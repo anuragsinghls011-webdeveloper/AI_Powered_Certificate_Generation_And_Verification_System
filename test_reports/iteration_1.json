@@ -1,0 +1,40 @@
+{
+  "summary": "Tested Node.js/Express backend + React Design Studio feature end-to-end. Backend: 13/13 pytest cases pass covering analytics (count_documents fix verified), templates CRUD, events, bulk certificate generation, PDF download with custom template layout, send-email, revoke. Frontend: Design Studio navigation, canvas rendering, add field, mouse-drag position update, template save/update/save-as-copy/delete, live preview mode (drag disabled), background image upload/clear all verified. Full integration Design Studio -> Bulk Generator -> PDF download works (PDF is 3.7KB, %PDF header, correct Content-Type).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Design Studio -> Bulk Generator template list refresh",
+        "issue": "When a new template is created in Design Studio, App.js's `templates` state is not refreshed automatically. The new template does not appear in the Bulk Generator's template <select> until the user manually reloads the page or triggers fetchAllData. Design Studio maintains its own local template state and does not notify the parent App. UX impact: user must reload to use a freshly-designed template. Suggested fix: lift templates state up or pass a refresh callback (like `notify`) from App into DesignStudio and call it after save/delete.",
+        "affected_selectors": ["[data-testid=\"bulk-template-select\"]"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_backend.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "OPTIONAL/UX: After template save/delete in DesignStudio, refresh templates in parent App.js (pass a refresh callback prop from App to DesignStudio) so Bulk Generator picks up newly-designed templates without a page reload.",
+    "OPTIONAL: Seeded templates (tpl-modern, tpl-classic, tpl-tech) in the current DB were created by an earlier server version and have empty `fields` arrays; seedInitialData skips on non-empty collection. If pristine seed is desired, either version-check the seed or add missing fields to those docs via a migration."
+  ],
+  "critical_code_review_comments": [
+    "DesignStudio.jsx line 83: loadTemplate uses uid() which is declared with const on line 88. Works at call-time (function body executes after module init) but slightly fragile - move uid definition above loadTemplate for clarity.",
+    "App.js maintains its own `templates` state that is only refreshed on mount/after certain actions. Consider a shared context or React Query for template data to avoid stale UI across tabs.",
+    "server.js: seed function should be idempotent per-record (upsert by id) rather than skipping when collection non-empty, so schema evolutions to seeded records are picked up.",
+    "server.js: PUT /api/templates/:id accepts arbitrary body fields without Pydantic-style validation; consider request-body validation (Joi/zod) for robustness."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_backend.py"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "Test data (PW_ prefixed) created transiently and cleaned up during tests.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend at https://full-stack-web-19.preview.emergentagent.com. Tests: /app/backend/tests/test_backend.py (pytest). DB contains legacy seeded templates with empty fields — not a code bug, just stale data. Design Studio<->Bulk Generator template list refresh is the only known UX gap."
+}

@@ -1,0 +1,501 @@
+Student_ID,First_Name,Last_Name,Email_Address,University_College,Degree_Program,Year_of_Study,Primary_Design_Tool,Experience_Level,Portfolio_URL,Registration_Date
+UIS26-0001,Oliver,Patel,oliver.patel35@example.com,Carnegie Mellon University,M.Des,2nd Year,Adobe XD,Beginner,https://behance.net/oliverpatel9035,2026-07-07 23:05
+UIS26-0002,Sai,Mishra,sai.mishra442@example.com,IIT Bombay,B.Des (UI/UX),1st Year,Adobe XD,Beginner,https://behance.net/saimishra9295,2026-08-08 00:54
+UIS26-0003,Ananya,Williams,ananya.williams675@example.com,Carnegie Mellon University,BCA,4th Year,Adobe XD,Intermediate,https://behance.net/ananyawilliams2715,2026-07-18 00:13
+UIS26-0004,James,Chauhan,james.chauhan358@example.com,BITS Pilani,B.Tech Computer Science,2nd Year,Sketch,Beginner,https://behance.net/jameschauhan5981,2026-07-25 03:18
+UIS26-0005,Kavya,Pandey,kavya.pandey280@example.com,Rhode Island School of Design,B.Des (UI/UX),4th Year,Framer,Beginner,https://behance.net/kavyapandey9144,2026-07-25 02:41
+UIS26-0006,Priya,Miller,priya.miller653@example.com,IIIT Hyderabad,HCI (Master's),3rd Year,Framer,Beginner,https://behance.net/priyamiller3833,2026-07-05 01:33
+UIS26-0007,Isabella,Nair,isabella.nair91@example.com,Parsons School of Design,B.Tech Computer Science,1st Year,Penpot,Beginner,https://behance.net/isabellanair2764,2026-08-10 12:27
+UIS26-0008,Isha,Yadav,isha.yadav224@example.com,Stanford University,M.Des,1st Year,Framer,Intermediate,https://behance.net/ishayadav2777,2026-08-04 08:21
+UIS26-0009,Sneha,Bose,sneha.bose286@example.com,University of Arts London,MCA,Alumni / Graduated,Adobe XD,Intermediate,https://behance.net/snehabose625,2026-07-04 07:49
+UIS26-0010,Aisha,Bose,aisha.bose284@example.com,NID Ahmedabad,B.Tech Computer Science,Alumni / Graduated,Webflow,Intermediate,https://behance.net/aishabose7617,2026-08-01 13:30
+UIS26-0011,Ishaan,Jain,ishaan.jain152@example.com,VIT Vellore,MCA,Alumni / Graduated,Framer,Beginner,https://behance.net/ishaanjain9660,2026-08-07 14:37
+UIS26-0012,Rahul,Yadav,rahul.yadav234@example.com,Srishti Institute of Art,BCA,4th Year,Figma,Intermediate,https://behance.net/rahulyadav2721,2026-07-08 05:13
+UIS26-0013,Amelia,Chauhan,amelia.chauhan620@example.com,NID Ahmedabad,BFA (Visual Communication),4th Year,Framer,Advanced,https://behance.net/ameliachauhan9164,2026-08-03 08:34
+UIS26-0014,Aarav,Johnson,aarav.johnson748@example.com,NID Ahmedabad,MCA,Alumni / Graduated,Sketch,Intermediate,https://behance.net/aaravjohnson4908,2026-07-22 03:48
+UIS26-0015,Sumit,Verma,sumit.verma474@example.com,IIT Bombay,MCA,3rd Year,Framer,Intermediate,https://behance.net/sumitverma4989,2026-08-02 03:37
+UIS26-0016,Oliver,Iyer,oliver.iyer633@example.com,VIT Vellore,B.Tech Computer Science,3rd Year,Adobe XD,Intermediate,https://behance.net/oliveriyer9913,2026-08-03 00:01
+UIS26-0017,Aisha,Bhat,aisha.bhat29@example.com,NID Ahmedabad,M.Des,3rd Year,Adobe XD,Beginner,https://behance.net/aishabhat1503,2026-08-06 02:41
+UIS26-0018,William,Bhat,william.bhat845@example.com,NID Ahmedabad,HCI (Master's),Alumni / Graduated,Adobe XD,Beginner,https://behance.net/williambhat2805,2026-07-31 18:45
+UIS26-0019,Diya,Iyer,diya.iyer903@example.com,IIIT Hyderabad,BFA (Visual Communication),2nd Year,Framer,Intermediate,https://behance.net/diyaiyer6637,2026-07-13 10:38
+UIS26-0020,Elijah,Smith,elijah.smith392@example.com,NIFT Delhi,BCA,4th Year,Figma,Beginner,https://behance.net/elijahsmith444,2026-07-05 11:32
+UIS26-0021,Olivia,Chakraborty,olivia.chakraborty245@example.com,IIIT Hyderabad,B.Tech Computer Science,1st Year,Figma,Intermediate,https://behance.net/oliviachakraborty1204,2026-07-04 07:48
+UIS26-0022,Aditya,Davis,aditya.davis348@example.com,NID Ahmedabad,BCA,2nd Year,Sketch,Intermediate,https://behance.net/adityadavis2267,2026-07-14 18:24
+UIS26-0023,William,Martinez,william.martinez913@example.com,IIIT Hyderabad,BCA,4th Year,Adobe XD,Intermediate,https://behance.net/williammartinez1645,2026-07-27 06:29
+UIS26-0024,Reyaansh,Johnson,reyaansh.johnson451@example.com,MIT Institute of Design,BFA (Visual Communication),4th Year,Penpot,Advanced,https://behance.net/reyaanshjohnson1712,2026-07-04 22:59
+UIS26-0025,Vihaan,Bose,vihaan.bose755@example.com,MIT Institute of Design,HCI (Master's),1st Year,Adobe XD,Beginner,https://behance.net/vihaanbose2396,2026-08-04 15:18
+UIS26-0026,Sumit,Verma,sumit.verma295@example.com,NIFT Delhi,B.Tech Computer Science,1st Year,Penpot,Advanced,https://behance.net/sumitverma928,2026-08-05 03:20
+UIS26-0027,Charlotte,Chakraborty,charlotte.chakraborty866@example.com,IIT Bombay,B.Des (UI/UX),2nd Year,Adobe XD,Intermediate,https://behance.net/charlottechakraborty6670,2026-07-31 07:17
+UIS26-0028,Vihaan,Verma,vihaan.verma398@example.com,IIT Bombay,BFA (Visual Communication),3rd Year,Penpot,Beginner,https://behance.net/vihaanverma8073,2026-08-05 22:35
+UIS26-0029,Ishaan,Reddy,ishaan.reddy313@example.com,VIT Vellore,B.Des (UI/UX),Alumni / Graduated,Webflow,Intermediate,https://behance.net/ishaanreddy921,2026-07-21 01:57
+UIS26-0030,Olivia,Bhat,olivia.bhat524@example.com,University of Arts London,HCI (Master's),Alumni / Graduated,Adobe XD,Beginner,https://behance.net/oliviabhat3144,2026-08-02 02:44
+UIS26-0031,Arjun,Pandey,arjun.pandey79@example.com,Stanford University,HCI (Master's),2nd Year,Penpot,Beginner,https://behance.net/arjunpandey9585,2026-08-06 08:24
+UIS26-0032,Noah,Singh,noah.singh644@example.com,NID Ahmedabad,BFA (Visual Communication),Alumni / Graduated,Framer,Intermediate,https://behance.net/noahsingh5247,2026-07-17 06:58
+UIS26-0033,Ariya,Jain,ariya.jain415@example.com,Srishti Institute of Art,MCA,3rd Year,Penpot,Intermediate,https://behance.net/ariyajain7608,2026-07-05 00:19
+UIS26-0034,Emma,Mishra,emma.mishra112@example.com,NID Ahmedabad,BCA,2nd Year,Framer,Beginner,https://behance.net/emmamishra4102,2026-07-23 02:20
+UIS26-0035,Isha,Nair,isha.nair171@example.com,NIFT Delhi,HCI (Master's),Alumni / Graduated,Webflow,Intermediate,https://behance.net/ishanair9186,2026-08-03 00:16
+UIS26-0036,Riya,Martinez,riya.martinez689@example.com,NID Ahmedabad,B.Tech Computer Science,3rd Year,Figma,Advanced,https://behance.net/riyamartinez4562,2026-08-05 05:18
+UIS26-0037,Priya,Pandey,priya.pandey225@example.com,Carnegie Mellon University,M.Des,2nd Year,Webflow,Intermediate,https://behance.net/priyapandey8104,2026-07-17 17:15
+UIS26-0038,Diya,Rodriguez,diya.rodriguez939@example.com,Parsons School of Design,B.Des (UI/UX),1st Year,Webflow,Intermediate,https://behance.net/diyarodriguez158,2026-07-18 01:30
+UIS26-0039,Neha,Jones,neha.jones143@example.com,Stanford University,M.Des,2nd Year,Webflow,Intermediate,https://behance.net/nehajones258,2026-07-28 19:08
+UIS26-0040,Ayaan,Kumar,ayaan.kumar977@example.com,University of Arts London,MCA,2nd Year,Framer,Beginner,https://behance.net/ayaankumar9152,2026-07-24 19:52
+UIS26-0041,Ishaan,Chauhan,ishaan.chauhan140@example.com,IIT Bombay,M.Des,3rd Year,Figma,Advanced,https://behance.net/ishaanchauhan4188,2026-07-14 23:16
+UIS26-0042,Elijah,Patel,elijah.patel372@example.com,Rhode Island School of Design,BCA,4th Year,Framer,Intermediate,https://behance.net/elijahpatel3000,2026-07-16 05:32
+UIS26-0043,Amit,Sharma,amit.sharma193@example.com,Carnegie Mellon University,M.Des,4th Year,Webflow,Advanced,https://behance.net/amitsharma2708,2026-07-16 09:06
+UIS26-0044,James,Patel,james.patel401@example.com,Parsons School of Design,B.Des (UI/UX),4th Year,Adobe XD,Beginner,https://behance.net/jamespatel5100,2026-07-30 11:56
+UIS26-0045,Sara,Rao,sara.rao34@example.com,Stanford University,B.Tech Computer Science,4th Year,Sketch,Beginner,https://behance.net/sararao5853,2026-07-05 09:31
+UIS26-0046,Charlotte,Iyer,charlotte.iyer419@example.com,Stanford University,HCI (Master's),Alumni / Graduated,Sketch,Advanced,https://behance.net/charlotteiyer3025,2026-07-08 08:54
+UIS26-0047,Olivia,Jain,olivia.jain49@example.com,NID Ahmedabad,BCA,4th Year,Sketch,Intermediate,https://behance.net/oliviajain8479,2026-07-21 14:53
+UIS26-0048,Ayaan,Bose,ayaan.bose931@example.com,IIIT Hyderabad,B.Tech Computer Science,3rd Year,Figma,Intermediate,https://behance.net/ayaanbose8921,2026-07-01 17:44
+UIS26-0049,Amelia,Brown,amelia.brown972@example.com,Carnegie Mellon University,MCA,2nd Year,Sketch,Intermediate,https://behance.net/ameliabrown5243,2026-07-22 21:16
+UIS26-0050,Elijah,Davis,elijah.davis137@example.com,Carnegie Mellon University,M.Des,Alumni / Graduated,Sketch,Intermediate,https://behance.net/elijahdavis4944,2026-07-21 13:44
+UIS26-0051,Sita,Gupta,sita.gupta206@example.com,Delhi Technological University,MCA,4th Year,Webflow,Intermediate,https://behance.net/sitagupta9424,2026-07-12 21:00
+UIS26-0052,Riya,Bose,riya.bose571@example.com,Parsons School of Design,B.Des (UI/UX),3rd Year,Sketch,Beginner,https://behance.net/riyabose5379,2026-08-07 20:42
+UIS26-0053,Sneha,Mehta,sneha.mehta462@example.com,Stanford University,B.Tech Computer Science,Alumni / Graduated,Penpot,Intermediate,https://behance.net/snehamehta1489,2026-07-11 22:29
+UIS26-0054,Priya,Iyer,priya.iyer689@example.com,Stanford University,BCA,3rd Year,Figma,Advanced,https://behance.net/priyaiyer5185,2026-07-16 22:57
+UIS26-0055,Sara,Garcia,sara.garcia213@example.com,Srishti Institute of Art,B.Des (UI/UX),1st Year,Adobe XD,Advanced,https://behance.net/saragarcia7561,2026-08-09 02:29
+UIS26-0056,Amit,Rodriguez,amit.rodriguez654@example.com,IIIT Hyderabad,B.Tech Computer Science,4th Year,Penpot,Intermediate,https://behance.net/amitrodriguez190,2026-07-10 22:23
+UIS26-0057,Benjamin,Davis,benjamin.davis798@example.com,University of Arts London,B.Des (UI/UX),4th Year,Adobe XD,Beginner,https://behance.net/benjamindavis922,2026-08-03 15:51
+UIS26-0058,Sita,Rao,sita.rao949@example.com,Parsons School of Design,B.Des (UI/UX),4th Year,Adobe XD,Advanced,https://behance.net/sitarao9855,2026-08-03 19:04
+UIS26-0059,Aisha,Jones,aisha.jones922@example.com,NIFT Delhi,BCA,Alumni / Graduated,Penpot,Advanced,https://behance.net/aishajones2707,2026-08-05 15:13
+UIS26-0060,Sophia,Davis,sophia.davis496@example.com,NIFT Delhi,M.Des,2nd Year,Webflow,Beginner,https://behance.net/sophiadavis4019,2026-08-03 16:32
+UIS26-0061,Saanvi,Mehta,saanvi.mehta89@example.com,Carnegie Mellon University,M.Des,2nd Year,Sketch,Intermediate,https://behance.net/saanvimehta2367,2026-08-04 02:45
+UIS26-0062,Ishaan,Rao,ishaan.rao402@example.com,Carnegie Mellon University,B.Tech Computer Science,2nd Year,Figma,Intermediate,https://behance.net/ishaanrao7733,2026-07-22 18:31
+UIS26-0063,Amit,Singh,amit.singh221@example.com,Parsons School of Design,BFA (Visual Communication),4th Year,Framer,Advanced,https://behance.net/amitsingh6332,2026-07-02 19:39
+UIS26-0064,Karan,Sharma,karan.sharma975@example.com,MIT Institute of Design,M.Des,4th Year,Penpot,Intermediate,https://behance.net/karansharma3713,2026-08-04 20:35
+UIS26-0065,Vikram,Rao,vikram.rao289@example.com,Delhi Technological University,BFA (Visual Communication),1st Year,Penpot,Intermediate,https://behance.net/vikramrao7757,2026-07-26 05:38
+UIS26-0066,Krishna,Pandey,krishna.pandey556@example.com,IIT Bombay,BFA (Visual Communication),Alumni / Graduated,Framer,Intermediate,https://behance.net/krishnapandey7122,2026-07-06 21:56
+UIS26-0067,Krishna,Davis,krishna.davis482@example.com,Srishti Institute of Art,B.Des (UI/UX),3rd Year,Penpot,Intermediate,https://behance.net/krishnadavis5629,2026-07-30 11:09
+UIS26-0068,Benjamin,Rodriguez,benjamin.rodriguez398@example.com,BITS Pilani,HCI (Master's),4th Year,Sketch,Advanced,https://behance.net/benjaminrodriguez8937,2026-07-31 00:39
+UIS26-0069,Vihaan,Yadav,vihaan.yadav239@example.com,Stanford University,B.Des (UI/UX),1st Year,Figma,Advanced,https://behance.net/vihaanyadav2596,2026-07-13 00:41
+UIS26-0070,Ariya,Gupta,ariya.gupta494@example.com,Stanford University,B.Des (UI/UX),Alumni / Graduated,Adobe XD,Intermediate,https://behance.net/ariyagupta2849,2026-07-17 12:35
+UIS26-0071,Noah,Pandey,noah.pandey996@example.com,Carnegie Mellon University,MCA,1st Year,Adobe XD,Advanced,https://behance.net/noahpandey520,2026-07-07 19:45
+UIS26-0072,Riya,Mishra,riya.mishra703@example.com,University of Arts London,BFA (Visual Communication),4th Year,Webflow,Beginner,https://behance.net/riyamishra4078,2026-08-07 23:34
+UIS26-0073,Reyaansh,Williams,reyaansh.williams801@example.com,BITS Pilani,HCI (Master's),Alumni / Graduated,Figma,Intermediate,https://behance.net/reyaanshwilliams5788,2026-08-06 01:24
+UIS26-0074,Gita,Chauhan,gita.chauhan687@example.com,MIT Institute of Design,B.Des (UI/UX),Alumni / Graduated,Webflow,Intermediate,https://behance.net/gitachauhan1829,2026-07-27 16:43
+UIS26-0075,Sumit,Yadav,sumit.yadav660@example.com,University of Arts London,HCI (Master's),4th Year,Webflow,Beginner,https://behance.net/sumityadav4525,2026-07-12 17:48
+UIS26-0076,Emma,Garcia,emma.garcia951@example.com,Symbiosis Institute of Design,HCI (Master's),4th Year,Penpot,Intermediate,https://behance.net/emmagarcia5380,2026-08-07 09:09
+UIS26-0077,Ariya,Miller,ariya.miller967@example.com,NID Ahmedabad,M.Des,4th Year,Adobe XD,Intermediate,https://behance.net/ariyamiller6309,2026-08-06 20:49
+UIS26-0078,Neha,Sharma,neha.sharma516@example.com,Parsons School of Design,M.Des,2nd Year,Penpot,Beginner,https://behance.net/nehasharma4681,2026-07-17 11:37
+UIS26-0079,Noah,Williams,noah.williams911@example.com,BITS Pilani,BCA,1st Year,Framer,Advanced,https://behance.net/noahwilliams6758,2026-07-06 08:14
+UIS26-0080,Vikram,Chakraborty,vikram.chakraborty786@example.com,VIT Vellore,MCA,4th Year,Webflow,Intermediate,https://behance.net/vikramchakraborty1624,2026-07-29 00:35
+UIS26-0081,Priya,Rao,priya.rao424@example.com,Carnegie Mellon University,B.Tech Computer Science,3rd Year,Webflow,Intermediate,https://behance.net/priyarao8798,2026-07-31 18:53
+UIS26-0082,Kavya,Chauhan,kavya.chauhan773@example.com,Symbiosis Institute of Design,M.Des,3rd Year,Webflow,Intermediate,https://behance.net/kavyachauhan3877,2026-07-20 08:34
+UIS26-0083,Ayaan,Brown,ayaan.brown207@example.com,MIT Institute of Design,B.Des (UI/UX),Alumni / Graduated,Webflow,Beginner,https://behance.net/ayaanbrown4630,2026-07-14 16:31
+UIS26-0084,William,Mishra,william.mishra788@example.com,Symbiosis Institute of Design,BCA,3rd Year,Figma,Advanced,https://behance.net/williammishra6012,2026-07-19 07:45
+UIS26-0085,Atharv,Nair,atharv.nair24@example.com,Carnegie Mellon University,BCA,2nd Year,Sketch,Beginner,https://behance.net/atharvnair4886,2026-07-04 18:53
+UIS26-0086,James,Gupta,james.gupta663@example.com,Parsons School of Design,HCI (Master's),4th Year,Figma,Advanced,https://behance.net/jamesgupta7790,2026-08-06 09:42
+UIS26-0087,Karan,Mehta,karan.mehta358@example.com,Srishti Institute of Art,B.Des (UI/UX),3rd Year,Penpot,Beginner,https://behance.net/karanmehta8156,2026-07-05 13:40
+UIS26-0088,Arjun,Mishra,arjun.mishra654@example.com,Stanford University,B.Des (UI/UX),2nd Year,Adobe XD,Advanced,https://behance.net/arjunmishra4166,2026-07-20 02:54
+UIS26-0089,Ayaan,Chakraborty,ayaan.chakraborty792@example.com,Delhi Technological University,BCA,Alumni / Graduated,Framer,Beginner,https://behance.net/ayaanchakraborty7481,2026-08-03 12:59
+UIS26-0090,Pooja,Nair,pooja.nair890@example.com,IIIT Hyderabad,BFA (Visual Communication),3rd Year,Framer,Intermediate,https://behance.net/poojanair3504,2026-08-09 03:23
+UIS26-0091,Oliver,Reddy,oliver.reddy280@example.com,Stanford University,B.Des (UI/UX),2nd Year,Adobe XD,Beginner,https://behance.net/oliverreddy143,2026-07-05 05:20
+UIS26-0092,Amit,Mehta,amit.mehta715@example.com,IIIT Hyderabad,BFA (Visual Communication),3rd Year,Figma,Beginner,https://behance.net/amitmehta7538,2026-07-19 23:59
+UIS26-0093,Arjun,Johnson,arjun.johnson249@example.com,University of Arts London,M.Des,Alumni / Graduated,Webflow,Advanced,https://behance.net/arjunjohnson1980,2026-07-13 14:30
+UIS26-0094,Gita,Rao,gita.rao673@example.com,Srishti Institute of Art,M.Des,2nd Year,Figma,Beginner,https://behance.net/gitarao9425,2026-07-20 20:18
+UIS26-0095,Priya,Mehta,priya.mehta137@example.com,NIFT Delhi,MCA,3rd Year,Webflow,Intermediate,https://behance.net/priyamehta8947,2026-07-18 17:04
+UIS26-0096,Vikram,Mehta,vikram.mehta92@example.com,IIIT Hyderabad,B.Des (UI/UX),4th Year,Webflow,Intermediate,https://behance.net/vikrammehta1596,2026-07-17 00:52
+UIS26-0097,Sara,Johnson,sara.johnson866@example.com,Parsons School of Design,BCA,Alumni / Graduated,Figma,Advanced,https://behance.net/sarajohnson759,2026-07-18 19:40
+UIS26-0098,Benjamin,Jones,benjamin.jones189@example.com,NIFT Delhi,BCA,4th Year,Sketch,Beginner,https://behance.net/benjaminjones8156,2026-08-07 14:52
+UIS26-0099,Sai,Bhat,sai.bhat366@example.com,Delhi Technological University,M.Des,3rd Year,Webflow,Beginner,https://behance.net/saibhat6844,2026-07-11 11:15
+UIS26-0100,James,Bhat,james.bhat305@example.com,Stanford University,BFA (Visual Communication),Alumni / Graduated,Figma,Intermediate,https://behance.net/jamesbhat5396,2026-07-21 08:36
+UIS26-0101,Ayaan,Jones,ayaan.jones423@example.com,Parsons School of Design,BCA,1st Year,Webflow,Advanced,https://behance.net/ayaanjones988,2026-07-30 14:06
+UIS26-0102,Ananya,Iyer,ananya.iyer380@example.com,IIIT Hyderabad,HCI (Master's),4th Year,Webflow,Intermediate,https://behance.net/ananyaiyer4475,2026-07-04 06:56
+UIS26-0103,Sita,Gupta,sita.gupta959@example.com,BITS Pilani,BFA (Visual Communication),4th Year,Figma,Beginner,https://behance.net/sitagupta4020,2026-08-10 20:46
+UIS26-0104,Ava,Verma,ava.verma328@example.com,Symbiosis Institute of Design,B.Des (UI/UX),Alumni / Graduated,Penpot,Beginner,https://behance.net/avaverma2024,2026-07-08 15:45
+UIS26-0105,Charlotte,Miller,charlotte.miller167@example.com,NIFT Delhi,MCA,3rd Year,Framer,Intermediate,https://behance.net/charlottemiller7836,2026-07-27 16:28
+UIS26-0106,Ariya,Mehta,ariya.mehta574@example.com,Srishti Institute of Art,BFA (Visual Communication),2nd Year,Framer,Intermediate,https://behance.net/ariyamehta4626,2026-07-09 02:22
+UIS26-0107,Isabella,Garcia,isabella.garcia884@example.com,Delhi Technological University,M.Des,Alumni / Graduated,Sketch,Advanced,https://behance.net/isabellagarcia9716,2026-07-19 10:11
+UIS26-0108,Olivia,Johnson,olivia.johnson511@example.com,Parsons School of Design,B.Tech Computer Science,4th Year,Framer,Intermediate,https://behance.net/oliviajohnson9003,2026-07-22 18:50
+UIS26-0109,Rohan,Mehta,rohan.mehta965@example.com,MIT Institute of Design,HCI (Master's),2nd Year,Webflow,Beginner,https://behance.net/rohanmehta6830,2026-07-25 07:58
+UIS26-0110,Aditya,Das,aditya.das772@example.com,NIFT Delhi,MCA,4th Year,Penpot,Advanced,https://behance.net/adityadas706,2026-07-10 16:54
+UIS26-0111,Krishna,Iyer,krishna.iyer998@example.com,IIIT Hyderabad,M.Des,1st Year,Penpot,Beginner,https://behance.net/krishnaiyer2461,2026-07-30 00:31
+UIS26-0112,Amit,Davis,amit.davis680@example.com,Srishti Institute of Art,B.Des (UI/UX),4th Year,Sketch,Intermediate,https://behance.net/amitdavis1415,2026-07-26 22:10
+UIS26-0113,Neha,Davis,neha.davis700@example.com,Parsons School of Design,BCA,4th Year,Sketch,Intermediate,https://behance.net/nehadavis688,2026-08-01 18:28
+UIS26-0114,Emma,Kumar,emma.kumar250@example.com,Stanford University,MCA,3rd Year,Adobe XD,Intermediate,https://behance.net/emmakumar1746,2026-07-28 03:21
+UIS26-0115,Pooja,Verma,pooja.verma720@example.com,BITS Pilani,B.Des (UI/UX),1st Year,Sketch,Intermediate,https://behance.net/poojaverma6241,2026-07-19 12:14
+UIS26-0116,Sumit,Gupta,sumit.gupta260@example.com,Symbiosis Institute of Design,BFA (Visual Communication),Alumni / Graduated,Webflow,Intermediate,https://behance.net/sumitgupta1393,2026-07-11 05:58
+UIS26-0117,Emma,Davis,emma.davis401@example.com,IIIT Hyderabad,MCA,2nd Year,Penpot,Advanced,https://behance.net/emmadavis7655,2026-07-10 07:55
+UIS26-0118,Oliver,Jain,oliver.jain480@example.com,BITS Pilani,MCA,1st Year,Penpot,Advanced,https://behance.net/oliverjain1310,2026-08-04 05:23
+UIS26-0119,Pooja,Yadav,pooja.yadav611@example.com,BITS Pilani,MCA,4th Year,Webflow,Beginner,https://behance.net/poojayadav6402,2026-07-20 06:47
+UIS26-0120,Karan,Patel,karan.patel252@example.com,Delhi Technological University,BCA,3rd Year,Framer,Beginner,https://behance.net/karanpatel6584,2026-07-19 00:44
+UIS26-0121,Saanvi,Sharma,saanvi.sharma589@example.com,Parsons School of Design,MCA,1st Year,Framer,Intermediate,https://behance.net/saanvisharma5872,2026-07-19 07:51
+UIS26-0122,Sara,Smith,sara.smith204@example.com,IIIT Hyderabad,M.Des,2nd Year,Webflow,Beginner,https://behance.net/sarasmith745,2026-08-10 22:03
+UIS26-0123,Riya,Garcia,riya.garcia461@example.com,IIT Bombay,BCA,3rd Year,Webflow,Beginner,https://behance.net/riyagarcia6907,2026-07-19 11:09
+UIS26-0124,Atharv,Reddy,atharv.reddy145@example.com,Rhode Island School of Design,BCA,3rd Year,Framer,Intermediate,https://behance.net/atharvreddy4310,2026-07-18 05:36
+UIS26-0125,Karan,Garcia,karan.garcia312@example.com,Carnegie Mellon University,HCI (Master's),3rd Year,Figma,Intermediate,https://behance.net/karangarcia3796,2026-07-05 04:48
+UIS26-0126,Amelia,Brown,amelia.brown700@example.com,Delhi Technological University,HCI (Master's),Alumni / Graduated,Sketch,Beginner,https://behance.net/ameliabrown4432,2026-07-26 00:28
+UIS26-0127,Gita,Patel,gita.patel475@example.com,MIT Institute of Design,MCA,3rd Year,Framer,Intermediate,https://behance.net/gitapatel1875,2026-08-10 12:40
+UIS26-0128,Amelia,Rao,amelia.rao492@example.com,IIT Bombay,BCA,Alumni / Graduated,Sketch,Advanced,https://behance.net/ameliarao1135,2026-07-15 22:06
+UIS26-0129,Oliver,Miller,oliver.miller485@example.com,University of Arts London,MCA,3rd Year,Webflow,Intermediate,https://behance.net/olivermiller709,2026-07-09 01:32
+UIS26-0130,Riya,Bhat,riya.bhat128@example.com,NID Ahmedabad,B.Tech Computer Science,Alumni / Graduated,Adobe XD,Intermediate,https://behance.net/riyabhat8950,2026-07-24 22:53
+UIS26-0131,Amit,Mishra,amit.mishra770@example.com,Carnegie Mellon University,B.Tech Computer Science,4th Year,Webflow,Beginner,https://behance.net/amitmishra6786,2026-08-01 21:00
+UIS26-0132,Saanvi,Singh,saanvi.singh716@example.com,MIT Institute of Design,B.Tech Computer Science,4th Year,Penpot,Advanced,https://behance.net/saanvisingh6118,2026-07-24 03:23
+UIS26-0133,Gita,Rodriguez,gita.rodriguez670@example.com,MIT Institute of Design,B.Des (UI/UX),4th Year,Sketch,Beginner,https://behance.net/gitarodriguez1601,2026-07-08 15:31
+UIS26-0134,Elijah,Reddy,elijah.reddy667@example.com,Stanford University,BCA,1st Year,Figma,Intermediate,https://behance.net/elijahreddy9350,2026-07-16 04:17
+UIS26-0135,Myra,Kumar,myra.kumar859@example.com,Rhode Island School of Design,BCA,2nd Year,Framer,Beginner,https://behance.net/myrakumar2517,2026-07-15 11:12
+UIS26-0136,Noah,Sharma,noah.sharma293@example.com,Parsons School of Design,B.Tech Computer Science,2nd Year,Framer,Beginner,https://behance.net/noahsharma522,2026-07-12 03:45
+UIS26-0137,Krishna,Sharma,krishna.sharma376@example.com,Rhode Island School of Design,HCI (Master's),2nd Year,Framer,Intermediate,https://behance.net/krishnasharma958,2026-07-12 09:03
+UIS26-0138,Krishna,Brown,krishna.brown441@example.com,Symbiosis Institute of Design,B.Des (UI/UX),1st Year,Penpot,Intermediate,https://behance.net/krishnabrown9826,2026-07-24 17:31
+UIS26-0139,Reyaansh,Mehta,reyaansh.mehta525@example.com,VIT Vellore,BCA,1st Year,Webflow,Intermediate,https://behance.net/reyaanshmehta7604,2026-08-03 10:17
+UIS26-0140,Charlotte,Sharma,charlotte.sharma72@example.com,NIFT Delhi,HCI (Master's),4th Year,Penpot,Intermediate,https://behance.net/charlottesharma1304,2026-08-01 15:08
+UIS26-0141,Sai,Das,sai.das632@example.com,Srishti Institute of Art,B.Des (UI/UX),2nd Year,Sketch,Intermediate,https://behance.net/saidas5427,2026-08-07 18:43
+UIS26-0142,Rohan,Pandey,rohan.pandey553@example.com,BITS Pilani,BFA (Visual Communication),Alumni / Graduated,Framer,Intermediate,https://behance.net/rohanpandey9133,2026-07-08 22:20
+UIS26-0143,William,Davis,william.davis230@example.com,Delhi Technological University,BFA (Visual Communication),2nd Year,Penpot,Intermediate,https://behance.net/williamdavis6915,2026-07-30 13:36
+UIS26-0144,William,Patel,william.patel330@example.com,Delhi Technological University,M.Des,3rd Year,Sketch,Advanced,https://behance.net/williampatel1594,2026-07-31 02:17
+UIS26-0145,Sai,Kumar,sai.kumar452@example.com,NID Ahmedabad,MCA,3rd Year,Adobe XD,Intermediate,https://behance.net/saikumar9302,2026-08-07 19:10
+UIS26-0146,Neha,Johnson,neha.johnson135@example.com,Delhi Technological University,M.Des,4th Year,Webflow,Beginner,https://behance.net/nehajohnson5219,2026-07-19 20:29
+UIS26-0147,Kavya,Patel,kavya.patel601@example.com,Symbiosis Institute of Design,B.Tech Computer Science,2nd Year,Webflow,Intermediate,https://behance.net/kavyapatel9213,2026-07-07 11:57
+UIS26-0148,Isha,Patel,isha.patel790@example.com,BITS Pilani,BCA,2nd Year,Penpot,Advanced,https://behance.net/ishapatel9221,2026-08-09 20:56
+UIS26-0149,Vivaan,Pandey,vivaan.pandey961@example.com,Stanford University,HCI (Master's),3rd Year,Figma,Beginner,https://behance.net/vivaanpandey5851,2026-07-20 11:35
+UIS26-0150,Aarav,Verma,aarav.verma900@example.com,Srishti Institute of Art,BCA,4th Year,Figma,Beginner,https://behance.net/aaravverma1603,2026-08-10 01:02
+UIS26-0151,Sophia,Iyer,sophia.iyer230@example.com,Delhi Technological University,BFA (Visual Communication),4th Year,Sketch,Beginner,https://behance.net/sophiaiyer9399,2026-07-20 11:04
+UIS26-0152,Noah,Kumar,noah.kumar914@example.com,IIT Bombay,B.Tech Computer Science,2nd Year,Framer,Beginner,https://behance.net/noahkumar7359,2026-07-06 09:17
+UIS26-0153,Elijah,Chauhan,elijah.chauhan507@example.com,IIIT Hyderabad,BFA (Visual Communication),4th Year,Sketch,Beginner,https://behance.net/elijahchauhan5755,2026-08-02 03:53
+UIS26-0154,Sumit,Patel,sumit.patel300@example.com,Stanford University,MCA,Alumni / Graduated,Penpot,Intermediate,https://behance.net/sumitpatel3712,2026-07-20 01:33
+UIS26-0155,Rahul,Pandey,rahul.pandey66@example.com,IIT Bombay,B.Tech Computer Science,3rd Year,Adobe XD,Intermediate,https://behance.net/rahulpandey5475,2026-07-17 09:52
+UIS26-0156,Ayaan,Sharma,ayaan.sharma519@example.com,Carnegie Mellon University,BFA (Visual Communication),2nd Year,Adobe XD,Intermediate,https://behance.net/ayaansharma9254,2026-07-15 17:04
+UIS26-0157,Elijah,Garcia,elijah.garcia372@example.com,NID Ahmedabad,BFA (Visual Communication),1st Year,Penpot,Beginner,https://behance.net/elijahgarcia9533,2026-07-05 10:41
+UIS26-0158,Sumit,Mishra,sumit.mishra424@example.com,Carnegie Mellon University,MCA,4th Year,Sketch,Beginner,https://behance.net/sumitmishra2915,2026-07-02 11:05
+UIS26-0159,Emma,Mehta,emma.mehta861@example.com,Carnegie Mellon University,M.Des,1st Year,Penpot,Advanced,https://behance.net/emmamehta9748,2026-07-16 14:52
+UIS26-0160,Rahul,Iyer,rahul.iyer90@example.com,Delhi Technological University,HCI (Master's),3rd Year,Webflow,Intermediate,https://behance.net/rahuliyer1351,2026-07-22 05:44
+UIS26-0161,Suresh,Smith,suresh.smith126@example.com,Symbiosis Institute of Design,BCA,2nd Year,Sketch,Intermediate,https://behance.net/sureshsmith1784,2026-07-10 08:03
+UIS26-0162,Ishaan,Jain,ishaan.jain212@example.com,Srishti Institute of Art,BCA,2nd Year,Webflow,Beginner,https://behance.net/ishaanjain7701,2026-08-10 16:51
+UIS26-0163,Benjamin,Mishra,benjamin.mishra788@example.com,IIIT Hyderabad,BFA (Visual Communication),Alumni / Graduated,Webflow,Intermediate,https://behance.net/benjaminmishra5279,2026-08-09 11:01
+UIS26-0164,Ishaan,Mehta,ishaan.mehta79@example.com,NIFT Delhi,BFA (Visual Communication),3rd Year,Sketch,Intermediate,https://behance.net/ishaanmehta1315,2026-07-23 17:19
+UIS26-0165,Riya,Mehta,riya.mehta472@example.com,IIT Bombay,B.Des (UI/UX),3rd Year,Sketch,Beginner,https://behance.net/riyamehta9833,2026-07-06 20:59
+UIS26-0166,Suresh,Bose,suresh.bose483@example.com,IIIT Hyderabad,BCA,1st Year,Penpot,Advanced,https://behance.net/sureshbose3184,2026-08-06 22:14
+UIS26-0167,Aisha,Pandey,aisha.pandey497@example.com,Symbiosis Institute of Design,B.Tech Computer Science,1st Year,Penpot,Beginner,https://behance.net/aishapandey8366,2026-07-22 02:52
+UIS26-0168,Charlotte,Verma,charlotte.verma50@example.com,VIT Vellore,MCA,4th Year,Penpot,Intermediate,https://behance.net/charlotteverma6062,2026-08-09 05:25
+UIS26-0169,Isha,Martinez,isha.martinez299@example.com,Delhi Technological University,BFA (Visual Communication),3rd Year,Webflow,Intermediate,https://behance.net/ishamartinez5582,2026-08-10 22:05
+UIS26-0170,Arjun,Das,arjun.das106@example.com,Symbiosis Institute of Design,MCA,4th Year,Sketch,Beginner,https://behance.net/arjundas5561,2026-08-08 05:07
+UIS26-0171,Sai,Mishra,sai.mishra689@example.com,Srishti Institute of Art,M.Des,3rd Year,Webflow,Intermediate,https://behance.net/saimishra9849,2026-07-26 04:24
+UIS26-0172,Ava,Kumar,ava.kumar327@example.com,Symbiosis Institute of Design,BFA (Visual Communication),3rd Year,Adobe XD,Intermediate,https://behance.net/avakumar7037,2026-08-03 03:11
+UIS26-0173,Suresh,Yadav,suresh.yadav28@example.com,MIT Institute of Design,M.Des,2nd Year,Adobe XD,Intermediate,https://behance.net/sureshyadav3811,2026-08-01 06:33
+UIS26-0174,Krishna,Gupta,krishna.gupta89@example.com,BITS Pilani,HCI (Master's),1st Year,Framer,Intermediate,https://behance.net/krishnagupta5617,2026-08-03 01:17
+UIS26-0175,Isabella,Pandey,isabella.pandey144@example.com,IIIT Hyderabad,BFA (Visual Communication),2nd Year,Adobe XD,Beginner,https://behance.net/isabellapandey7270,2026-08-09 05:39
+UIS26-0176,Aditya,Chauhan,aditya.chauhan383@example.com,Stanford University,MCA,2nd Year,Penpot,Intermediate,https://behance.net/adityachauhan8849,2026-07-29 07:59
+UIS26-0177,Ariya,Nair,ariya.nair998@example.com,Rhode Island School of Design,HCI (Master's),4th Year,Adobe XD,Intermediate,https://behance.net/ariyanair7664,2026-08-06 15:02
+UIS26-0178,Isabella,Nair,isabella.nair806@example.com,Delhi Technological University,BCA,Alumni / Graduated,Penpot,Advanced,https://behance.net/isabellanair2367,2026-07-13 20:38
+UIS26-0179,Diya,Singh,diya.singh666@example.com,NIFT Delhi,HCI (Master's),3rd Year,Framer,Advanced,https://behance.net/diyasingh4770,2026-08-03 04:15
+UIS26-0180,Sai,Jones,sai.jones174@example.com,BITS Pilani,BFA (Visual Communication),Alumni / Graduated,Adobe XD,Advanced,https://behance.net/saijones7491,2026-07-06 07:34
+UIS26-0181,Kavya,Martinez,kavya.martinez37@example.com,Delhi Technological University,B.Des (UI/UX),4th Year,Framer,Intermediate,https://behance.net/kavyamartinez6242,2026-07-25 02:47
+UIS26-0182,Sara,Sharma,sara.sharma336@example.com,University of Arts London,B.Des (UI/UX),3rd Year,Adobe XD,Beginner,https://behance.net/sarasharma2373,2026-07-19 16:07
+UIS26-0183,Benjamin,Williams,benjamin.williams490@example.com,NIFT Delhi,BCA,1st Year,Figma,Beginner,https://behance.net/benjaminwilliams9091,2026-07-14 05:06
+UIS26-0184,William,Pandey,william.pandey550@example.com,Delhi Technological University,B.Des (UI/UX),3rd Year,Adobe XD,Intermediate,https://behance.net/williampandey6978,2026-07-04 08:08
+UIS26-0185,Oliver,Garcia,oliver.garcia647@example.com,NIFT Delhi,B.Des (UI/UX),1st Year,Penpot,Intermediate,https://behance.net/olivergarcia8543,2026-07-02 21:34
+UIS26-0186,Liam,Rao,liam.rao745@example.com,Srishti Institute of Art,M.Des,4th Year,Figma,Intermediate,https://behance.net/liamrao6925,2026-07-16 19:28
+UIS26-0187,Atharv,Johnson,atharv.johnson694@example.com,NID Ahmedabad,BCA,3rd Year,Figma,Advanced,https://behance.net/atharvjohnson8416,2026-08-04 17:19
+UIS26-0188,Sita,Sharma,sita.sharma409@example.com,Parsons School of Design,BFA (Visual Communication),1st Year,Webflow,Intermediate,https://behance.net/sitasharma366,2026-07-24 08:39
+UIS26-0189,Kavya,Garcia,kavya.garcia79@example.com,MIT Institute of Design,B.Tech Computer Science,1st Year,Framer,Intermediate,https://behance.net/kavyagarcia826,2026-07-22 04:33
+UIS26-0190,Kavya,Chakraborty,kavya.chakraborty356@example.com,Parsons School of Design,MCA,2nd Year,Webflow,Intermediate,https://behance.net/kavyachakraborty3086,2026-07-31 21:33
+UIS26-0191,Krishna,Kumar,krishna.kumar743@example.com,Rhode Island School of Design,BFA (Visual Communication),1st Year,Sketch,Beginner,https://behance.net/krishnakumar5270,2026-07-13 01:25
+UIS26-0192,Riya,Iyer,riya.iyer417@example.com,Parsons School of Design,BCA,4th Year,Sketch,Beginner,https://behance.net/riyaiyer5948,2026-07-13 09:45
+UIS26-0193,Isabella,Singh,isabella.singh896@example.com,Stanford University,M.Des,3rd Year,Figma,Intermediate,https://behance.net/isabellasingh7304,2026-07-28 13:39
+UIS26-0194,Rohan,Das,rohan.das201@example.com,NIFT Delhi,MCA,4th Year,Sketch,Advanced,https://behance.net/rohandas1453,2026-08-03 09:06
+UIS26-0195,William,Chauhan,william.chauhan90@example.com,Delhi Technological University,BCA,2nd Year,Framer,Beginner,https://behance.net/williamchauhan5472,2026-07-07 02:43
+UIS26-0196,Elijah,Nair,elijah.nair323@example.com,NIFT Delhi,BCA,4th Year,Adobe XD,Intermediate,https://behance.net/elijahnair793,2026-07-23 15:15
+UIS26-0197,William,Davis,william.davis943@example.com,MIT Institute of Design,BCA,4th Year,Sketch,Intermediate,https://behance.net/williamdavis6755,2026-07-04 02:33
+UIS26-0198,Isha,Iyer,isha.iyer830@example.com,Carnegie Mellon University,MCA,2nd Year,Figma,Beginner,https://behance.net/ishaiyer7279,2026-08-08 23:08
+UIS26-0199,Aditya,Gupta,aditya.gupta78@example.com,VIT Vellore,HCI (Master's),3rd Year,Sketch,Intermediate,https://behance.net/adityagupta2613,2026-08-06 01:06
+UIS26-0200,Amelia,Mehta,amelia.mehta981@example.com,MIT Institute of Design,M.Des,4th Year,Figma,Intermediate,https://behance.net/ameliamehta6621,2026-08-03 12:31
+UIS26-0201,Aisha,Smith,aisha.smith295@example.com,VIT Vellore,B.Des (UI/UX),1st Year,Webflow,Beginner,https://behance.net/aishasmith9302,2026-08-03 13:12
+UIS26-0202,Ayaan,Jain,ayaan.jain803@example.com,BITS Pilani,MCA,4th Year,Adobe XD,Advanced,https://behance.net/ayaanjain8147,2026-07-19 23:41
+UIS26-0203,Ananya,Patel,ananya.patel148@example.com,Parsons School of Design,B.Des (UI/UX),4th Year,Adobe XD,Advanced,https://behance.net/ananyapatel5336,2026-07-29 02:59
+UIS26-0204,Elijah,Yadav,elijah.yadav736@example.com,NID Ahmedabad,BCA,Alumni / Graduated,Sketch,Advanced,https://behance.net/elijahyadav2952,2026-07-11 23:54
+UIS26-0205,Isha,Iyer,isha.iyer239@example.com,NID Ahmedabad,B.Tech Computer Science,2nd Year,Adobe XD,Intermediate,https://behance.net/ishaiyer9177,2026-07-02 12:19
+UIS26-0206,Liam,Yadav,liam.yadav488@example.com,Rhode Island School of Design,BCA,2nd Year,Framer,Advanced,https://behance.net/liamyadav6623,2026-07-05 10:33
+UIS26-0207,Ava,Brown,ava.brown500@example.com,Symbiosis Institute of Design,BFA (Visual Communication),4th Year,Framer,Beginner,https://behance.net/avabrown1315,2026-07-21 21:55
+UIS26-0208,Pooja,Mehta,pooja.mehta706@example.com,Symbiosis Institute of Design,M.Des,2nd Year,Framer,Intermediate,https://behance.net/poojamehta7188,2026-07-12 04:24
+UIS26-0209,Suresh,Martinez,suresh.martinez899@example.com,IIT Bombay,HCI (Master's),1st Year,Framer,Beginner,https://behance.net/sureshmartinez5386,2026-07-11 05:31
+UIS26-0210,Ava,Rao,ava.rao364@example.com,Symbiosis Institute of Design,M.Des,1st Year,Sketch,Beginner,https://behance.net/avarao2150,2026-08-05 09:22
+UIS26-0211,Oliver,Nair,oliver.nair639@example.com,Symbiosis Institute of Design,B.Des (UI/UX),Alumni / Graduated,Webflow,Beginner,https://behance.net/olivernair2904,2026-08-07 05:15
+UIS26-0212,Elijah,Pandey,elijah.pandey747@example.com,University of Arts London,BCA,3rd Year,Framer,Beginner,https://behance.net/elijahpandey844,2026-07-02 02:46
+UIS26-0213,Charlotte,Jones,charlotte.jones600@example.com,BITS Pilani,MCA,2nd Year,Framer,Intermediate,https://behance.net/charlottejones8259,2026-08-10 01:02
+UIS26-0214,Oliver,Chakraborty,oliver.chakraborty306@example.com,Stanford University,M.Des,4th Year,Adobe XD,Advanced,https://behance.net/oliverchakraborty7530,2026-07-26 10:09
+UIS26-0215,Arjun,Williams,arjun.williams71@example.com,Srishti Institute of Art,BFA (Visual Communication),4th Year,Penpot,Intermediate,https://behance.net/arjunwilliams2453,2026-07-22 20:42
+UIS26-0216,Aisha,Davis,aisha.davis745@example.com,MIT Institute of Design,MCA,3rd Year,Penpot,Beginner,https://behance.net/aishadavis9302,2026-07-24 17:34
+UIS26-0217,Reyaansh,Das,reyaansh.das257@example.com,NIFT Delhi,B.Des (UI/UX),3rd Year,Penpot,Beginner,https://behance.net/reyaanshdas4854,2026-07-07 01:43
+UIS26-0218,Rohan,Davis,rohan.davis640@example.com,Delhi Technological University,B.Tech Computer Science,2nd Year,Sketch,Advanced,https://behance.net/rohandavis2710,2026-07-21 06:28
+UIS26-0219,Vikram,Iyer,vikram.iyer488@example.com,NIFT Delhi,M.Des,4th Year,Figma,Beginner,https://behance.net/vikramiyer7591,2026-07-26 17:15
+UIS26-0220,Ariya,Reddy,ariya.reddy607@example.com,MIT Institute of Design,B.Des (UI/UX),1st Year,Sketch,Intermediate,https://behance.net/ariyareddy8893,2026-07-31 09:45
+UIS26-0221,Aarav,Davis,aarav.davis120@example.com,Delhi Technological University,B.Tech Computer Science,3rd Year,Webflow,Intermediate,https://behance.net/aaravdavis841,2026-07-26 12:29
+UIS26-0222,Rahul,Singh,rahul.singh593@example.com,Symbiosis Institute of Design,B.Tech Computer Science,3rd Year,Framer,Beginner,https://behance.net/rahulsingh7478,2026-07-25 17:12
+UIS26-0223,Benjamin,Chakraborty,benjamin.chakraborty296@example.com,Parsons School of Design,BCA,Alumni / Graduated,Figma,Beginner,https://behance.net/benjaminchakraborty6214,2026-07-07 13:26
+UIS26-0224,Neha,Chakraborty,neha.chakraborty971@example.com,MIT Institute of Design,HCI (Master's),2nd Year,Adobe XD,Intermediate,https://behance.net/nehachakraborty759,2026-07-26 17:04
+UIS26-0225,Aditya,Singh,aditya.singh150@example.com,Carnegie Mellon University,M.Des,4th Year,Framer,Intermediate,https://behance.net/adityasingh2390,2026-08-08 17:35
+UIS26-0226,Aisha,Martinez,aisha.martinez637@example.com,MIT Institute of Design,B.Tech Computer Science,4th Year,Framer,Intermediate,https://behance.net/aishamartinez5611,2026-07-20 20:15
+UIS26-0227,Suresh,Miller,suresh.miller531@example.com,Symbiosis Institute of Design,BFA (Visual Communication),Alumni / Graduated,Sketch,Intermediate,https://behance.net/sureshmiller5527,2026-07-02 12:34
+UIS26-0228,Amelia,Patel,amelia.patel436@example.com,IIIT Hyderabad,M.Des,1st Year,Framer,Intermediate,https://behance.net/ameliapatel3828,2026-08-07 19:42
+UIS26-0229,William,Singh,william.singh607@example.com,NIFT Delhi,B.Tech Computer Science,Alumni / Graduated,Webflow,Intermediate,https://behance.net/williamsingh4068,2026-07-25 05:02
+UIS26-0230,Aditya,Mishra,aditya.mishra980@example.com,Carnegie Mellon University,B.Des (UI/UX),2nd Year,Figma,Intermediate,https://behance.net/adityamishra6865,2026-07-27 05:10
+UIS26-0231,James,Reddy,james.reddy430@example.com,Symbiosis Institute of Design,HCI (Master's),Alumni / Graduated,Penpot,Advanced,https://behance.net/jamesreddy8598,2026-07-04 04:42
+UIS26-0232,Myra,Chakraborty,myra.chakraborty342@example.com,Stanford University,BFA (Visual Communication),Alumni / Graduated,Penpot,Intermediate,https://behance.net/myrachakraborty8834,2026-07-12 15:41
+UIS26-0233,Neha,Chakraborty,neha.chakraborty372@example.com,Stanford University,HCI (Master's),3rd Year,Framer,Intermediate,https://behance.net/nehachakraborty9243,2026-07-16 09:31
+UIS26-0234,Riya,Rao,riya.rao974@example.com,BITS Pilani,HCI (Master's),3rd Year,Webflow,Beginner,https://behance.net/riyarao7961,2026-08-01 10:49
+UIS26-0235,Kavya,Chakraborty,kavya.chakraborty966@example.com,University of Arts London,HCI (Master's),3rd Year,Sketch,Beginner,https://behance.net/kavyachakraborty6564,2026-08-04 12:57
+UIS26-0236,Kavya,Jones,kavya.jones833@example.com,Srishti Institute of Art,M.Des,1st Year,Sketch,Advanced,https://behance.net/kavyajones7347,2026-07-06 11:49
+UIS26-0237,Charlotte,Jain,charlotte.jain775@example.com,NIFT Delhi,B.Tech Computer Science,2nd Year,Framer,Beginner,https://behance.net/charlottejain4550,2026-08-05 23:45
+UIS26-0238,Krishna,Patel,krishna.patel640@example.com,Carnegie Mellon University,BCA,2nd Year,Adobe XD,Beginner,https://behance.net/krishnapatel3914,2026-08-03 07:42
+UIS26-0239,Vihaan,Patel,vihaan.patel433@example.com,MIT Institute of Design,MCA,4th Year,Figma,Intermediate,https://behance.net/vihaanpatel9116,2026-07-09 00:10
+UIS26-0240,Shaurya,Chauhan,shaurya.chauhan678@example.com,University of Arts London,BFA (Visual Communication),4th Year,Webflow,Beginner,https://behance.net/shauryachauhan4776,2026-07-19 10:57
+UIS26-0241,Charlotte,Singh,charlotte.singh939@example.com,Rhode Island School of Design,B.Des (UI/UX),Alumni / Graduated,Adobe XD,Intermediate,https://behance.net/charlottesingh6946,2026-07-03 05:58
+UIS26-0242,Atharv,Martinez,atharv.martinez951@example.com,IIT Bombay,HCI (Master's),4th Year,Penpot,Beginner,https://behance.net/atharvmartinez251,2026-07-19 01:16
+UIS26-0243,Riya,Mishra,riya.mishra627@example.com,NID Ahmedabad,M.Des,3rd Year,Penpot,Advanced,https://behance.net/riyamishra8192,2026-08-04 17:53
+UIS26-0244,Krishna,Davis,krishna.davis526@example.com,NIFT Delhi,M.Des,2nd Year,Figma,Intermediate,https://behance.net/krishnadavis4315,2026-07-30 22:07
+UIS26-0245,Ava,Verma,ava.verma24@example.com,Carnegie Mellon University,M.Des,3rd Year,Framer,Intermediate,https://behance.net/avaverma6743,2026-07-13 05:59
+UIS26-0246,Sumit,Iyer,sumit.iyer345@example.com,NID Ahmedabad,BFA (Visual Communication),1st Year,Adobe XD,Advanced,https://behance.net/sumitiyer4164,2026-07-31 11:02
+UIS26-0247,Aarav,Jain,aarav.jain402@example.com,VIT Vellore,BFA (Visual Communication),3rd Year,Sketch,Intermediate,https://behance.net/aaravjain4385,2026-08-06 00:23
+UIS26-0248,Charlotte,Yadav,charlotte.yadav719@example.com,VIT Vellore,B.Des (UI/UX),1st Year,Penpot,Intermediate,https://behance.net/charlotteyadav8333,2026-07-26 23:25
+UIS26-0249,Ava,Jones,ava.jones328@example.com,Carnegie Mellon University,B.Des (UI/UX),3rd Year,Sketch,Intermediate,https://behance.net/avajones7934,2026-07-15 04:33
+UIS26-0250,Ishaan,Mehta,ishaan.mehta775@example.com,IIIT Hyderabad,M.Des,4th Year,Webflow,Intermediate,https://behance.net/ishaanmehta3678,2026-07-31 18:20
+UIS26-0251,Benjamin,Rao,benjamin.rao706@example.com,Rhode Island School of Design,BCA,1st Year,Framer,Intermediate,https://behance.net/benjaminrao9343,2026-07-24 02:39
+UIS26-0252,Ayaan,Singh,ayaan.singh858@example.com,Symbiosis Institute of Design,BCA,2nd Year,Framer,Intermediate,https://behance.net/ayaansingh8625,2026-07-11 11:11
+UIS26-0253,Pooja,Patel,pooja.patel706@example.com,VIT Vellore,MCA,Alumni / Graduated,Penpot,Beginner,https://behance.net/poojapatel1011,2026-08-02 15:12
+UIS26-0254,Sneha,Gupta,sneha.gupta535@example.com,Delhi Technological University,BFA (Visual Communication),Alumni / Graduated,Figma,Intermediate,https://behance.net/snehagupta6587,2026-07-20 00:44
+UIS26-0255,Diya,Miller,diya.miller13@example.com,Carnegie Mellon University,B.Tech Computer Science,Alumni / Graduated,Figma,Beginner,https://behance.net/diyamiller1144,2026-07-23 23:54
+UIS26-0256,Gita,Singh,gita.singh967@example.com,University of Arts London,B.Des (UI/UX),4th Year,Figma,Beginner,https://behance.net/gitasingh6987,2026-07-12 04:37
+UIS26-0257,Isha,Rodriguez,isha.rodriguez401@example.com,NIFT Delhi,HCI (Master's),4th Year,Penpot,Beginner,https://behance.net/isharodriguez5797,2026-08-04 04:32
+UIS26-0258,Ayaan,Verma,ayaan.verma560@example.com,Delhi Technological University,BCA,2nd Year,Webflow,Advanced,https://behance.net/ayaanverma4988,2026-07-01 00:46
+UIS26-0259,Sneha,Johnson,sneha.johnson746@example.com,Symbiosis Institute of Design,BFA (Visual Communication),Alumni / Graduated,Penpot,Advanced,https://behance.net/snehajohnson5771,2026-07-16 15:43
+UIS26-0260,Ishaan,Jain,ishaan.jain203@example.com,University of Arts London,MCA,1st Year,Figma,Advanced,https://behance.net/ishaanjain356,2026-07-27 20:59
+UIS26-0261,Ariya,Reddy,ariya.reddy78@example.com,NID Ahmedabad,BCA,1st Year,Penpot,Intermediate,https://behance.net/ariyareddy824,2026-07-04 08:21
+UIS26-0262,Rahul,Mehta,rahul.mehta249@example.com,Symbiosis Institute of Design,B.Tech Computer Science,1st Year,Adobe XD,Intermediate,https://behance.net/rahulmehta9538,2026-07-19 07:59
+UIS26-0263,Aisha,Mishra,aisha.mishra622@example.com,Rhode Island School of Design,MCA,3rd Year,Adobe XD,Intermediate,https://behance.net/aishamishra8640,2026-07-10 22:32
+UIS26-0264,Sara,Chauhan,sara.chauhan317@example.com,BITS Pilani,B.Des (UI/UX),Alumni / Graduated,Framer,Advanced,https://behance.net/sarachauhan7099,2026-07-12 21:22
+UIS26-0265,Sita,Bhat,sita.bhat58@example.com,MIT Institute of Design,MCA,4th Year,Framer,Intermediate,https://behance.net/sitabhat2544,2026-07-27 13:56
+UIS26-0266,Riya,Bose,riya.bose198@example.com,Rhode Island School of Design,BCA,4th Year,Adobe XD,Advanced,https://behance.net/riyabose7686,2026-07-20 04:55
+UIS26-0267,Vihaan,Chakraborty,vihaan.chakraborty432@example.com,Delhi Technological University,BCA,Alumni / Graduated,Adobe XD,Intermediate,https://behance.net/vihaanchakraborty5511,2026-07-17 06:56
+UIS26-0268,Charlotte,Kumar,charlotte.kumar954@example.com,NIFT Delhi,HCI (Master's),3rd Year,Figma,Intermediate,https://behance.net/charlottekumar4498,2026-07-13 01:45
+UIS26-0269,Rohan,Johnson,rohan.johnson629@example.com,IIIT Hyderabad,B.Des (UI/UX),1st Year,Adobe XD,Advanced,https://behance.net/rohanjohnson9256,2026-08-07 22:55
+UIS26-0270,Myra,Bhat,myra.bhat223@example.com,Parsons School of Design,M.Des,3rd Year,Figma,Beginner,https://behance.net/myrabhat7946,2026-07-13 04:00
+UIS26-0271,Ariya,Williams,ariya.williams628@example.com,Carnegie Mellon University,B.Tech Computer Science,4th Year,Adobe XD,Intermediate,https://behance.net/ariyawilliams7739,2026-07-19 12:59
+UIS26-0272,Gita,Smith,gita.smith377@example.com,BITS Pilani,M.Des,3rd Year,Framer,Advanced,https://behance.net/gitasmith7792,2026-07-30 03:21
+UIS26-0273,Benjamin,Miller,benjamin.miller337@example.com,University of Arts London,B.Tech Computer Science,3rd Year,Sketch,Intermediate,https://behance.net/benjaminmiller2490,2026-08-06 07:33
+UIS26-0274,Vivaan,Jain,vivaan.jain576@example.com,University of Arts London,BCA,Alumni / Graduated,Webflow,Intermediate,https://behance.net/vivaanjain5504,2026-07-10 06:41
+UIS26-0275,Sara,Bose,sara.bose593@example.com,Parsons School of Design,B.Tech Computer Science,4th Year,Framer,Intermediate,https://behance.net/sarabose8105,2026-07-22 08:47
+UIS26-0276,William,Smith,william.smith767@example.com,NIFT Delhi,BFA (Visual Communication),2nd Year,Webflow,Intermediate,https://behance.net/williamsmith9054,2026-07-11 04:46
+UIS26-0277,Vikram,Verma,vikram.verma948@example.com,University of Arts London,BCA,1st Year,Framer,Beginner,https://behance.net/vikramverma894,2026-07-05 22:48
+UIS26-0278,Benjamin,Sharma,benjamin.sharma432@example.com,Srishti Institute of Art,HCI (Master's),2nd Year,Figma,Intermediate,https://behance.net/benjaminsharma8385,2026-07-01 07:27
+UIS26-0279,Sneha,Yadav,sneha.yadav71@example.com,IIIT Hyderabad,MCA,Alumni / Graduated,Penpot,Intermediate,https://behance.net/snehayadav8819,2026-07-02 00:13
+UIS26-0280,Sita,Chauhan,sita.chauhan22@example.com,IIT Bombay,BCA,3rd Year,Framer,Advanced,https://behance.net/sitachauhan7154,2026-07-02 17:08
+UIS26-0281,Atharv,Patel,atharv.patel950@example.com,NID Ahmedabad,BCA,2nd Year,Adobe XD,Beginner,https://behance.net/atharvpatel5907,2026-08-03 08:36
+UIS26-0282,Saanvi,Garcia,saanvi.garcia416@example.com,NID Ahmedabad,M.Des,4th Year,Penpot,Intermediate,https://behance.net/saanvigarcia1420,2026-07-15 10:14
+UIS26-0283,Charlotte,Davis,charlotte.davis675@example.com,Rhode Island School of Design,B.Des (UI/UX),1st Year,Penpot,Intermediate,https://behance.net/charlottedavis1019,2026-08-05 16:14
+UIS26-0284,Oliver,Sharma,oliver.sharma729@example.com,Srishti Institute of Art,B.Des (UI/UX),4th Year,Penpot,Intermediate,https://behance.net/oliversharma1662,2026-07-22 19:18
+UIS26-0285,Ramesh,Martinez,ramesh.martinez53@example.com,VIT Vellore,B.Tech Computer Science,Alumni / Graduated,Penpot,Beginner,https://behance.net/rameshmartinez4693,2026-07-05 23:21
+UIS26-0286,Gita,Mishra,gita.mishra683@example.com,IIT Bombay,B.Tech Computer Science,3rd Year,Figma,Advanced,https://behance.net/gitamishra6625,2026-08-07 04:55
+UIS26-0287,Arjun,Nair,arjun.nair176@example.com,IIIT Hyderabad,B.Tech Computer Science,Alumni / Graduated,Penpot,Intermediate,https://behance.net/arjunnair6388,2026-08-04 11:19
+UIS26-0288,Benjamin,Brown,benjamin.brown153@example.com,Rhode Island School of Design,MCA,1st Year,Framer,Intermediate,https://behance.net/benjaminbrown1700,2026-07-23 01:49
+UIS26-0289,Sumit,Rao,sumit.rao868@example.com,NID Ahmedabad,M.Des,Alumni / Graduated,Framer,Advanced,https://behance.net/sumitrao585,2026-07-26 11:08
+UIS26-0290,Oliver,Jain,oliver.jain812@example.com,NIFT Delhi,BFA (Visual Communication),2nd Year,Sketch,Intermediate,https://behance.net/oliverjain3143,2026-07-25 14:44
+UIS26-0291,Amelia,Mishra,amelia.mishra686@example.com,Delhi Technological University,B.Des (UI/UX),Alumni / Graduated,Sketch,Intermediate,https://behance.net/ameliamishra4490,2026-07-05 02:48
+UIS26-0292,Ishaan,Bose,ishaan.bose738@example.com,Rhode Island School of Design,MCA,2nd Year,Webflow,Intermediate,https://behance.net/ishaanbose1599,2026-07-24 03:38
+UIS26-0293,Aarav,Nair,aarav.nair465@example.com,MIT Institute of Design,HCI (Master's),3rd Year,Figma,Beginner,https://behance.net/aaravnair7453,2026-07-12 14:42
+UIS26-0294,Sita,Chakraborty,sita.chakraborty534@example.com,Delhi Technological University,B.Des (UI/UX),1st Year,Figma,Intermediate,https://behance.net/sitachakraborty9898,2026-07-06 20:22
+UIS26-0295,Aisha,Davis,aisha.davis404@example.com,IIT Bombay,M.Des,4th Year,Penpot,Intermediate,https://behance.net/aishadavis9470,2026-08-05 08:17
+UIS26-0296,Ramesh,Verma,ramesh.verma711@example.com,Delhi Technological University,B.Tech Computer Science,2nd Year,Sketch,Intermediate,https://behance.net/rameshverma1136,2026-08-01 04:58
+UIS26-0297,Shaurya,Chauhan,shaurya.chauhan292@example.com,Delhi Technological University,M.Des,4th Year,Figma,Intermediate,https://behance.net/shauryachauhan8223,2026-07-16 21:20
+UIS26-0298,Noah,Pandey,noah.pandey210@example.com,NIFT Delhi,B.Des (UI/UX),2nd Year,Sketch,Beginner,https://behance.net/noahpandey6324,2026-07-26 11:20
+UIS26-0299,Neha,Mehta,neha.mehta352@example.com,Delhi Technological University,HCI (Master's),Alumni / Graduated,Adobe XD,Intermediate,https://behance.net/nehamehta3390,2026-08-08 23:43
+UIS26-0300,Karan,Das,karan.das191@example.com,Delhi Technological University,M.Des,3rd Year,Webflow,Intermediate,https://behance.net/karandas4071,2026-08-01 19:39
+UIS26-0301,Aisha,Bose,aisha.bose297@example.com,Parsons School of Design,HCI (Master's),4th Year,Sketch,Beginner,https://behance.net/aishabose9803,2026-08-06 06:49
+UIS26-0302,Gita,Verma,gita.verma708@example.com,Rhode Island School of Design,BCA,1st Year,Webflow,Intermediate,https://behance.net/gitaverma4873,2026-07-14 14:57
+UIS26-0303,James,Kumar,james.kumar848@example.com,Parsons School of Design,HCI (Master's),4th Year,Webflow,Intermediate,https://behance.net/jameskumar4065,2026-08-10 10:20
+UIS26-0304,Diya,Johnson,diya.johnson167@example.com,Carnegie Mellon University,BFA (Visual Communication),4th Year,Figma,Intermediate,https://behance.net/diyajohnson9639,2026-08-08 16:21
+UIS26-0305,Rahul,Chakraborty,rahul.chakraborty528@example.com,University of Arts London,HCI (Master's),4th Year,Framer,Beginner,https://behance.net/rahulchakraborty8896,2026-07-24 23:56
+UIS26-0306,Noah,Smith,noah.smith946@example.com,NID Ahmedabad,B.Des (UI/UX),2nd Year,Webflow,Intermediate,https://behance.net/noahsmith825,2026-07-11 22:05
+UIS26-0307,Liam,Smith,liam.smith703@example.com,Stanford University,BFA (Visual Communication),3rd Year,Penpot,Beginner,https://behance.net/liamsmith3737,2026-07-07 08:49
+UIS26-0308,Suresh,Brown,suresh.brown541@example.com,Symbiosis Institute of Design,BCA,Alumni / Graduated,Adobe XD,Intermediate,https://behance.net/sureshbrown9743,2026-07-26 15:48
+UIS26-0309,James,Iyer,james.iyer164@example.com,MIT Institute of Design,B.Des (UI/UX),4th Year,Figma,Beginner,https://behance.net/jamesiyer2421,2026-07-06 03:57
+UIS26-0310,Kavya,Nair,kavya.nair361@example.com,NIFT Delhi,HCI (Master's),2nd Year,Framer,Intermediate,https://behance.net/kavyanair7278,2026-07-31 03:19
+UIS26-0311,William,Williams,william.williams473@example.com,MIT Institute of Design,B.Des (UI/UX),3rd Year,Figma,Advanced,https://behance.net/williamwilliams5720,2026-07-08 00:46
+UIS26-0312,Charlotte,Patel,charlotte.patel703@example.com,Rhode Island School of Design,B.Tech Computer Science,2nd Year,Framer,Beginner,https://behance.net/charlottepatel9272,2026-07-11 11:17
+UIS26-0313,Sumit,Mehta,sumit.mehta247@example.com,Rhode Island School of Design,BFA (Visual Communication),2nd Year,Adobe XD,Intermediate,https://behance.net/sumitmehta578,2026-07-28 13:30
+UIS26-0314,Sophia,Pandey,sophia.pandey914@example.com,VIT Vellore,BFA (Visual Communication),Alumni / Graduated,Penpot,Intermediate,https://behance.net/sophiapandey4660,2026-07-14 07:01
+UIS26-0315,Benjamin,Williams,benjamin.williams838@example.com,Rhode Island School of Design,B.Des (UI/UX),Alumni / Graduated,Figma,Intermediate,https://behance.net/benjaminwilliams6093,2026-08-04 06:22
+UIS26-0316,Aisha,Reddy,aisha.reddy478@example.com,NID Ahmedabad,M.Des,4th Year,Framer,Advanced,https://behance.net/aishareddy6467,2026-07-21 20:22
+UIS26-0317,Emma,Bose,emma.bose611@example.com,NID Ahmedabad,M.Des,3rd Year,Penpot,Intermediate,https://behance.net/emmabose9769,2026-07-20 20:58
+UIS26-0318,Sai,Johnson,sai.johnson147@example.com,MIT Institute of Design,B.Des (UI/UX),2nd Year,Sketch,Beginner,https://behance.net/saijohnson2416,2026-07-24 23:40
+UIS26-0319,Suresh,Bose,suresh.bose438@example.com,IIIT Hyderabad,B.Tech Computer Science,Alumni / Graduated,Penpot,Intermediate,https://behance.net/sureshbose8904,2026-08-01 21:41
+UIS26-0320,James,Martinez,james.martinez670@example.com,University of Arts London,B.Tech Computer Science,Alumni / Graduated,Adobe XD,Intermediate,https://behance.net/jamesmartinez5254,2026-07-09 06:23
+UIS26-0321,Pooja,Pandey,pooja.pandey64@example.com,Parsons School of Design,M.Des,1st Year,Penpot,Beginner,https://behance.net/poojapandey8381,2026-07-25 19:10
+UIS26-0322,Charlotte,Bhat,charlotte.bhat428@example.com,Stanford University,BFA (Visual Communication),4th Year,Webflow,Advanced,https://behance.net/charlottebhat1454,2026-08-01 05:42
+UIS26-0323,Liam,Sharma,liam.sharma824@example.com,Rhode Island School of Design,B.Tech Computer Science,3rd Year,Figma,Beginner,https://behance.net/liamsharma2855,2026-08-04 09:51
+UIS26-0324,Isabella,Mehta,isabella.mehta589@example.com,Carnegie Mellon University,HCI (Master's),4th Year,Framer,Intermediate,https://behance.net/isabellamehta4489,2026-08-06 03:53
+UIS26-0325,Isabella,Chakraborty,isabella.chakraborty853@example.com,MIT Institute of Design,BCA,1st Year,Webflow,Intermediate,https://behance.net/isabellachakraborty1777,2026-07-14 14:30
+UIS26-0326,Sophia,Miller,sophia.miller679@example.com,Rhode Island School of Design,B.Tech Computer Science,3rd Year,Figma,Intermediate,https://behance.net/sophiamiller7293,2026-07-23 02:58
+UIS26-0327,Ayaan,Jones,ayaan.jones841@example.com,VIT Vellore,B.Tech Computer Science,Alumni / Graduated,Webflow,Intermediate,https://behance.net/ayaanjones7115,2026-08-09 21:35
+UIS26-0328,Shaurya,Pandey,shaurya.pandey152@example.com,Rhode Island School of Design,B.Tech Computer Science,2nd Year,Figma,Intermediate,https://behance.net/shauryapandey9878,2026-08-04 09:35
+UIS26-0329,Gita,Verma,gita.verma341@example.com,Carnegie Mellon University,M.Des,3rd Year,Framer,Beginner,https://behance.net/gitaverma1660,2026-08-02 23:11
+UIS26-0330,Krishna,Jones,krishna.jones814@example.com,Delhi Technological University,B.Des (UI/UX),3rd Year,Webflow,Beginner,https://behance.net/krishnajones2496,2026-07-09 08:31
+UIS26-0331,Ava,Das,ava.das858@example.com,VIT Vellore,HCI (Master's),4th Year,Penpot,Beginner,https://behance.net/avadas6886,2026-08-10 09:10
+UIS26-0332,Rohan,Mehta,rohan.mehta87@example.com,Stanford University,HCI (Master's),1st Year,Penpot,Intermediate,https://behance.net/rohanmehta6146,2026-07-18 23:42
+UIS26-0333,Sneha,Bhat,sneha.bhat345@example.com,IIIT Hyderabad,B.Des (UI/UX),1st Year,Webflow,Advanced,https://behance.net/snehabhat5969,2026-08-10 22:40
+UIS26-0334,Arjun,Garcia,arjun.garcia557@example.com,Delhi Technological University,B.Tech Computer Science,4th Year,Adobe XD,Intermediate,https://behance.net/arjungarcia5633,2026-07-21 09:40
+UIS26-0335,Sita,Mishra,sita.mishra143@example.com,IIIT Hyderabad,HCI (Master's),4th Year,Sketch,Advanced,https://behance.net/sitamishra1731,2026-07-04 01:34
+UIS26-0336,Oliver,Garcia,oliver.garcia866@example.com,NIFT Delhi,B.Des (UI/UX),1st Year,Adobe XD,Intermediate,https://behance.net/olivergarcia3414,2026-07-01 14:36
+UIS26-0337,James,Martinez,james.martinez145@example.com,University of Arts London,MCA,3rd Year,Adobe XD,Advanced,https://behance.net/jamesmartinez6005,2026-07-18 03:11
+UIS26-0338,Diya,Kumar,diya.kumar390@example.com,Stanford University,MCA,2nd Year,Figma,Intermediate,https://behance.net/diyakumar3936,2026-07-20 23:52
+UIS26-0339,Sumit,Smith,sumit.smith103@example.com,Carnegie Mellon University,B.Des (UI/UX),1st Year,Adobe XD,Intermediate,https://behance.net/sumitsmith3805,2026-07-09 20:15
+UIS26-0340,Ramesh,Johnson,ramesh.johnson465@example.com,IIT Bombay,B.Des (UI/UX),3rd Year,Figma,Advanced,https://behance.net/rameshjohnson2265,2026-07-28 23:41
+UIS26-0341,Karan,Kumar,karan.kumar244@example.com,Delhi Technological University,B.Des (UI/UX),1st Year,Figma,Intermediate,https://behance.net/karankumar6370,2026-07-20 04:40
+UIS26-0342,Isabella,Miller,isabella.miller781@example.com,Parsons School of Design,B.Tech Computer Science,2nd Year,Figma,Intermediate,https://behance.net/isabellamiller2788,2026-07-01 20:49
+UIS26-0343,Pooja,Yadav,pooja.yadav749@example.com,VIT Vellore,MCA,2nd Year,Penpot,Intermediate,https://behance.net/poojayadav1520,2026-07-29 07:24
+UIS26-0344,Reyaansh,Gupta,reyaansh.gupta780@example.com,NID Ahmedabad,BCA,4th Year,Sketch,Advanced,https://behance.net/reyaanshgupta4159,2026-07-21 04:46
+UIS26-0345,Saanvi,Smith,saanvi.smith96@example.com,VIT Vellore,BCA,Alumni / Graduated,Framer,Intermediate,https://behance.net/saanvismith539,2026-07-19 23:34
+UIS26-0346,Elijah,Rodriguez,elijah.rodriguez318@example.com,VIT Vellore,BCA,Alumni / Graduated,Framer,Beginner,https://behance.net/elijahrodriguez994,2026-07-26 10:05
+UIS26-0347,Ariya,Bhat,ariya.bhat405@example.com,NID Ahmedabad,B.Tech Computer Science,4th Year,Webflow,Intermediate,https://behance.net/ariyabhat6016,2026-08-03 00:24
+UIS26-0348,Aisha,Gupta,aisha.gupta406@example.com,Parsons School of Design,HCI (Master's),Alumni / Graduated,Penpot,Intermediate,https://behance.net/aishagupta1295,2026-07-12 16:04
+UIS26-0349,Vivaan,Mishra,vivaan.mishra79@example.com,IIT Bombay,M.Des,2nd Year,Figma,Advanced,https://behance.net/vivaanmishra4793,2026-07-26 17:17
+UIS26-0350,Oliver,Williams,oliver.williams523@example.com,Rhode Island School of Design,BFA (Visual Communication),4th Year,Webflow,Intermediate,https://behance.net/oliverwilliams8908,2026-08-10 18:18
+UIS26-0351,Emma,Gupta,emma.gupta294@example.com,NID Ahmedabad,M.Des,1st Year,Framer,Advanced,https://behance.net/emmagupta5453,2026-07-10 18:18
+UIS26-0352,Rahul,Mishra,rahul.mishra659@example.com,Rhode Island School of Design,HCI (Master's),1st Year,Sketch,Intermediate,https://behance.net/rahulmishra4105,2026-07-16 01:58
+UIS26-0353,Sai,Martinez,sai.martinez454@example.com,NID Ahmedabad,BFA (Visual Communication),Alumni / Graduated,Framer,Beginner,https://behance.net/saimartinez307,2026-07-12 04:04
+UIS26-0354,Ava,Gupta,ava.gupta728@example.com,IIT Bombay,B.Tech Computer Science,4th Year,Sketch,Intermediate,https://behance.net/avagupta6192,2026-07-17 05:41
+UIS26-0355,Krishna,Brown,krishna.brown809@example.com,Parsons School of Design,M.Des,1st Year,Figma,Intermediate,https://behance.net/krishnabrown8682,2026-07-28 09:17
+UIS26-0356,Arjun,Jain,arjun.jain739@example.com,IIIT Hyderabad,MCA,1st Year,Penpot,Intermediate,https://behance.net/arjunjain8285,2026-07-24 01:53
+UIS26-0357,Liam,Verma,liam.verma386@example.com,Srishti Institute of Art,M.Des,1st Year,Framer,Intermediate,https://behance.net/liamverma8436,2026-07-08 07:47
+UIS26-0358,Aarav,Singh,aarav.singh889@example.com,Parsons School of Design,B.Des (UI/UX),2nd Year,Figma,Intermediate,https://behance.net/aaravsingh3032,2026-07-25 05:07
+UIS26-0359,Aditya,Chakraborty,aditya.chakraborty832@example.com,University of Arts London,MCA,4th Year,Adobe XD,Intermediate,https://behance.net/adityachakraborty4544,2026-07-27 10:55
+UIS26-0360,Arjun,Mishra,arjun.mishra391@example.com,NID Ahmedabad,BCA,1st Year,Adobe XD,Beginner,https://behance.net/arjunmishra6668,2026-08-03 01:34
+UIS26-0361,Arjun,Rodriguez,arjun.rodriguez486@example.com,Parsons School of Design,M.Des,3rd Year,Sketch,Beginner,https://behance.net/arjunrodriguez6144,2026-07-30 00:16
+UIS26-0362,Ananya,Nair,ananya.nair587@example.com,Rhode Island School of Design,M.Des,Alumni / Graduated,Adobe XD,Intermediate,https://behance.net/ananyanair3301,2026-08-07 16:50
+UIS26-0363,William,Rodriguez,william.rodriguez569@example.com,Rhode Island School of Design,HCI (Master's),2nd Year,Adobe XD,Beginner,https://behance.net/williamrodriguez3917,2026-07-27 00:48
+UIS26-0364,Gita,Yadav,gita.yadav661@example.com,Parsons School of Design,MCA,1st Year,Sketch,Beginner,https://behance.net/gitayadav1803,2026-07-25 10:29
+UIS26-0365,Myra,Iyer,myra.iyer253@example.com,Delhi Technological University,BFA (Visual Communication),1st Year,Adobe XD,Intermediate,https://behance.net/myraiyer3892,2026-07-06 01:29
+UIS26-0366,Ramesh,Chauhan,ramesh.chauhan727@example.com,University of Arts London,M.Des,4th Year,Webflow,Beginner,https://behance.net/rameshchauhan2287,2026-07-07 17:15
+UIS26-0367,Oliver,Miller,oliver.miller413@example.com,NID Ahmedabad,BCA,Alumni / Graduated,Figma,Intermediate,https://behance.net/olivermiller4878,2026-07-09 08:04
+UIS26-0368,Diya,Davis,diya.davis332@example.com,University of Arts London,HCI (Master's),4th Year,Webflow,Advanced,https://behance.net/diyadavis7517,2026-07-21 10:51
+UIS26-0369,Saanvi,Rao,saanvi.rao86@example.com,VIT Vellore,B.Tech Computer Science,Alumni / Graduated,Figma,Beginner,https://behance.net/saanvirao7735,2026-07-11 15:20
+UIS26-0370,Aisha,Chauhan,aisha.chauhan133@example.com,Symbiosis Institute of Design,M.Des,2nd Year,Penpot,Intermediate,https://behance.net/aishachauhan1581,2026-07-17 04:05
+UIS26-0371,Shaurya,Garcia,shaurya.garcia712@example.com,BITS Pilani,HCI (Master's),Alumni / Graduated,Figma,Beginner,https://behance.net/shauryagarcia1594,2026-07-21 05:03
+UIS26-0372,Ava,Rao,ava.rao374@example.com,Delhi Technological University,BCA,1st Year,Webflow,Beginner,https://behance.net/avarao6725,2026-07-12 01:03
+UIS26-0373,Pooja,Chakraborty,pooja.chakraborty776@example.com,Symbiosis Institute of Design,B.Tech Computer Science,1st Year,Penpot,Beginner,https://behance.net/poojachakraborty295,2026-07-09 04:08
+UIS26-0374,Vihaan,Miller,vihaan.miller809@example.com,VIT Vellore,B.Tech Computer Science,2nd Year,Penpot,Intermediate,https://behance.net/vihaanmiller1476,2026-08-10 22:00
+UIS26-0375,Olivia,Mishra,olivia.mishra275@example.com,University of Arts London,HCI (Master's),1st Year,Figma,Advanced,https://behance.net/oliviamishra7365,2026-07-13 22:02
+UIS26-0376,Krishna,Kumar,krishna.kumar936@example.com,Parsons School of Design,HCI (Master's),3rd Year,Figma,Beginner,https://behance.net/krishnakumar2852,2026-07-30 01:43
+UIS26-0377,Liam,Chauhan,liam.chauhan851@example.com,Carnegie Mellon University,BFA (Visual Communication),4th Year,Figma,Intermediate,https://behance.net/liamchauhan5899,2026-07-28 05:53
+UIS26-0378,Myra,Martinez,myra.martinez201@example.com,BITS Pilani,M.Des,4th Year,Adobe XD,Beginner,https://behance.net/myramartinez4126,2026-08-09 21:03
+UIS26-0379,Charlotte,Nair,charlotte.nair520@example.com,Delhi Technological University,BCA,4th Year,Figma,Beginner,https://behance.net/charlottenair6968,2026-07-25 04:41
+UIS26-0380,Ananya,Smith,ananya.smith915@example.com,Rhode Island School of Design,BCA,2nd Year,Webflow,Advanced,https://behance.net/ananyasmith6366,2026-08-04 00:39
+UIS26-0381,Ava,Yadav,ava.yadav501@example.com,Symbiosis Institute of Design,HCI (Master's),4th Year,Sketch,Advanced,https://behance.net/avayadav6463,2026-08-02 10:58
+UIS26-0382,Saanvi,Verma,saanvi.verma36@example.com,MIT Institute of Design,BCA,2nd Year,Figma,Advanced,https://behance.net/saanviverma7828,2026-07-18 01:59
+UIS26-0383,Ramesh,Yadav,ramesh.yadav795@example.com,IIIT Hyderabad,B.Tech Computer Science,2nd Year,Figma,Beginner,https://behance.net/rameshyadav8843,2026-07-16 09:05
+UIS26-0384,Sophia,Singh,sophia.singh792@example.com,VIT Vellore,BCA,4th Year,Sketch,Advanced,https://behance.net/sophiasingh3975,2026-07-12 06:00
+UIS26-0385,Olivia,Das,olivia.das835@example.com,Carnegie Mellon University,MCA,3rd Year,Framer,Beginner,https://behance.net/oliviadas9334,2026-07-23 19:22
+UIS26-0386,Ishaan,Mishra,ishaan.mishra981@example.com,VIT Vellore,HCI (Master's),4th Year,Framer,Intermediate,https://behance.net/ishaanmishra1578,2026-08-01 01:17
+UIS26-0387,Vihaan,Rao,vihaan.rao626@example.com,VIT Vellore,B.Des (UI/UX),Alumni / Graduated,Penpot,Beginner,https://behance.net/vihaanrao2237,2026-08-09 06:52
+UIS26-0388,Neha,Williams,neha.williams191@example.com,University of Arts London,HCI (Master's),3rd Year,Figma,Beginner,https://behance.net/nehawilliams1917,2026-08-07 04:50
+UIS26-0389,Ramesh,Davis,ramesh.davis383@example.com,NID Ahmedabad,M.Des,4th Year,Framer,Beginner,https://behance.net/rameshdavis2335,2026-07-20 11:00
+UIS26-0390,Shaurya,Brown,shaurya.brown981@example.com,Delhi Technological University,HCI (Master's),4th Year,Webflow,Intermediate,https://behance.net/shauryabrown5946,2026-08-05 23:40
+UIS26-0391,Sara,Johnson,sara.johnson613@example.com,Parsons School of Design,B.Tech Computer Science,4th Year,Sketch,Intermediate,https://behance.net/sarajohnson3011,2026-07-19 04:20
+UIS26-0392,William,Sharma,william.sharma981@example.com,Carnegie Mellon University,BCA,4th Year,Framer,Beginner,https://behance.net/williamsharma3719,2026-08-08 10:51
+UIS26-0393,Oliver,Mishra,oliver.mishra116@example.com,University of Arts London,BFA (Visual Communication),2nd Year,Sketch,Intermediate,https://behance.net/olivermishra5334,2026-07-16 11:50
+UIS26-0394,Shaurya,Smith,shaurya.smith916@example.com,NID Ahmedabad,HCI (Master's),3rd Year,Penpot,Beginner,https://behance.net/shauryasmith1210,2026-07-14 08:31
+UIS26-0395,Kavya,Jain,kavya.jain815@example.com,NID Ahmedabad,MCA,1st Year,Figma,Intermediate,https://behance.net/kavyajain6883,2026-07-27 05:40
+UIS26-0396,Vikram,Rodriguez,vikram.rodriguez397@example.com,MIT Institute of Design,BCA,4th Year,Figma,Advanced,https://behance.net/vikramrodriguez3795,2026-08-06 22:13
+UIS26-0397,Shaurya,Mehta,shaurya.mehta85@example.com,Rhode Island School of Design,HCI (Master's),1st Year,Sketch,Beginner,https://behance.net/shauryamehta1315,2026-07-17 03:34
+UIS26-0398,Neha,Verma,neha.verma919@example.com,Delhi Technological University,B.Tech Computer Science,1st Year,Framer,Advanced,https://behance.net/nehaverma9832,2026-07-06 11:32
+UIS26-0399,Emma,Rodriguez,emma.rodriguez504@example.com,Carnegie Mellon University,B.Des (UI/UX),4th Year,Webflow,Beginner,https://behance.net/emmarodriguez977,2026-07-28 05:21
+UIS26-0400,Reyaansh,Das,reyaansh.das220@example.com,VIT Vellore,BFA (Visual Communication),Alumni / Graduated,Webflow,Advanced,https://behance.net/reyaanshdas4712,2026-08-04 09:03
+UIS26-0401,Riya,Rao,riya.rao108@example.com,IIT Bombay,BFA (Visual Communication),Alumni / Graduated,Framer,Advanced,https://behance.net/riyarao6011,2026-07-10 01:51
+UIS26-0402,Aarav,Chauhan,aarav.chauhan99@example.com,BITS Pilani,HCI (Master's),Alumni / Graduated,Penpot,Beginner,https://behance.net/aaravchauhan2898,2026-07-02 07:03
+UIS26-0403,Oliver,Nair,oliver.nair93@example.com,NIFT Delhi,HCI (Master's),1st Year,Sketch,Intermediate,https://behance.net/olivernair4441,2026-07-31 16:41
+UIS26-0404,Sai,Smith,sai.smith567@example.com,Delhi Technological University,B.Tech Computer Science,3rd Year,Penpot,Intermediate,https://behance.net/saismith4413,2026-07-29 01:31
+UIS26-0405,Pooja,Mehta,pooja.mehta279@example.com,VIT Vellore,HCI (Master's),3rd Year,Framer,Beginner,https://behance.net/poojamehta5732,2026-07-07 02:55
+UIS26-0406,Gita,Chauhan,gita.chauhan784@example.com,IIIT Hyderabad,B.Tech Computer Science,Alumni / Graduated,Figma,Advanced,https://behance.net/gitachauhan8873,2026-08-03 14:17
+UIS26-0407,Amelia,Davis,amelia.davis968@example.com,NIFT Delhi,BCA,2nd Year,Penpot,Beginner,https://behance.net/ameliadavis8326,2026-07-26 01:11
+UIS26-0408,Liam,Rodriguez,liam.rodriguez539@example.com,Rhode Island School of Design,BCA,Alumni / Graduated,Adobe XD,Beginner,https://behance.net/liamrodriguez2838,2026-07-29 05:54
+UIS26-0409,Myra,Garcia,myra.garcia207@example.com,Srishti Institute of Art,B.Des (UI/UX),4th Year,Figma,Advanced,https://behance.net/myragarcia2522,2026-07-28 06:53
+UIS26-0410,Noah,Jain,noah.jain337@example.com,University of Arts London,MCA,1st Year,Figma,Intermediate,https://behance.net/noahjain5443,2026-07-26 18:50
+UIS26-0411,Saanvi,Iyer,saanvi.iyer479@example.com,University of Arts London,HCI (Master's),1st Year,Webflow,Intermediate,https://behance.net/saanviiyer1943,2026-08-03 14:19
+UIS26-0412,Amit,Gupta,amit.gupta161@example.com,IIIT Hyderabad,BCA,Alumni / Graduated,Figma,Advanced,https://behance.net/amitgupta4787,2026-08-06 03:26
+UIS26-0413,Gita,Rodriguez,gita.rodriguez362@example.com,University of Arts London,BFA (Visual Communication),3rd Year,Penpot,Intermediate,https://behance.net/gitarodriguez7850,2026-08-06 20:47
+UIS26-0414,Aditya,Verma,aditya.verma292@example.com,Delhi Technological University,B.Tech Computer Science,Alumni / Graduated,Framer,Intermediate,https://behance.net/adityaverma6584,2026-07-26 01:19
+UIS26-0415,Neha,Williams,neha.williams253@example.com,IIT Bombay,MCA,4th Year,Sketch,Advanced,https://behance.net/nehawilliams5065,2026-07-02 11:31
+UIS26-0416,Riya,Jain,riya.jain873@example.com,NIFT Delhi,HCI (Master's),1st Year,Adobe XD,Beginner,https://behance.net/riyajain4514,2026-07-29 10:57
+UIS26-0417,William,Chauhan,william.chauhan629@example.com,Stanford University,B.Des (UI/UX),2nd Year,Penpot,Beginner,https://behance.net/williamchauhan8562,2026-07-27 16:32
+UIS26-0418,Isha,Miller,isha.miller67@example.com,Symbiosis Institute of Design,HCI (Master's),2nd Year,Figma,Intermediate,https://behance.net/ishamiller2322,2026-08-02 13:46
+UIS26-0419,Isabella,Davis,isabella.davis546@example.com,University of Arts London,BCA,1st Year,Adobe XD,Beginner,https://behance.net/isabelladavis4187,2026-07-13 01:58
+UIS26-0420,Aditya,Mehta,aditya.mehta61@example.com,University of Arts London,M.Des,2nd Year,Sketch,Intermediate,https://behance.net/adityamehta6603,2026-07-30 17:14
+UIS26-0421,Oliver,Martinez,oliver.martinez136@example.com,Stanford University,B.Des (UI/UX),2nd Year,Sketch,Intermediate,https://behance.net/olivermartinez7875,2026-07-29 06:03
+UIS26-0422,Olivia,Chakraborty,olivia.chakraborty368@example.com,MIT Institute of Design,B.Tech Computer Science,3rd Year,Webflow,Advanced,https://behance.net/oliviachakraborty549,2026-07-06 09:43
+UIS26-0423,Rohan,Singh,rohan.singh176@example.com,Parsons School of Design,BCA,2nd Year,Adobe XD,Intermediate,https://behance.net/rohansingh6809,2026-07-14 09:11
+UIS26-0424,Suresh,Sharma,suresh.sharma895@example.com,Rhode Island School of Design,HCI (Master's),1st Year,Penpot,Advanced,https://behance.net/sureshsharma238,2026-07-12 20:31
+UIS26-0425,Sara,Jain,sara.jain632@example.com,Rhode Island School of Design,M.Des,3rd Year,Penpot,Advanced,https://behance.net/sarajain4228,2026-07-23 15:40
+UIS26-0426,Myra,Mehta,myra.mehta319@example.com,Stanford University,BCA,Alumni / Graduated,Penpot,Intermediate,https://behance.net/myramehta6231,2026-07-01 17:27
+UIS26-0427,Sita,Smith,sita.smith618@example.com,IIIT Hyderabad,M.Des,3rd Year,Webflow,Beginner,https://behance.net/sitasmith4629,2026-07-05 11:28
+UIS26-0428,Oliver,Das,oliver.das892@example.com,BITS Pilani,M.Des,3rd Year,Adobe XD,Beginner,https://behance.net/oliverdas9930,2026-07-16 01:56
+UIS26-0429,Rahul,Johnson,rahul.johnson337@example.com,Stanford University,B.Tech Computer Science,1st Year,Webflow,Intermediate,https://behance.net/rahuljohnson6957,2026-07-19 08:51
+UIS26-0430,Rahul,Bose,rahul.bose764@example.com,IIT Bombay,BCA,Alumni / Graduated,Adobe XD,Intermediate,https://behance.net/rahulbose8859,2026-07-15 23:25
+UIS26-0431,Oliver,Garcia,oliver.garcia497@example.com,University of Arts London,MCA,3rd Year,Framer,Intermediate,https://behance.net/olivergarcia9246,2026-07-11 22:26
+UIS26-0432,Atharv,Nair,atharv.nair109@example.com,NIFT Delhi,B.Tech Computer Science,3rd Year,Webflow,Advanced,https://behance.net/atharvnair5599,2026-07-12 23:12
+UIS26-0433,Charlotte,Kumar,charlotte.kumar237@example.com,MIT Institute of Design,B.Tech Computer Science,3rd Year,Penpot,Intermediate,https://behance.net/charlottekumar4369,2026-07-22 12:41
+UIS26-0434,Olivia,Nair,olivia.nair484@example.com,Parsons School of Design,B.Des (UI/UX),4th Year,Figma,Advanced,https://behance.net/olivianair1266,2026-08-07 19:48
+UIS26-0435,Karan,Rodriguez,karan.rodriguez209@example.com,Symbiosis Institute of Design,B.Des (UI/UX),4th Year,Framer,Beginner,https://behance.net/karanrodriguez2350,2026-07-04 05:08
+UIS26-0436,Ananya,Das,ananya.das429@example.com,IIIT Hyderabad,BFA (Visual Communication),2nd Year,Sketch,Advanced,https://behance.net/ananyadas8088,2026-07-12 02:45
+UIS26-0437,Neha,Smith,neha.smith191@example.com,MIT Institute of Design,MCA,1st Year,Figma,Intermediate,https://behance.net/nehasmith9541,2026-07-14 05:45
+UIS26-0438,Benjamin,Verma,benjamin.verma511@example.com,Rhode Island School of Design,HCI (Master's),1st Year,Adobe XD,Intermediate,https://behance.net/benjaminverma6709,2026-08-10 14:39
+UIS26-0439,Sumit,Bhat,sumit.bhat402@example.com,IIT Bombay,B.Des (UI/UX),Alumni / Graduated,Adobe XD,Intermediate,https://behance.net/sumitbhat8800,2026-07-01 10:59
+UIS26-0440,Ananya,Sharma,ananya.sharma702@example.com,IIT Bombay,MCA,2nd Year,Adobe XD,Intermediate,https://behance.net/ananyasharma2212,2026-07-23 10:39
+UIS26-0441,Reyaansh,Bose,reyaansh.bose525@example.com,IIIT Hyderabad,M.Des,2nd Year,Figma,Advanced,https://behance.net/reyaanshbose7569,2026-07-20 09:55
+UIS26-0442,William,Iyer,william.iyer620@example.com,Symbiosis Institute of Design,M.Des,4th Year,Webflow,Advanced,https://behance.net/williamiyer5985,2026-07-22 16:43
+UIS26-0443,Benjamin,Reddy,benjamin.reddy178@example.com,University of Arts London,HCI (Master's),4th Year,Figma,Beginner,https://behance.net/benjaminreddy459,2026-07-09 07:12
+UIS26-0444,Olivia,Iyer,olivia.iyer183@example.com,NID Ahmedabad,M.Des,1st Year,Penpot,Advanced,https://behance.net/oliviaiyer896,2026-07-17 18:15
+UIS26-0445,Noah,Singh,noah.singh687@example.com,NID Ahmedabad,MCA,1st Year,Figma,Intermediate,https://behance.net/noahsingh6330,2026-07-27 15:09
+UIS26-0446,Ayaan,Chakraborty,ayaan.chakraborty268@example.com,NIFT Delhi,MCA,2nd Year,Adobe XD,Intermediate,https://behance.net/ayaanchakraborty5033,2026-08-10 00:19
+UIS26-0447,Amit,Johnson,amit.johnson113@example.com,Stanford University,BCA,3rd Year,Framer,Intermediate,https://behance.net/amitjohnson1818,2026-07-09 14:17
+UIS26-0448,Suresh,Brown,suresh.brown642@example.com,NID Ahmedabad,M.Des,1st Year,Figma,Intermediate,https://behance.net/sureshbrown4408,2026-08-08 06:49
+UIS26-0449,Ramesh,Reddy,ramesh.reddy376@example.com,Carnegie Mellon University,BFA (Visual Communication),3rd Year,Adobe XD,Beginner,https://behance.net/rameshreddy7975,2026-08-01 07:05
+UIS26-0450,Neha,Rao,neha.rao12@example.com,IIT Bombay,MCA,1st Year,Figma,Advanced,https://behance.net/neharao1575,2026-08-01 05:05
+UIS26-0451,Isabella,Iyer,isabella.iyer86@example.com,Carnegie Mellon University,MCA,1st Year,Sketch,Intermediate,https://behance.net/isabellaiyer4427,2026-07-30 10:06
+UIS26-0452,Sneha,Singh,sneha.singh112@example.com,Parsons School of Design,B.Tech Computer Science,1st Year,Sketch,Intermediate,https://behance.net/snehasingh1998,2026-07-21 14:32
+UIS26-0453,Reyaansh,Davis,reyaansh.davis786@example.com,University of Arts London,B.Des (UI/UX),1st Year,Adobe XD,Intermediate,https://behance.net/reyaanshdavis5957,2026-07-11 11:13
+UIS26-0454,Pooja,Pandey,pooja.pandey284@example.com,University of Arts London,MCA,1st Year,Sketch,Advanced,https://behance.net/poojapandey6666,2026-07-12 03:53
+UIS26-0455,Rahul,Mehta,rahul.mehta288@example.com,Parsons School of Design,BFA (Visual Communication),4th Year,Penpot,Intermediate,https://behance.net/rahulmehta2271,2026-07-11 03:51
+UIS26-0456,James,Brown,james.brown70@example.com,Parsons School of Design,B.Tech Computer Science,1st Year,Penpot,Advanced,https://behance.net/jamesbrown7278,2026-07-31 19:25
+UIS26-0457,Atharv,Pandey,atharv.pandey398@example.com,Rhode Island School of Design,M.Des,Alumni / Graduated,Figma,Advanced,https://behance.net/atharvpandey8097,2026-07-09 16:29
+UIS26-0458,Ayaan,Rodriguez,ayaan.rodriguez431@example.com,NIFT Delhi,B.Des (UI/UX),1st Year,Sketch,Intermediate,https://behance.net/ayaanrodriguez8698,2026-07-01 23:08
+UIS26-0459,Isabella,Brown,isabella.brown600@example.com,Carnegie Mellon University,BCA,2nd Year,Webflow,Advanced,https://behance.net/isabellabrown1660,2026-08-03 17:51
+UIS26-0460,Sumit,Johnson,sumit.johnson754@example.com,VIT Vellore,BFA (Visual Communication),3rd Year,Webflow,Intermediate,https://behance.net/sumitjohnson9247,2026-07-25 05:04
+UIS26-0461,Emma,Singh,emma.singh21@example.com,Stanford University,B.Tech Computer Science,Alumni / Graduated,Penpot,Advanced,https://behance.net/emmasingh8155,2026-07-11 02:33
+UIS26-0462,Aisha,Rao,aisha.rao348@example.com,BITS Pilani,B.Des (UI/UX),Alumni / Graduated,Adobe XD,Intermediate,https://behance.net/aisharao3950,2026-07-25 13:45
+UIS26-0463,Sai,Mehta,sai.mehta464@example.com,Rhode Island School of Design,BCA,4th Year,Figma,Advanced,https://behance.net/saimehta2044,2026-07-29 10:47
+UIS26-0464,Vikram,Brown,vikram.brown679@example.com,IIT Bombay,B.Des (UI/UX),4th Year,Penpot,Beginner,https://behance.net/vikrambrown1589,2026-08-05 00:00
+UIS26-0465,Noah,Pandey,noah.pandey662@example.com,BITS Pilani,BCA,Alumni / Graduated,Adobe XD,Intermediate,https://behance.net/noahpandey6053,2026-07-30 11:38
+UIS26-0466,Vihaan,Miller,vihaan.miller238@example.com,Parsons School of Design,BFA (Visual Communication),3rd Year,Framer,Intermediate,https://behance.net/vihaanmiller6052,2026-08-08 16:08
+UIS26-0467,Ava,Mehta,ava.mehta126@example.com,NID Ahmedabad,HCI (Master's),2nd Year,Figma,Intermediate,https://behance.net/avamehta9073,2026-08-10 09:57
+UIS26-0468,Ramesh,Yadav,ramesh.yadav728@example.com,NID Ahmedabad,B.Des (UI/UX),2nd Year,Penpot,Beginner,https://behance.net/rameshyadav4266,2026-07-27 03:39
+UIS26-0469,Emma,Reddy,emma.reddy202@example.com,NID Ahmedabad,HCI (Master's),4th Year,Adobe XD,Intermediate,https://behance.net/emmareddy1865,2026-07-13 11:32
+UIS26-0470,Benjamin,Chauhan,benjamin.chauhan57@example.com,University of Arts London,MCA,Alumni / Graduated,Figma,Intermediate,https://behance.net/benjaminchauhan9755,2026-07-29 15:36
+UIS26-0471,Suresh,Gupta,suresh.gupta996@example.com,NIFT Delhi,B.Des (UI/UX),Alumni / Graduated,Webflow,Beginner,https://behance.net/sureshgupta8012,2026-07-28 19:58
+UIS26-0472,Suresh,Jones,suresh.jones953@example.com,University of Arts London,B.Tech Computer Science,Alumni / Graduated,Adobe XD,Intermediate,https://behance.net/sureshjones6447,2026-07-09 03:32
+UIS26-0473,Elijah,Pandey,elijah.pandey630@example.com,University of Arts London,M.Des,Alumni / Graduated,Penpot,Intermediate,https://behance.net/elijahpandey4167,2026-08-08 23:38
+UIS26-0474,Saanvi,Bose,saanvi.bose996@example.com,MIT Institute of Design,M.Des,4th Year,Adobe XD,Beginner,https://behance.net/saanvibose8493,2026-08-08 23:53
+UIS26-0475,Riya,Miller,riya.miller728@example.com,Symbiosis Institute of Design,HCI (Master's),3rd Year,Webflow,Intermediate,https://behance.net/riyamiller3660,2026-08-05 21:35
+UIS26-0476,Ananya,Reddy,ananya.reddy649@example.com,Carnegie Mellon University,M.Des,3rd Year,Webflow,Beginner,https://behance.net/ananyareddy8988,2026-07-12 17:11
+UIS26-0477,James,Smith,james.smith340@example.com,Carnegie Mellon University,B.Des (UI/UX),3rd Year,Framer,Intermediate,https://behance.net/jamessmith6939,2026-08-06 22:46
+UIS26-0478,Amelia,Brown,amelia.brown925@example.com,Parsons School of Design,BCA,3rd Year,Penpot,Advanced,https://behance.net/ameliabrown514,2026-08-03 03:38
+UIS26-0479,Rohan,Gupta,rohan.gupta64@example.com,Stanford University,B.Des (UI/UX),2nd Year,Sketch,Intermediate,https://behance.net/rohangupta4205,2026-07-11 09:46
+UIS26-0480,Ishaan,Miller,ishaan.miller73@example.com,Carnegie Mellon University,HCI (Master's),3rd Year,Adobe XD,Intermediate,https://behance.net/ishaanmiller7515,2026-07-03 12:14
+UIS26-0481,Reyaansh,Pandey,reyaansh.pandey898@example.com,Stanford University,MCA,Alumni / Graduated,Adobe XD,Intermediate,https://behance.net/reyaanshpandey3992,2026-08-05 13:16
+UIS26-0482,Suresh,Garcia,suresh.garcia825@example.com,Rhode Island School of Design,MCA,3rd Year,Webflow,Intermediate,https://behance.net/sureshgarcia6925,2026-07-25 13:13
+UIS26-0483,Amelia,Das,amelia.das999@example.com,Symbiosis Institute of Design,B.Des (UI/UX),1st Year,Webflow,Beginner,https://behance.net/ameliadas3795,2026-08-09 15:07
+UIS26-0484,Oliver,Williams,oliver.williams736@example.com,Stanford University,M.Des,Alumni / Graduated,Framer,Intermediate,https://behance.net/oliverwilliams4919,2026-07-13 06:36
+UIS26-0485,Pooja,Verma,pooja.verma709@example.com,NID Ahmedabad,B.Tech Computer Science,2nd Year,Webflow,Intermediate,https://behance.net/poojaverma7120,2026-07-25 01:23
+UIS26-0486,Saanvi,Chakraborty,saanvi.chakraborty280@example.com,Srishti Institute of Art,B.Tech Computer Science,Alumni / Graduated,Sketch,Beginner,https://behance.net/saanvichakraborty754,2026-07-30 05:17
+UIS26-0487,Ishaan,Martinez,ishaan.martinez340@example.com,IIIT Hyderabad,B.Des (UI/UX),Alumni / Graduated,Webflow,Intermediate,https://behance.net/ishaanmartinez5966,2026-08-06 18:46
+UIS26-0488,Arjun,Garcia,arjun.garcia734@example.com,MIT Institute of Design,BCA,2nd Year,Adobe XD,Intermediate,https://behance.net/arjungarcia6914,2026-08-02 05:26
+UIS26-0489,Gita,Chakraborty,gita.chakraborty423@example.com,NID Ahmedabad,M.Des,2nd Year,Adobe XD,Intermediate,https://behance.net/gitachakraborty4909,2026-07-22 12:18
+UIS26-0490,Myra,Jones,myra.jones643@example.com,Symbiosis Institute of Design,BFA (Visual Communication),Alumni / Graduated,Webflow,Beginner,https://behance.net/myrajones4037,2026-07-23 15:12
+UIS26-0491,Charlotte,Pandey,charlotte.pandey950@example.com,IIIT Hyderabad,B.Tech Computer Science,1st Year,Webflow,Advanced,https://behance.net/charlottepandey6422,2026-07-25 03:52
+UIS26-0492,Diya,Chakraborty,diya.chakraborty751@example.com,BITS Pilani,B.Des (UI/UX),Alumni / Graduated,Sketch,Intermediate,https://behance.net/diyachakraborty8075,2026-08-02 15:12
+UIS26-0493,Aditya,Nair,aditya.nair929@example.com,Stanford University,B.Tech Computer Science,3rd Year,Framer,Beginner,https://behance.net/adityanair8914,2026-07-07 05:42
+UIS26-0494,Gita,Sharma,gita.sharma651@example.com,NID Ahmedabad,B.Tech Computer Science,2nd Year,Webflow,Intermediate,https://behance.net/gitasharma8910,2026-07-07 07:01
+UIS26-0495,James,Rodriguez,james.rodriguez769@example.com,Rhode Island School of Design,BFA (Visual Communication),1st Year,Webflow,Intermediate,https://behance.net/jamesrodriguez5534,2026-07-02 15:40
+UIS26-0496,Aditya,Kumar,aditya.kumar85@example.com,IIT Bombay,B.Tech Computer Science,3rd Year,Framer,Beginner,https://behance.net/adityakumar6778,2026-07-15 08:49
+UIS26-0497,Rohan,Mehta,rohan.mehta655@example.com,Delhi Technological University,BFA (Visual Communication),3rd Year,Figma,Intermediate,https://behance.net/rohanmehta196,2026-07-08 18:15
+UIS26-0498,Charlotte,Brown,charlotte.brown643@example.com,NID Ahmedabad,HCI (Master's),Alumni / Graduated,Figma,Intermediate,https://behance.net/charlottebrown8338,2026-07-05 12:12
+UIS26-0499,Reyaansh,Nair,reyaansh.nair815@example.com,Stanford University,M.Des,Alumni / Graduated,Figma,Beginner,https://behance.net/reyaanshnair6573,2026-07-29 13:01
+UIS26-0500,Elijah,Sharma,elijah.sharma495@example.com,Srishti Institute of Art,BCA,2nd Year,Adobe XD,Intermediate,https://behance.net/elijahsharma2460,2026-08-04 10:04
