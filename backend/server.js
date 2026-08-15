@@ -1,18 +1,39 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
 const { MongoClient, ObjectId } = require('mongodb');
 const { v4: uuidv4 } = require('uuid');
 const QRCode = require('qrcode');
 const PDFDocument = require('pdfkit');
 require('dotenv').config();
 const bulkModule = require('./modules/bulkGeneration/routes');
+const authRoutes = require('./modules/auth/routes');
+const authMiddleware = require('./modules/auth/middleware');
 
 const app = express();
 const PORT = process.env.PORT || 8001;
 const MONGO_URL = process.env.MONGO_URL || 'mongodb://localhost:27017';
 const DB_NAME = process.env.DB_NAME || 'cert_management_db';
 
-app.use(cors());
+app.set('trust proxy', 1);
+app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false, crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+app.use(cookieParser());
+
+const FRONTEND_URL = process.env.FRONTEND_URL || '';
+app.use(cors({
+  origin: (origin, cb) => {
+    // Allow same-origin (no Origin header), configured FRONTEND_URL, and *.emergentagent.com preview subdomains.
+    if (!origin) return cb(null, true);
+    if (FRONTEND_URL && origin === FRONTEND_URL) return cb(null, true);
+    if (/^https:\/\/[a-z0-9-]+\.preview\.emergentagent\.com$/.test(origin)) return cb(null, true);
+    if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return cb(null, true);
+    return cb(null, true); // permissive for demo; tighten to specific origins in production
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-organization-id']
+}));
 app.use(express.json({ limit: '10mb' }));
 
 let db, eventsCol, templatesCol, certificatesCol;
@@ -26,8 +47,12 @@ async function connectDB() {
     templatesCol = db.collection('templates');
     certificatesCol = db.collection('certificates');
     console.log('Connected to MongoDB successfully');
-    // Mount bulk generation routes now that db is available
+    // Mount auth + bulk routes now that db is available
+    const authMw = authMiddleware.build(db);
+    app.use('/api/auth', authRoutes.build(db, authMw));
     app.use('/api/bulk', bulkModule.build(db));
+    // Expose middleware for downstream use if needed
+    app.locals.authMw = authMw;
     await seedInitialData();
   } catch (err) {
     console.error('MongoDB connection error:', err);

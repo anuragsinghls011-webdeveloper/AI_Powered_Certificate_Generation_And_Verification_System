@@ -1,0 +1,39 @@
+{
+  "summary": "Iteration 3 — Auth (JWT + RBAC + sessions + email verify + password reset) tested end-to-end. Backend: 33/33 pytest tests pass covering register/login/logout/refresh+reuse/sessions/verify/forgot-reset/change-pw/switch-org/JWT validation/security headers/cookies/members/audit-logs/brute-force. Regression on /api/analytics, /api/templates, /api/events, /api/certificates, /api/bulk/* all green (still public as spec'd). Frontend: login-form + all sub-testids present on root, admin login → dashboard with super_admin role badge, user menu dropdown + sessions modal (with 'This device' badge) + logout all working, forgot-password shows dev-mode auth-dev-links, fresh register auto-logs in and reaches dashboard, nav-bulk-studio & nav-design-studio still injected.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/auth/login", "issue": "IP loginLimiter (20/15min) fires BEFORE the account-lockout check, so during automated testing the 6th wrong login can return the rate-limit message ('Too many login attempts...') instead of the intended per-account lockout message ('Account locked for N minute(s)'). Functionally still 429, but user-facing message can be misleading. Consider putting brute-force check ahead of loginLimiter or excluding brute-force lockout responses from the IP limiter window."},
+      {"endpoint": "/api/auth/register", "issue": "The provided spec listed 'nolet123' as a rejected weak password but it satisfies the actual policy (>=8 chars, letter+digit). Backend accepts it — matches the code, spec statement is inconsistent. No code change needed unless the intent was to require a non-numeric prefix pattern."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "AuthPages/Forgot form", "issue": "'Back to sign in' button on the forgot-password form has no data-testid (e.g., link-login). Every other navigation link (link-login on register form) has one. Add data-testid=\"link-login\" on the back-button for testability parity.", "selector": "button 'Back to sign in' inside [data-testid=forgot-form]", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_auth.py", "/app/test_reports/pytest/auth_results.xml"],
+  "action_items": [
+    "OPTIONAL: reorder loginLimiter vs brute-force check so the 6th attempt returns the 'Account locked for N minute(s)' message instead of the IP-rate-limit message.",
+    "LOW: add data-testid='link-login' to the 'Back to sign in' button on the forgot-password/reset views for consistent E2E coverage."
+  ],
+  "critical_code_review_comments": [
+    "server.js mixes bulk of certificate/template routes inline (>500 lines). Consider splitting certificates/events/analytics into modules similar to /modules/auth for maintainability.",
+    "CORS config always returns cb(null, true) even after the regex checks (line 31) — the earlier checks are dead code. Tighten in production.",
+    "signAccessToken/generateRefreshToken calls jwt.sign SYNCHRONOUSLY; fine for HS256 but tokens.js should use async APIs when moving to RS256 later.",
+    "sessions.token_hash + expires_at TTL is correct; +good use of sha256(refresh) rather than storing raw JWT.",
+    "refresh route: reuse detection triggers on ANY mismatch (missing session record), which correctly revokes all sessions on the user — verified in tests.",
+    "audit collection: logs stored but never trimmed; consider TTL or periodic archive.",
+    "SessionsPanel initially renders 'Loading…' briefly — fine, but ensure a skeleton or graceful empty-state.",
+    "AuthContext relies on axios global withCredentials — good; but axios interceptor should also drop retries after N attempts to avoid infinite refresh loops on truly-expired refresh (assumed done, not verified in this iteration)."
+  ],
+  "updated_files": ["/app/backend/tests/test_auth.py"],
+  "success_rate": {"backend": "100% (33/33)", "frontend": "100% of critical flows"},
+  "test_credentials": "admin@campuscert.local / Admin@12345 (super_admin), editor@campuscert.local / Editor@12345 (editor)",
+  "seed_data_creation": "Test users created during pytest (prefix TEST_*@example.com) are persisted in MongoDB; not cleaned up. Consider a teardown or a mongo cleanup script if this becomes noisy.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend rate limiters are IN-MEMORY (express-rate-limit default MemoryStore). Running pytest twice in <15 min will exhaust register(20/hr)/login(20/15min)/forgot(10/hr) and cause 429s. Always `sudo supervisorctl restart backend` before re-running the auth test suite. brute_force test uses a unique email per run so DB state is fine. Verify link + reset link are surfaced under response.email_verification.link and response.link respectively in dev mode. JWT_SECRET is in /app/backend/.env."
+}

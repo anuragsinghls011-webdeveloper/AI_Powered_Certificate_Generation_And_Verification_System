@@ -3,15 +3,19 @@ import axios from 'axios';
 import { 
   Award, Calendar, Users, FileText, QrCode, ShieldCheck, 
   BarChart3, Plus, Trash2, Download, Send, CheckCircle2, 
-  Search, RefreshCw, Layers, Sparkles, Building2, UserCheck, AlertTriangle, Wand2, Rocket
+  Search, RefreshCw, Layers, Sparkles, Building2, UserCheck, AlertTriangle, Wand2, Rocket, Loader2
 } from 'lucide-react';
 import DesignStudio from './DesignStudio';
 import BulkStudio from './BulkStudio';
+import { useAuth } from './auth/AuthContext';
+import AuthPages from './auth/AuthPages';
+import UserMenu from './auth/UserMenu';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const API = `${BACKEND_URL}/api`;
 
 export default function App() {
+  const { user, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [events, setEvents] = useState([]);
   const [templates, setTemplates] = useState([]);
@@ -51,8 +55,8 @@ export default function App() {
   const [filterEvent, setFilterEvent] = useState('');
 
   useEffect(() => {
-    fetchAllData();
-  }, []);
+    if (user) fetchAllData();
+  }, [user]);
 
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type });
@@ -205,6 +209,19 @@ export default function App() {
     return matchesSearch && matchesEvent;
   });
 
+  // Gate the app behind auth
+  if (authLoading) {
+    return (
+      <div data-testid="auth-loading" className="min-h-screen bg-slate-950 grid place-items-center">
+        <div className="text-center">
+          <Loader2 className="w-10 h-10 text-brand-400 animate-spin mx-auto mb-3" />
+          <p className="text-slate-300 text-sm">Loading your workspace…</p>
+        </div>
+      </div>
+    );
+  }
+  if (!user) return <AuthPages />;
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
       {/* Top Banner / Notification */}
@@ -281,6 +298,8 @@ export default function App() {
               Verify Portal
             </button>
           </div>
+
+          <UserMenu />
         </div>
       </header>
 

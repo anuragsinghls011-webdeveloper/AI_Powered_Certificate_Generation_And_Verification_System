@@ -68,8 +68,9 @@
 - **P2** — Template categories/folders + tag filtering.
 
 ## Recent Milestones
-- **Jan 2026 (session 3)** — Shipped **Smart Bulk Certificate Generation** module. 8-step stepper (Upload → Preview → Map → Validate → Template → Sample → Configure → Generate). CSV/XLSX safe parsing with formula-injection sanitisation. Auto column mapping with confidence scoring, saved mappings, error CSV export, sample PDF preview, in-process worker queue (concurrency=3), unique cert IDs via MongoDB counter (`CERT-{year}-{6-digit}`), disk-persisted PDFs, ZIP download, retry-failed & cancel & resend-emails, job history + analytics, audit logs. Testing agent: 27/27 backend + 100% frontend.
-- **Jan 2026 (session 2)** — Certificate Design Studio: drag-and-drop editor, 9 field types, typography, background upload, live preview, edit-existing-templates. PDF renderer honours custom templates.
-- **Jan 2026 (session 1)** — Backend migrated FastAPI → Node.js/Express, count_documents bug fixed.
+- **Jan 2026 (session 4)** — Shipped **JWT Authentication + Multi-Org RBAC**. Register/login/logout/logout-all, 15-min access + 7-day refresh tokens with rotation & reuse-detection, HttpOnly+Secure+SameSite=None cookies, bcrypt 12 rounds, MongoDB sessions with TTL, email verification + password reset (DEV MODE — links surfaced in API responses; wire SendGrid via .env for production), change-password (revokes other sessions), brute-force lockout (5 fails → 15 min), rate limits on login/register/forgot, `authenticateUser → resolveOrganization → requireOrganizationMember → requirePermission` middleware chain, role-based permissions (super_admin/admin/editor/viewer), Organizations + OrganizationMemberships + Sessions + EmailVerificationTokens + PasswordResetTokens + AuditLogs models, /api/auth/members + role management, /api/auth/audit-logs. Frontend: AuthProvider with silent-refresh axios interceptor, Login/Register/Forgot/Reset/Verify pages, UserMenu dropdown, Sessions panel, org switcher. First registered user auto-becomes super_admin of default org. Testing agent: 33/33 backend + 100% frontend.
+- **Jan 2026 (session 3)** — Smart Bulk Certificate Generation module (27/27 tests passed).
+- **Jan 2026 (session 2)** — Certificate Design Studio.
+- **Jan 2026 (session 1)** — Backend migrated FastAPI → Node.js/Express.
 
 ## Prioritized Backlog (P0/P1/P2)
