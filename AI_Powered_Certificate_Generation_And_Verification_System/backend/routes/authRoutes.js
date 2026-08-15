@@ -177,7 +177,7 @@ const mw = require('../middleware/authMiddleware');
       });
       const emailResult = await sendVerificationEmail(userDoc, rawToken);
 
-      await logAudit(db, {
+      await logAudit(getDB(), {
         action: 'AUTH_REGISTER', user_id: userId, organization_id: org.id,
         role, ip: req.ip, user_agent: req.headers['user-agent'] || ''
       });
@@ -228,20 +228,20 @@ const mw = require('../middleware/authMiddleware');
       const identifier = `${req.ip}:${email}`;
       const lock = await checkLockout(identifier);
       if (lock.locked) {
-        await logAudit(db, { action: 'AUTH_LOGIN_LOCKED', email, ip: req.ip });
+        await logAudit(getDB(), { action: 'AUTH_LOGIN_LOCKED', email, ip: req.ip });
         return res.status(429).json({ error: `Account locked for ${lock.minutes} more minute(s)` });
       }
 
       const user = await getDB().collection('users').findOne({ email });
       if (!user || user.status === 'suspended') {
         await recordFailedAttempt(identifier);
-        await logAudit(db, { action: 'AUTH_LOGIN_FAIL', email, ip: req.ip, reason: 'not_found_or_suspended' });
+        await logAudit(getDB(), { action: 'AUTH_LOGIN_FAIL', email, ip: req.ip, reason: 'not_found_or_suspended' });
         return res.status(401).json({ error: 'Invalid credentials' });
       }
       const ok = await verifyPassword(password, user.password_hash);
       if (!ok) {
         const attempts = await recordFailedAttempt(identifier);
-        await logAudit(db, { action: 'AUTH_LOGIN_FAIL', email, user_id: user.id, ip: req.ip, attempts });
+        await logAudit(getDB(), { action: 'AUTH_LOGIN_FAIL', email, user_id: user.id, ip: req.ip, attempts });
         return res.status(401).json({ error: 'Invalid credentials' });
       }
       await clearAttempts(identifier);
@@ -265,7 +265,7 @@ const mw = require('../middleware/authMiddleware');
       const access = signAccessToken(user, membership);
       setAuthCookies(res, access, refresh);
 
-      await logAudit(db, { action: 'AUTH_LOGIN', user_id: user.id, organization_id: user.current_org_id, ip: req.ip });
+      await logAudit(getDB(), { action: 'AUTH_LOGIN', user_id: user.id, organization_id: user.current_org_id, ip: req.ip });
 
       res.json({
         user: sanitizeUser(user),
@@ -298,7 +298,7 @@ const mw = require('../middleware/authMiddleware');
           { user_id: decoded.sub, revoked_at: null },
           { $set: { revoked_at: nowIso(), revoke_reason: 'reuse_detected' } }
         );
-        await logAudit(db, { action: 'AUTH_REFRESH_REUSE_DETECTED', user_id: decoded.sub, ip: req.ip });
+        await logAudit(getDB(), { action: 'AUTH_REFRESH_REUSE_DETECTED', user_id: decoded.sub, ip: req.ip });
         return res.status(401).json({ error: 'Refresh token invalid or reused' });
       }
       if (new Date(session.expires_at) < new Date()) {
@@ -345,7 +345,7 @@ const mw = require('../middleware/authMiddleware');
         );
       }
       if (req.user) {
-        await logAudit(db, { action: 'AUTH_LOGOUT', user_id: req.user.id, ip: req.ip });
+        await logAudit(getDB(), { action: 'AUTH_LOGOUT', user_id: req.user.id, ip: req.ip });
       }
       clearAuthCookies(res);
       res.json({ message: 'Logged out' });
@@ -361,7 +361,7 @@ const mw = require('../middleware/authMiddleware');
         { user_id: req.user.id, revoked_at: null },
         { $set: { revoked_at: nowIso(), revoke_reason: 'logout_all' } }
       );
-      await logAudit(db, { action: 'AUTH_LOGOUT_ALL', user_id: req.user.id, ip: req.ip });
+      await logAudit(getDB(), { action: 'AUTH_LOGOUT_ALL', user_id: req.user.id, ip: req.ip });
       clearAuthCookies(res);
       res.json({ message: 'All sessions revoked' });
     } catch (err) {
@@ -408,7 +408,7 @@ const mw = require('../middleware/authMiddleware');
     const user = { ...req.user, current_org_id: orgId };
     const access = signAccessToken(user, membership);
     setAuthCookies(res, access, req.cookies?.refresh_token || '');
-    await logAudit(db, { action: 'AUTH_ORG_SWITCH', user_id: req.user.id, organization_id: orgId, ip: req.ip });
+    await logAudit(getDB(), { action: 'AUTH_ORG_SWITCH', user_id: req.user.id, organization_id: orgId, ip: req.ip });
     res.json({ access_token: access, organization_id: orgId, membership });
   });
 
@@ -432,7 +432,7 @@ const mw = require('../middleware/authMiddleware');
       { $set: { revoked_at: nowIso(), revoke_reason: 'manual' } }
     );
     if (result.matchedCount === 0) return res.status(404).json({ error: 'Session not found' });
-    await logAudit(db, { action: 'AUTH_SESSION_REVOKED', user_id: req.user.id, session_id: req.params.id });
+    await logAudit(getDB(), { action: 'AUTH_SESSION_REVOKED', user_id: req.user.id, session_id: req.params.id });
     res.json({ message: 'Session revoked' });
   });
 
@@ -451,7 +451,7 @@ const mw = require('../middleware/authMiddleware');
       { $set: { email_verified: true, updated_at: nowIso() } }
     );
     await getDB().collection('email_verification_tokens').updateOne({ _id: rec._id }, { $set: { used_at: nowIso() } });
-    await logAudit(db, { action: 'AUTH_EMAIL_VERIFIED', user_id: rec.user_id, ip: req.ip });
+    await logAudit(getDB(), { action: 'AUTH_EMAIL_VERIFIED', user_id: rec.user_id, ip: req.ip });
     res.json({ message: 'Email verified' });
   });
 
@@ -482,7 +482,7 @@ const mw = require('../middleware/authMiddleware');
         expires_at: inSecondsFromNow(60 * 60), used_at: null, created_at: nowIso()
       });
       const emailResult = await sendPasswordResetEmail(user, rawToken);
-      await logAudit(db, { action: 'AUTH_PASSWORD_RESET_REQUESTED', user_id: user.id, ip: req.ip });
+      await logAudit(getDB(), { action: 'AUTH_PASSWORD_RESET_REQUESTED', user_id: user.id, ip: req.ip });
       // In dev mode, surface the link so testing agent can verify.
       return res.json({
         message: 'If that account exists, a reset email has been sent.',
@@ -517,7 +517,7 @@ const mw = require('../middleware/authMiddleware');
       { user_id: rec.user_id, revoked_at: null },
       { $set: { revoked_at: nowIso(), revoke_reason: 'password_reset' } }
     );
-    await logAudit(db, { action: 'AUTH_PASSWORD_RESET', user_id: rec.user_id, ip: req.ip });
+    await logAudit(getDB(), { action: 'AUTH_PASSWORD_RESET', user_id: rec.user_id, ip: req.ip });
     res.json({ message: 'Password reset. Please log in again.' });
   });
 
@@ -541,7 +541,7 @@ const mw = require('../middleware/authMiddleware');
       { user_id: req.user.id, revoked_at: null, token_hash: { $ne: currentHash } },
       { $set: { revoked_at: nowIso(), revoke_reason: 'password_change' } }
     );
-    await logAudit(db, { action: 'AUTH_PASSWORD_CHANGED', user_id: req.user.id, ip: req.ip });
+    await logAudit(getDB(), { action: 'AUTH_PASSWORD_CHANGED', user_id: req.user.id, ip: req.ip });
     res.json({ message: 'Password changed' });
   });
 
@@ -595,7 +595,7 @@ const mw = require('../middleware/authMiddleware');
         { $set: { role, updated_at: nowIso() } }
       );
       if (result.matchedCount === 0) return res.status(404).json({ error: 'Membership not found' });
-      await logAudit(db, {
+      await logAudit(getDB(), {
         action: 'MEMBER_ROLE_CHANGED', user_id: req.user.id,
         target_user_id: req.params.userId, organization_id: req.membership.organization_id, new_role: role
       });

@@ -1,7 +1,7 @@
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
 
-const MONGO_URL = process.env.MONGO_URL || 'mongodb://localhost:27017';
+const MONGO_URL = process.env.MONGO_URL || 'mongodb+srv://arjun730099_db_user:V6iMmwJlkSMf8tqM@internal.cwlg295.mongodb.net/';
 const DB_NAME = process.env.DB_NAME || 'cert_management_db';
 
 let db;
