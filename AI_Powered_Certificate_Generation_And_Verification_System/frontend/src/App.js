@@ -21,7 +21,12 @@ import VerifyPage from './pages/VerifyPage';
 import DesignStudio from './DesignStudio';
 import BulkStudio from './BulkStudio';
 
+// Auth Components
+import { useAuth } from './auth/AuthContext';
+import AuthPages from './auth/AuthPages';
+
 export default function App() {
+  const { user, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [events, setEvents] = useState([]);
   const [templates, setTemplates] = useState([]);
@@ -257,6 +262,9 @@ export default function App() {
     reader.readAsBinaryString(file);
     e.target.value = null;
   };
+
+  if (authLoading) return <div className="flex h-screen items-center justify-center text-slate-500">Loading...</div>;
+  if (!user) return <AuthPages />;
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">

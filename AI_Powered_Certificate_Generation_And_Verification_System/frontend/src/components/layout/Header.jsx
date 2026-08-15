@@ -1,5 +1,6 @@
 import React from 'react';
 import { Award, Wand2, Rocket } from 'lucide-react';
+import UserMenu from '../../auth/UserMenu';
 
 export default function Header({ activeTab, setActiveTab, certificateCount }) {
   return (
@@ -66,6 +67,8 @@ export default function Header({ activeTab, setActiveTab, certificateCount }) {
             Verify Portal
           </button>
         </div>
+        
+        <UserMenu />
       </div>
     </header>
   );

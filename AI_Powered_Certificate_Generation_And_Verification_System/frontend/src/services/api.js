@@ -6,6 +6,7 @@ const API = `${BACKEND_URL}/api`;
 // Pre-configured axios instance (optional usage)
 const apiClient = axios.create({
   baseURL: API,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json'
   }
