@@ -3,14 +3,13 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
+import { API } from './services/api';
 import {
   Upload, FileSpreadsheet, ArrowRight, ArrowLeft, CheckCircle2, AlertTriangle,
   Wand2, Download, RefreshCw, X, Play, Pause, Eye, FileText, Search, ChevronDown,
   Save, Trash2, Rocket, Loader2, Settings, Layers, ListChecks
 } from 'lucide-react';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
-const API = `${BACKEND_URL}/api`;
 
 const STEPS = [
   { key: 'upload', label: 'Upload', icon: Upload },

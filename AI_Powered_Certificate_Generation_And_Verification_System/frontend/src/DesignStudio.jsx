@@ -1,13 +1,12 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import axios from 'axios';
+import { API } from './services/api';
 import {
   Type, Save, Trash2, Upload, Plus, Eye, EyeOff, Palette,
   MoveHorizontal, MoveVertical, Bold, Italic, Copy, Layers, Wand2,
   QrCode, User, Building2, Award, LinkIcon, FileText, RefreshCw
 } from 'lucide-react';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
-const API = `${BACKEND_URL}/api`;
 
 // Canvas dimensions (aspect ratio matches landscape LETTER)
 const CANVAS_W = 792;
