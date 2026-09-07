@@ -18,7 +18,7 @@ import RepositoryPage from './pages/RepositoryPage';
 import VerifyPage from './pages/VerifyPage';
 
 // Feature Components (already standalone)
-import DesignStudio from './DesignStudio';
+import DesignStudio from './studio/DesignStudio';
 import BulkStudio from './BulkStudio';
 
 // Auth Components

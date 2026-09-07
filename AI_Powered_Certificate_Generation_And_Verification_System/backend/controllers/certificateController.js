@@ -163,7 +163,7 @@ async function downloadPdf(req, res) {
 
     const template = await getTemplatesCol().findOne({ id: cert.template_id });
 
-    streamCertificatePdf(cert, template, res);
+    await streamCertificatePdf(cert, template, res);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -17,7 +17,8 @@ const app = express();
 
 // --- Global Middleware ---
 app.use(cors({ origin: true, credentials: true }));
-app.use(express.json({ limit: '10mb' }));
+// Design Studio templates embed background/signature/logo images as data URLs.
+app.use(express.json({ limit: '25mb' }));
 app.use(cookieParser());
 
 // --- API Routes ---
