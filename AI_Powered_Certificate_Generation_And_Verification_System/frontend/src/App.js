@@ -16,6 +16,7 @@ import EventsPage from './pages/EventsPage';
 import BulkGeneratorPage from './pages/BulkGeneratorPage';
 import RepositoryPage from './pages/RepositoryPage';
 import VerifyPage from './pages/VerifyPage';
+import EventReportsPage from './pages/EventReportsPage';
 
 // Feature Components (already standalone)
 import DesignStudio from './studio/DesignStudio';
@@ -27,7 +28,7 @@ import AuthPages from './auth/AuthPages';
 
 export default function App() {
   const { user, loading: authLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => window.location.hash === '#reports' ? 'reports' : 'dashboard');
   const [events, setEvents] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [certificates, setCertificates] = useState([]);
@@ -56,9 +57,17 @@ export default function App() {
   // Selected certificate for preview modal
   const [previewCert, setPreviewCert] = useState(null);
 
+  const reportsOpen = activeTab === 'reports';
   useEffect(() => {
-    fetchAllData();
-  }, []);
+    // Reports fetch their own scoped events/summary; never preload the certificate collection.
+    if (!authLoading && user && !reportsOpen) fetchAllData();
+    // Existing mutation handlers explicitly refresh dashboard data when needed.
+  }, [authLoading, user?.id, reportsOpen]);
+
+  useEffect(() => {
+    const url = `${window.location.pathname}${window.location.search}${reportsOpen ? '#reports' : ''}`;
+    window.history.replaceState(null, '', url);
+  }, [reportsOpen]);
 
   const fetchAllData = async () => {
     setLoading(true);
@@ -273,10 +282,11 @@ export default function App() {
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        certificateCount={certificates.length}
+        certificateCount={reportsOpen ? null : certificates.length}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-8">
+        {activeTab === 'reports' && <EventReportsPage />}
         {activeTab === 'dashboard' && (
           <DashboardPage
             analytics={analytics}

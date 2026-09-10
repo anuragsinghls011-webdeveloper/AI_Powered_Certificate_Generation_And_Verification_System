@@ -1,11 +1,14 @@
 import React from 'react';
 import { Award, Wand2, Rocket } from 'lucide-react';
 import UserMenu from '../../auth/UserMenu';
+import { useAuth } from '../../auth/AuthContext';
 
 export default function Header({ activeTab, setActiveTab, certificateCount }) {
+  const { membership } = useAuth();
+  const canReport = ['admin', 'super_admin'].includes(membership?.role);
   return (
     <header className="bg-slate-900 text-white shadow-md border-b border-slate-800">
-      <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div className="max-w-7xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center gap-4">
         <div className="flex items-center gap-3">
           <div className="bg-brand-600 p-2.5 rounded-xl shadow-inner text-white">
             <Award className="w-8 h-8" />
@@ -16,7 +19,7 @@ export default function Header({ activeTab, setActiveTab, certificateCount }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 bg-slate-800 p-1 rounded-xl border border-slate-700">
+        <nav aria-label="Main navigation" className="order-3 w-full flex flex-wrap items-center gap-1 sm:gap-2 bg-slate-800 p-1 rounded-xl border border-slate-700">
           <button 
             data-testid="nav-dashboard"
             onClick={() => setActiveTab('dashboard')}
@@ -50,8 +53,14 @@ export default function Header({ activeTab, setActiveTab, certificateCount }) {
             onClick={() => setActiveTab('repository')}
             className={`px-3 py-2 rounded-lg text-sm font-medium transition ${activeTab === 'repository' ? 'bg-brand-600 text-white shadow' : 'text-slate-300 hover:text-white'}`}
           >
-            Repository ({certificateCount})
+            Repository{certificateCount == null ? '' : ` (${certificateCount})`}
           </button>
+          {canReport && <button
+            data-testid="nav-reports"
+            aria-current={activeTab === 'reports' ? 'page' : undefined}
+            onClick={() => setActiveTab('reports')}
+            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'reports' ? 'bg-brand-600 text-white shadow' : 'text-slate-300 hover:text-white'}`}
+          >Event Reports</button>}
           <button 
             data-testid="nav-design-studio"
             onClick={() => setActiveTab('design')}
@@ -66,7 +75,7 @@ export default function Header({ activeTab, setActiveTab, certificateCount }) {
           >
             Verify Portal
           </button>
-        </div>
+        </nav>
         
         <UserMenu />
       </div>

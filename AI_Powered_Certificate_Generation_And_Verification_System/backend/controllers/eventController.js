@@ -16,6 +16,8 @@ async function createEvent(req, res) {
   try {
     const event = {
       id: uuidv4(),
+      organization_id: req.organization.id,
+      created_by: req.user.id,
       title: req.body.title,
       category: req.body.category || 'Workshop',
       date: req.body.date || new Date().toISOString().split('T')[0],

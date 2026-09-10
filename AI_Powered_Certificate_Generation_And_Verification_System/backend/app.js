@@ -29,6 +29,7 @@ app.use('/api/events', authMw.authenticateUser(), eventRoutes);
 app.use('/api/templates', authMw.authenticateUser(), templateRoutes);
 app.use('/api/certificates', authMw.authenticateUser(), certificateRoutes);
 app.use('/api/analytics', authMw.authenticateUser(), analyticsRoutes);
+app.use('/api/reports', authMw.authenticateUser(), require('./routes/reportRoutes'));
 
 // --- Error Handler (must be last) ---
 app.use(errorHandler);

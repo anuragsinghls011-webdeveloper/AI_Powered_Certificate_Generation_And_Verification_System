@@ -36,5 +36,5 @@
   "seed_data_creation": "Test data (PW_ prefixed) created transiently and cleaned up during tests.",
   "retest_needed": false,
   "should_main_agent_self_test": false,
-  "context_for_next_testing_agent": "Backend at https://full-stack-web-19.preview.emergentagent.com. Tests: /app/backend/tests/test_backend.py (pytest). DB contains legacy seeded templates with empty fields — not a code bug, just stale data. Design Studio<->Bulk Generator template list refresh is the only known UX gap."
+  "context_for_next_testing_agent": "Backend at https://event-reports.preview.emergentagent.com. Tests: /app/backend/tests/test_backend.py (pytest). DB contains legacy seeded templates with empty fields — not a code bug, just stale data. Design Studio<->Bulk Generator template list refresh is the only known UX gap."
 }

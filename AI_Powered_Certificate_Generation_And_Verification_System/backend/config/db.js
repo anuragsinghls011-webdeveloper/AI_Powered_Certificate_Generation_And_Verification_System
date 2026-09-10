@@ -12,6 +12,9 @@ async function connectDB() {
     client = new MongoClient(MONGO_URL);
     await client.connect();
     db = client.db(DB_NAME);
+    // Report queries always start with an event relationship or organization scope.
+    await db.collection('certificates').createIndex({ event_id: 1, cert_id: 1 });
+    await db.collection('events').createIndex({ organization_id: 1, date: -1 });
     console.log('Connected to MongoDB successfully');
     return db;
   } catch (err) {
