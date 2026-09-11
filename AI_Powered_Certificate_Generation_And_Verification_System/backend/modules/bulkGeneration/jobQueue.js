@@ -8,6 +8,7 @@ const pLimit = require('p-limit');
 const QRCode = require('qrcode');
 const { renderCertificatePdfBuffer } = require('./certificateRenderer');
 const { invertMapping } = require('./validationEngine');
+const { deliverCertificate } = require('../../services/certificateEmailService');
 
 const CERT_DIR = process.env.CERT_STORAGE_DIR || '/app/backend/storage/certificates';
 
@@ -147,11 +148,19 @@ async function processJob(db, jobId, verifyBaseUrl) {
       };
       await certsCol.insertOne(certDoc);
 
-      // "Send" email (mock — mark as sent)
+      // Deliver the generated PDF without failing certificate issuance when email fails.
       let emailStatus = 'skipped';
+      let emailResult = null;
       if (settings.email_enabled !== false && values.email) {
-        emailStatus = 'sent';
-        await certsCol.updateOne({ cert_id: certId }, { $set: { sent_email: true, email_status: 'sent' } });
+        emailResult = await deliverCertificate({ cert: certDoc, template, pdfBuffer });
+        emailStatus = emailResult.delivered ? 'sent' : 'failed';
+        await certsCol.updateOne({ cert_id: certId }, { $set: {
+          sent_email: emailResult.delivered,
+          email_status: emailStatus,
+          email_id: emailResult.email_id || null,
+          email_actual_recipient: emailResult.actual_recipients?.[0] || null,
+          email_error: emailResult.delivered ? null : emailResult.error
+        } });
       }
 
       await recCol.updateOne({ _id: rec._id }, {
@@ -161,6 +170,8 @@ async function processJob(db, jobId, verifyBaseUrl) {
           pdf_path: filePath,
           pdf_hash: hash,
           email_status: emailStatus,
+          email_id: emailResult?.email_id || null,
+          email_error: emailResult?.delivered ? null : emailResult?.error || null,
           error: null,
           processed_at: nowIso()
         }

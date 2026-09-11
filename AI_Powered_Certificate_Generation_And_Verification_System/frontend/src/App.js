@@ -27,7 +27,7 @@ import { useAuth } from './auth/AuthContext';
 import AuthPages from './auth/AuthPages';
 
 export default function App() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, membership, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState(() => window.location.hash === '#reports' ? 'reports' : 'dashboard');
   const [events, setEvents] = useState([]);
   const [templates, setTemplates] = useState([]);
@@ -68,6 +68,13 @@ export default function App() {
     const url = `${window.location.pathname}${window.location.search}${reportsOpen ? '#reports' : ''}`;
     window.history.replaceState(null, '', url);
   }, [reportsOpen]);
+
+  useEffect(() => {
+    const pendingDelivery = activeTab === 'events' && events.some(event => ['queued', 'processing'].includes(event.report_delivery?.status));
+    if (!pendingDelivery) return undefined;
+    const timer = window.setInterval(fetchAllData, 3000);
+    return () => window.clearInterval(timer);
+  }, [activeTab, events]);
 
   const fetchAllData = async () => {
     setLoading(true);
@@ -128,6 +135,33 @@ export default function App() {
       fetchAllData();
     } catch (err) {
       showNotification('Error deleting event', 'error');
+    }
+  };
+
+  const handleCompleteEvent = async (eventId) => {
+    if (!window.confirm('Complete this event and email Excel/CSV reports to organization admins?')) return;
+    try {
+      setLoading(true);
+      const res = await axios.post(`${API}/events/${eventId}/complete`);
+      showNotification(res.data.message);
+      await fetchAllData();
+    } catch (err) {
+      showNotification(err.response?.data?.error || 'Unable to complete event', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRetryEventReport = async (eventId) => {
+    try {
+      setLoading(true);
+      const res = await axios.post(`${API}/events/${eventId}/report-delivery/retry`);
+      showNotification(res.data.message);
+      await fetchAllData();
+    } catch (err) {
+      showNotification(err.response?.data?.error || 'Unable to retry report delivery', 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -307,6 +341,10 @@ export default function App() {
             setNewEvent={setNewEvent}
             onCreateEvent={handleCreateEvent}
             onDeleteEvent={handleDeleteEvent}
+            onCompleteEvent={handleCompleteEvent}
+            onRetryEventReport={handleRetryEventReport}
+            completing={loading}
+            canComplete={['admin', 'super_admin'].includes(membership?.role)}
             setBulkData={setBulkData}
             bulkData={bulkData}
             setActiveTab={setActiveTab}

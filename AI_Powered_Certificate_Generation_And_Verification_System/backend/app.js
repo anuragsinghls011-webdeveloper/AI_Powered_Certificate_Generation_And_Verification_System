@@ -14,6 +14,11 @@ const bulkModule = require('./modules/bulkGeneration/routes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
+const trustProxyHops = Number(process.env.TRUST_PROXY_HOPS);
+if (!Number.isInteger(trustProxyHops) || trustProxyHops < 1) {
+  throw new Error('TRUST_PROXY_HOPS must be a positive integer');
+}
+app.set('trust proxy', trustProxyHops);
 
 // --- Global Middleware ---
 app.use(cors({ origin: true, credentials: true }));

@@ -73,7 +73,7 @@ export default function AuthPages() {
           {mode === 'verify' && <VerifyForm setMode={setMode} />}
           {devLinks && (
             <div data-testid="auth-dev-links" className="mt-5 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
-              <p className="font-bold mb-1 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> Dev-mode link (no SendGrid key set)</p>
+              <p className="font-bold mb-1 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> Dev-mode link (email provider not configured)</p>
               <a href={devLinks} className="font-mono underline break-all">{devLinks}</a>
             </div>
           )}

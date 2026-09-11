@@ -66,7 +66,7 @@ export default function BulkGeneratorPage({
               <div className="flex items-center gap-3">
                 <label className="cursor-pointer text-xs font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-1 bg-brand-50 px-2.5 py-1 rounded-md transition hover:bg-brand-100">
                   <Upload className="w-3.5 h-3.5" /> Upload CSV/Excel
-                  <input type="file" accept=".csv, .xlsx, .xls" className="hidden" onChange={onFileUpload} />
+                  <input data-testid="bulk-participant-file-input" type="file" accept=".csv, .xlsx, .xls" className="hidden" onChange={onFileUpload} />
                 </label>
                 <span className="text-xs text-slate-400">One participant per line</span>
               </div>

@@ -46,6 +46,8 @@ export default function BulkStudio({ notify }) {
   const [defaults, setDefaults] = useState({ issue_date: new Date().toISOString().split('T')[0] });
   const [validation, setValidation] = useState(null); // { summary, validated }
   const [templates, setTemplates] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [selectedEventId, setSelectedEventId] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [samplePdfUrl, setSamplePdfUrl] = useState('');
   const [jobSettings, setJobSettings] = useState({
@@ -66,14 +68,17 @@ export default function BulkStudio({ notify }) {
   useEffect(() => {
     (async () => {
       try {
-        const [l, t, jh, sm] = await Promise.all([
+        const [l, t, e, jh, sm] = await Promise.all([
           axios.get(`${API}/bulk/limits`),
           axios.get(`${API}/templates`),
+          axios.get(`${API}/events`),
           axios.get(`${API}/bulk/jobs`),
           axios.get(`${API}/bulk/saved-mappings`),
         ]);
         setLimits(l.data);
         setTemplates(t.data);
+        setEvents(e.data);
+        setSelectedEventId(current => current || e.data[0]?.id || '');
         setJobHistory(jh.data);
         setSavedMappings(sm.data);
       } catch (e) { /* ignore */ }
@@ -161,6 +166,7 @@ export default function BulkStudio({ notify }) {
       const res = await axios.post(`${API}/bulk/preview-sample`, {
         upload_id: uploadInfo.upload_id,
         template_id: selectedTemplateId,
+        event_id: selectedEventId,
         mapping, defaults, row_index: 0
       }, { responseType: 'blob' });
       const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
@@ -270,7 +276,7 @@ export default function BulkStudio({ notify }) {
       case 'validate': return validation && (validation.summary.valid > 0 || jobSettings.include_invalid);
       case 'template': return !!selectedTemplateId;
       case 'sample': return !!selectedTemplateId;
-      case 'configure': return true;
+      case 'configure': return !!selectedEventId;
       default: return false;
     }
   })();
@@ -397,6 +403,9 @@ export default function BulkStudio({ notify }) {
             defaults={defaults}
             setDefaults={setDefaults}
             validation={validation}
+            events={events}
+            selectedEventId={selectedEventId}
+            setSelectedEventId={setSelectedEventId}
           />
         )}
         {step === 'generate' && (
@@ -799,7 +808,7 @@ function SampleStep({ samplePdfUrl, generate, selectedTemplateId }) {
   );
 }
 
-function ConfigureStep({ settings, setSettings, validation, defaults, setDefaults }) {
+function ConfigureStep({ settings, setSettings, validation, defaults, setDefaults, events, selectedEventId, setSelectedEventId }) {
   const willGenerate = validation ? validation.summary.valid + (settings.include_invalid ? validation.summary.invalid : 0) : 0;
   return (
     <div className="space-y-4">
@@ -814,6 +823,20 @@ function ConfigureStep({ settings, setSettings, validation, defaults, setDefault
           <p className="font-bold text-slate-900">Ready to generate <span data-testid="bs-will-generate-count" className="text-indigo-700">{willGenerate}</span> certificates</p>
           <p className="text-xs text-slate-600">{validation?.summary?.invalid || 0} invalid & {validation?.summary?.duplicate || 0} duplicate records will be skipped.</p>
         </div>
+      </div>
+
+      <div className="p-4 rounded-xl border border-slate-200">
+        <label htmlFor="bs-event-select" className="block text-xs font-semibold text-slate-700 uppercase mb-2">Event for certificates and reports</label>
+        <select
+          id="bs-event-select"
+          data-testid="bs-event-select"
+          value={selectedEventId}
+          onChange={(event) => setSelectedEventId(event.target.value)}
+          className="w-full px-3 py-2 rounded-lg border border-slate-200 text-sm bg-white"
+        >
+          <option value="">Select an event</option>
+          {events.map(event => <option key={event.id} value={event.id}>{event.title}</option>)}
+        </select>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -835,7 +858,7 @@ function ConfigureStep({ settings, setSettings, validation, defaults, setDefault
 
         <div className="p-4 rounded-xl border border-slate-200 space-y-3">
           <h5 className="font-bold text-sm text-slate-900">Delivery & Skipping</h5>
-          <Toggle testid="bs-toggle-email" label="Send certificates via email (mock)" checked={settings.email_enabled} onChange={(v) => setSettings({ ...settings, email_enabled: v })} />
+          <Toggle testid="bs-toggle-email" label="Send certificate PDF by email" checked={settings.email_enabled} onChange={(v) => setSettings({ ...settings, email_enabled: v })} />
           <Toggle testid="bs-toggle-skip-invalid" label="Skip invalid rows" checked={settings.skip_invalid} onChange={(v) => setSettings({ ...settings, skip_invalid: v })} />
           <Toggle testid="bs-toggle-skip-duplicates" label="Skip duplicate rows" checked={settings.skip_duplicates} onChange={(v) => setSettings({ ...settings, skip_duplicates: v })} />
         </div>

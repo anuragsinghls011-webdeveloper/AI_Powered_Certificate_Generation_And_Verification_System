@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="9" time="18.984" timestamp="2026-09-11T18:42:22.994004+00:00" hostname="agent-env-1b72e818-5fa7-4242-8c7a-a91b0d454ab3"><testcase classname="backend.tests.test_resend_integration" name="test_admin_auth_and_events_list" time="0.971" /><testcase classname="backend.tests.test_resend_integration" name="test_generate_bulk_certificate_persists_resend_delivery_fields" time="0.447"><failure message="AssertionError: assert 'failed' == 'sent'&#10;  &#10;  - sent&#10;  + failed">backend/tests/test_resend_integration.py:221: in test_generate_bulk_certificate_persists_resend_delivery_fields
+    assert cert["email_status"] == "sent"
+E   AssertionError: assert 'failed' == 'sent'
+E     
+E     - sent
+E     + failed</failure></testcase><testcase classname="backend.tests.test_resend_integration" name="test_smart_bulk_job_links_event_and_stores_delivery_ids" time="2.245"><failure message="AssertionError: assert 'failed' == 'sent'&#10;  &#10;  - sent&#10;  + failed">backend/tests/test_resend_integration.py:309: in test_smart_bulk_job_links_event_and_stores_delivery_ids
+    assert row.get("email_status") == "sent"
+E   AssertionError: assert 'failed' == 'sent'
+E     
+E     - sent
+E     + failed</failure></testcase><testcase classname="backend.tests.test_resend_integration" name="test_resend_failed_endpoint_does_not_false_positive_sent" time="0.194" /><testcase classname="backend.tests.test_resend_integration" name="test_complete_event_queues_and_sends_xlsx_csv_to_admins" time="4.760"><failure message="AssertionError: assert 'failed' == 'sent'&#10;  &#10;  - sent&#10;  + failed">backend/tests/test_resend_integration.py:403: in test_complete_event_queues_and_sends_xlsx_csv_to_admins
+    assert delivered_event["report_delivery"]["status"] == "sent"
+E   AssertionError: assert 'failed' == 'sent'
+E     
+E     - sent
+E     + failed</failure></testcase><testcase classname="backend.tests.test_resend_integration" name="test_complete_event_idempotent_no_duplicate_report_delivery" time="4.213" /><testcase classname="backend.tests.test_resend_integration" name="test_retry_endpoint_rejects_non_failed_event_delivery" time="0.202" /><testcase classname="backend.tests.test_resend_integration" name="test_only_admin_or_super_admin_can_complete_events" time="4.437" /><testcase classname="backend.tests.test_resend_integration" name="test_reports_downloads_pdf_regression_and_no_api_key_exposure" time="1.322" /></testsuite></testsuites>

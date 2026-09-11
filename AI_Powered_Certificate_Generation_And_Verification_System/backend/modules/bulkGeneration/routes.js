@@ -15,26 +15,20 @@ const { suggestMappings, REQUIRED } = require('./columnMapper');
 const { validateRows, invertMapping } = require('./validationEngine');
 const { renderCertificatePdfBuffer } = require('./certificateRenderer');
 const { processJob, requestCancel } = require('./jobQueue');
+const { deliverCertificate } = require('../../services/certificateEmailService');
 
-const UPLOAD_DIR = process.env.UPLOAD_STORAGE_DIR || '/app/backend/storage/uploads';
 const CERT_DIR = process.env.CERT_STORAGE_DIR || '/app/backend/storage/certificates';
 const EXPORT_DIR = process.env.EXPORT_STORAGE_DIR || '/app/backend/storage/exports';
-[UPLOAD_DIR, CERT_DIR, EXPORT_DIR].forEach((d) => fs.mkdirSync(d, { recursive: true }));
+[CERT_DIR, EXPORT_DIR].forEach((d) => fs.mkdirSync(d, { recursive: true }));
 
 const MAX_FILE_SIZE = parseInt(process.env.BULK_MAX_FILE_SIZE || '10485760', 10); // 10MB
 const MAX_ROWS = parseInt(process.env.BULK_MAX_ROWS || '5000', 10);
 const MAX_COLS = parseInt(process.env.BULK_MAX_COLS || '50', 10);
 
-// Multer disk storage w/ random filename + extension whitelist
+// Uploaded spreadsheet rows are materialized in MongoDB; the source file only
+// exists in the OS temp directory while it is being parsed.
 const upload = multer({
-  storage: multer.diskStorage({
-    destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-    filename: (req, file, cb) => {
-      const ext = (file.originalname.split('.').pop() || '').toLowerCase();
-      const safeExt = ['csv', 'xlsx', 'xls'].includes(ext) ? ext : 'bin';
-      cb(null, `${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${safeExt}`);
-    }
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: MAX_FILE_SIZE, files: 1 },
   fileFilter: (req, file, cb) => {
     const ext = (file.originalname.split('.').pop() || '').toLowerCase();
@@ -90,13 +84,16 @@ function build(db, deps = {}) {
       if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
       try {
-        const parsed = parseFile(req.file.path, req.file.originalname);
+        const ext = (req.file.originalname.split('.').pop() || '').toLowerCase();
+        const tempPath = path.join(os.tmpdir(), `${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${ext}`);
+        fs.writeFileSync(tempPath, req.file.buffer);
+        let parsed;
+        try { parsed = parseFile(tempPath, req.file.originalname); }
+        finally { try { fs.unlinkSync(tempPath); } catch {} }
         if (parsed.headers.length > MAX_COLS) {
-          fs.unlinkSync(req.file.path);
           return res.status(400).json({ error: `Too many columns (max ${MAX_COLS})` });
         }
         if (parsed.rows.length > MAX_ROWS) {
-          fs.unlinkSync(req.file.path);
           return res.status(400).json({ error: `Too many rows (max ${MAX_ROWS})` });
         }
 
@@ -105,7 +102,7 @@ function build(db, deps = {}) {
         await db.collection('bulk_uploads').insertOne({
           id: uploadId,
           original_name: req.file.originalname,
-          storage_path: req.file.path,
+          storage_path: null,
           file_size: req.file.size,
           headers: parsed.headers,
           rows: parsed.rows,
@@ -122,7 +119,6 @@ function build(db, deps = {}) {
           preview: parsed.rows.slice(0, 25)
         });
       } catch (e) {
-        try { fs.unlinkSync(req.file.path); } catch {}
         res.status(400).json({ error: 'Failed to parse file: ' + e.message });
       }
     });
@@ -451,14 +447,34 @@ function build(db, deps = {}) {
 
   // --- Resend failed emails ---
   router.post('/jobs/:id/resend-emails', async (req, res) => {
-    const failed = await db.collection('bulk_records').updateMany(
-      { job_id: req.params.id, status: 'success', email_status: { $in: ['failed', 'queued'] } },
-      { $set: { email_status: 'sent' } }
-    );
+    const job = await db.collection('bulk_jobs').findOne({ id: req.params.id });
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    const template = await db.collection('templates').findOne({ id: job.template_id });
+    const records = await db.collection('bulk_records').find({
+      job_id: req.params.id, status: 'success', email_status: { $in: ['failed', 'queued'] }
+    }).limit(100).toArray();
+    let sent = 0;
+    let failed = 0;
+    for (const record of records) {
+      const cert = await db.collection('certificates').findOne({ cert_id: record.certificate_id });
+      if (!cert || !record.pdf_path || !fs.existsSync(record.pdf_path)) { failed++; continue; }
+      const result = await deliverCertificate({ cert, template, pdfBuffer: fs.readFileSync(record.pdf_path) });
+      const emailStatus = result.delivered ? 'sent' : 'failed';
+      await db.collection('bulk_records').updateOne({ _id: record._id }, { $set: {
+        email_status: emailStatus, email_id: result.email_id || null,
+        email_error: result.delivered ? null : result.error
+      } });
+      await db.collection('certificates').updateOne({ cert_id: record.certificate_id }, { $set: {
+        sent_email: result.delivered, email_status: emailStatus, email_id: result.email_id || null,
+        email_actual_recipient: result.actual_recipients?.[0] || null,
+        email_error: result.delivered ? null : result.error
+      } });
+      result.delivered ? sent++ : failed++;
+    }
     await db.collection('audit_logs').insertOne({
-      action: 'BULK_EMAILS_RESENT', job_id: req.params.id, count: failed.modifiedCount, timestamp: new Date().toISOString()
+      action: 'BULK_EMAILS_RESENT', job_id: req.params.id, count: sent, failed, timestamp: new Date().toISOString()
     });
-    res.json({ message: `Resent ${failed.modifiedCount} email(s)` });
+    res.json({ message: `Delivered ${sent} email(s); ${failed} failed.`, sent, failed, remaining: Math.max(0, records.length - 100) });
   });
 
   // --- Analytics ---

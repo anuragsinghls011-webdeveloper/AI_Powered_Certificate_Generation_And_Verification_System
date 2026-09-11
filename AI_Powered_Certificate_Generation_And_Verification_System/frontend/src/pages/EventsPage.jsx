@@ -1,10 +1,11 @@
 import React from 'react';
 import {
-  Calendar, Plus, Trash2, Award, Building2, Layers
+  Calendar, Plus, Trash2, Award, Building2, Layers, CheckCircle2, MailCheck, RefreshCw, Loader2
 } from 'lucide-react';
 
 export default function EventsPage({
-  events, newEvent, setNewEvent, onCreateEvent, onDeleteEvent,
+  events, newEvent, setNewEvent, onCreateEvent, onDeleteEvent, onCompleteEvent,
+  onRetryEventReport, completing, canComplete,
   setBulkData, bulkData, setActiveTab
 }) {
   return (
@@ -105,18 +106,29 @@ export default function EventsPage({
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {events.map((ev) => (
-              <div key={ev.id} className="p-5 rounded-2xl border border-slate-200 bg-slate-50/50 hover:border-brand-300 transition flex flex-col justify-between">
+              <div data-testid={`event-card-${ev.id}`} key={ev.id} className="p-5 rounded-2xl border border-slate-200 bg-slate-50/50 hover:border-brand-300 transition flex flex-col justify-between">
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-xs font-semibold bg-brand-100 text-brand-800 px-2.5 py-1 rounded-md">{ev.category}</span>
-                    <span className="text-xs text-slate-500">{ev.date}</span>
+                    <span data-testid={`event-date-${ev.id}`} className="text-xs text-slate-500">{ev.date}</span>
                   </div>
-                  <h4 className="font-bold text-slate-900 text-base">{ev.title}</h4>
+                  <h4 data-testid={`event-title-${ev.id}`} className="font-bold text-slate-900 text-base break-all">{ev.title}</h4>
                   <p className="text-xs text-slate-600 mt-1">{ev.description || 'No description provided.'}</p>
                   <p className="text-xs text-slate-500 mt-3 flex items-center gap-1 font-medium"><Building2 className="w-3.5 h-3.5" /> {ev.organizer} ({ev.location})</p>
+                  <div className="flex flex-wrap items-center gap-2 mt-4">
+                    <span data-testid={`event-status-${ev.id}`} className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-md ${ev.status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'}`}>
+                      <CheckCircle2 className="w-3.5 h-3.5" /> {ev.status === 'completed' ? 'Completed' : 'Active'}
+                    </span>
+                    {ev.status === 'completed' && (
+                      <span data-testid={`event-report-delivery-${ev.id}`} className="inline-flex items-center gap-1 text-xs text-slate-600">
+                        <MailCheck className="w-3.5 h-3.5" /> Reports: {deliveryLabel(ev.report_delivery?.status)}
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="mt-4 pt-3 border-t border-slate-200 flex justify-between items-center">
+                <div className="mt-4 pt-3 border-t border-slate-200 flex flex-wrap justify-between items-center gap-2">
                   <button 
+                    data-testid={`issue-certificates-${ev.id}`}
                     onClick={() => {
                       setBulkData({...bulkData, event_id: ev.id});
                       setActiveTab('bulk');
@@ -125,6 +137,26 @@ export default function EventsPage({
                   >
                     <Award className="w-4 h-4" /> Issue Certificates
                   </button>
+                  {canComplete && ev.status !== 'completed' && (
+                    <button
+                      data-testid={`complete-event-${ev.id}`}
+                      disabled={completing}
+                      onClick={() => onCompleteEvent(ev.id)}
+                      className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 disabled:opacity-50 flex items-center gap-1"
+                    >
+                      {completing ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />} Complete event
+                    </button>
+                  )}
+                  {canComplete && ev.report_delivery?.status === 'failed' && (
+                    <button
+                      data-testid={`retry-event-report-${ev.id}`}
+                      disabled={completing}
+                      onClick={() => onRetryEventReport(ev.id)}
+                      className="text-xs font-semibold text-amber-700 hover:text-amber-800 disabled:opacity-50 flex items-center gap-1"
+                    >
+                      <RefreshCw className="w-4 h-4" /> Retry reports
+                    </button>
+                  )}
                   <button 
                     data-testid={`delete-event-${ev.id}`}
                     onClick={() => onDeleteEvent(ev.id)}
@@ -141,4 +173,8 @@ export default function EventsPage({
       </div>
     </div>
   );
+}
+
+function deliveryLabel(status) {
+  return ({ not_started: 'Not started', queued: 'Queued', processing: 'Sending', sent: 'Sent', failed: 'Failed' })[status] || 'Pending';
 }

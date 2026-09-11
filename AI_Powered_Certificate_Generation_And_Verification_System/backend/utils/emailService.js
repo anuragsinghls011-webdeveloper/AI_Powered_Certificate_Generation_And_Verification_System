@@ -1,48 +1,101 @@
-// SendGrid email sender with dev-mode fallback: if SENDGRID_API_KEY is missing,
-// the "email" is logged and the link is returned to the API caller for testing.
+const { Resend } = require('resend');
 
-let sgMail = null;
-try { sgMail = require('@sendgrid/mail'); } catch { /* dep optional */ }
+let resendClient = null;
+let nextSendAt = 0;
+let sendChain = Promise.resolve();
 
-const APP_URL = () => process.env.FRONTEND_URL || process.env.APP_URL || 'http://localhost:3000';
-const SENDER = () => process.env.SENDER_EMAIL || 'no-reply@campuscert.local';
-const HAS_KEY = () => !!process.env.SENDGRID_API_KEY;
+const APP_URL = () => process.env.FRONTEND_URL || process.env.APP_URL;
+const HAS_KEY = () => Boolean(process.env.RESEND_API_KEY);
 
-if (HAS_KEY() && sgMail) sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+function deliveryConfig() {
+  const sender = process.env.SENDER_EMAIL;
+  const testMode = process.env.RESEND_TEST_MODE === 'true';
+  const testRecipient = process.env.RESEND_TEST_RECIPIENT;
+  if (!sender) throw new Error('SENDER_EMAIL is not configured');
+  if (testMode && !testRecipient) throw new Error('RESEND_TEST_RECIPIENT is not configured');
+  return { sender, testMode, testRecipient };
+}
 
-async function sendEmail({ to, subject, html, text }) {
-  if (!HAS_KEY() || !sgMail) {
-    // Dev-mode: log and return dev_link
-    console.log(`[EMAIL:DEV] to=${to} subject="${subject}"\n${text || html}`);
-    return { delivered: false, dev_mode: true };
-  }
+function client() {
+  if (!resendClient) resendClient = new Resend(process.env.RESEND_API_KEY);
+  return resendClient;
+}
+
+function scheduleSend(task) {
+  const queued = sendChain.then(async () => {
+    const wait = Math.max(0, nextSendAt - Date.now());
+    if (wait) await new Promise(resolve => setTimeout(resolve, wait));
+    nextSendAt = Date.now() + 550;
+    return task();
+  });
+  sendChain = queued.catch(() => {});
+  return queued;
+}
+
+async function sendEmail({ to, subject, html, text, attachments = [], idempotencyKey }) {
+  const intendedRecipients = (Array.isArray(to) ? to : [to]).filter(Boolean);
+  if (!intendedRecipients.length) return { delivered: false, error: 'No recipient email address' };
+  if (!HAS_KEY()) return { delivered: false, dev_mode: true, error: 'RESEND_API_KEY is not configured' };
+
   try {
-    await sgMail.send({ to, from: SENDER(), subject, html, text });
-    return { delivered: true, dev_mode: false };
-  } catch (err) {
-    console.error('[EMAIL:ERR]', err.message || err);
-    return { delivered: false, dev_mode: false, error: err.message || String(err) };
+    const { sender, testMode, testRecipient } = deliveryConfig();
+    const actualRecipients = testMode ? [testRecipient] : intendedRecipients;
+    const encodedAttachments = attachments.map(item => ({
+      filename: item.filename,
+      content: Buffer.isBuffer(item.content) ? item.content.toString('base64') : item.content
+    }));
+    const totalBytes = attachments.reduce((sum, item) => sum + (Buffer.isBuffer(item.content) ? item.content.length : 0), 0);
+    if (totalBytes > 30 * 1024 * 1024) throw new Error('Email attachments exceed the 30 MB application limit');
+
+    const result = await scheduleSend(() => client().emails.send({
+      from: sender,
+      to: actualRecipients,
+      subject,
+      html,
+      text,
+      attachments: encodedAttachments
+    }, idempotencyKey ? { idempotencyKey } : undefined));
+    if (result.error) throw new Error(result.error.message || 'Resend rejected the email');
+    return {
+      delivered: true,
+      dev_mode: false,
+      email_id: result.data?.id,
+      intended_recipients: intendedRecipients,
+      actual_recipients: actualRecipients,
+      redirected: testMode
+    };
+  } catch (error) {
+    console.error('[RESEND:ERR]', error.message || error);
+    return { delivered: false, dev_mode: false, error: error.message || String(error) };
   }
 }
 
 async function sendVerificationEmail(user, token) {
   const link = `${APP_URL()}/auth/verify-email?token=${token}`;
-  const subject = 'Verify your CampusCert Pro email';
-  const html = `<div style="font-family:sans-serif"><h2>Welcome, ${escapeHtml(user.name)}</h2><p>Confirm your email to activate your CampusCert Pro account.</p><p><a href="${link}" style="background:#2563eb;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none">Verify email</a></p><p>Or paste this link:<br><code>${link}</code></p></div>`;
-  const text = `Verify your email: ${link}`;
-  const result = await sendEmail({ to: user.email, subject, html, text });
+  const result = await sendEmail({
+    to: user.email,
+    subject: 'Verify your CampusCert email',
+    html: `<div style="font-family:Arial,sans-serif"><h2>Welcome, ${escapeHtml(user.name)}</h2><p>Confirm your email to activate your CampusCert account.</p><p><a href="${link}">Verify email</a></p></div>`,
+    text: `Verify your email: ${link}`,
+    idempotencyKey: `email-verification/${user.id}/${token.slice(0, 12)}`
+  });
   return { ...result, link };
 }
 
 async function sendPasswordResetEmail(user, token) {
   const link = `${APP_URL()}/auth/reset-password?token=${token}`;
-  const subject = 'Reset your CampusCert Pro password';
-  const html = `<div style="font-family:sans-serif"><h2>Password reset</h2><p>Someone requested a password reset for your account. This link expires in 1 hour.</p><p><a href="${link}" style="background:#dc2626;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none">Reset password</a></p><p>If you didn't request this, ignore this email.</p></div>`;
-  const text = `Reset your password: ${link}`;
-  const result = await sendEmail({ to: user.email, subject, html, text });
+  const result = await sendEmail({
+    to: user.email,
+    subject: 'Reset your CampusCert password',
+    html: `<div style="font-family:Arial,sans-serif"><h2>Password reset</h2><p>This link expires in one hour.</p><p><a href="${link}">Reset password</a></p></div>`,
+    text: `Reset your password: ${link}`,
+    idempotencyKey: `password-reset/${user.id}/${token.slice(0, 12)}`
+  });
   return { ...result, link };
 }
 
-function escapeHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+function escapeHtml(value) {
+  return String(value || '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+}
 
-module.exports = { sendEmail, sendVerificationEmail, sendPasswordResetEmail, HAS_KEY };
+module.exports = { sendEmail, sendVerificationEmail, sendPasswordResetEmail, HAS_KEY, escapeHtml };
