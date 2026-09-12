@@ -1,4 +1,4 @@
-# CampusCert Event Reports & Resend Delivery — Product Handoff
+# CampusCert — Product Handoff and Production Audit
 
 ## Original Problem Statement
 
@@ -88,3 +88,34 @@ The supplied architectural summary was read via its attachment URL before reposi
 ## Credentials
 
 Current local preview admin is recorded in `/app/memory/test_credentials.md`. Temporary role-test accounts are deleted by test teardown. No production credentials were changed.
+
+## Production Readiness Request — 2026-09-12
+
+User supplied a production-readiness master specification covering security, authorization/tenant isolation, JWT lifecycle, validation, certificate integrity/revocation/public verification, upload and spreadsheet safety, bounded durable/idempotent workloads, storage, privacy, observability, indexes, migrations, tests/load/security checks, CI/staging, backups and rollback. Preserve the Node/Express + React + native MongoDB modular monolith; use the architectural summary and targeted inspection, never read the entire repository or introduce speculative infrastructure.
+
+**Latest explicit instruction:** “Please read CODEBASE_SUMMARY.md and PRD.md to produce the targeted Critical/High/Medium/Low security audit. List out the findings clearly. Do not implement any code changes or fixes until we have reviewed the audit and agreed on the design for the highest-priority blockers.”
+
+### Phase 1 complete — AUDIT ONLY; remediation/design approval pending
+
+- Read the attached CODEBASE_SUMMARY.md (not present as a repository file) and this PRD, then inspected targeted entry points/security/data-processing modules. Read-only security review and focused corroboration completed.
+- Full report: `AI_Powered_Certificate_Generation_And_Verification_System/PRODUCTION_READINESS_AUDIT.md` — **1 Critical, 7 High, 16 Medium, 2 Low**. **Not ready for production launch.** This supersedes earlier feature-scoped health statements for production-readiness purposes.
+- Critical: legacy privileged APIs/bulk lack server-side permission/ownership checks. High: object-valued organization selectors can decouple membership from resolved organization; credentialed CORS reflects arbitrary origins; public signup grants shared-tenant editor privileges; missing Resend key conditionally exposes reset links; vulnerable upload/parser dependencies; unbounded expensive work; non-durable/non-idempotent bulk execution.
+- Other launch concerns: auth index initialization runs before DB connection and silently fails; access JWTs survive session revocation; weak/sequential certificate IDs without unique index; missing canonical integrity/revocation history; revoked certificates receive positive UI trust labels; public QR verification route is not implemented in this app; mutable/deletable historical templates/events; local PDFs/filename collisions; validation/export/observability/privacy/recovery gaps.
+- Corrected handoff assumptions: spreadsheet uploads already use memory + temporary parsing cleanup, not persistent multer.diskStorage; generated PDFs still use local filesystem. Summary's public UUID-ID verification claim does not match current implementation. Resend, not SendGrid, remains current provider.
+
+### Audit verification (non-mutating)
+
+- External OPTIONS confirmed arbitrary-origin credentialed CORS. Unauthenticated certificate GET returned401. `/api/health` and `/api/ready` returned404.
+- MongoDB index inspection confirmed missing auth uniqueness/TTL indexes and missing unique cert_id index. Aggregate ownership counts:9 events(1 unowned),2 templates(2 unowned),16 certificates(all lack direct organization_id),3 uploads(all unowned). No ownership values inferred or changed.
+- Read-only dependency audits: backend11 dependency-path findings(5 high/5 moderate/1 low;9 unique advisory pairs); frontend63(39 high/21 moderate/3 low;34 unique pairs, many build/dev transitive). No packages changed. Reachability/exploit tests remain pending.
+- Limited redacted tracked-file secret scan found no provider-key/private-key/credentialed-MongoURI literal matches; test password literals exist. Only tracked env file found contains nonsecret BROWSERSLIST. Git-history/external-secret checks were not performed.
+- Historical test evidence discrepancy: PRD previously records corrected9/9 Resend success, but retained iteration_4 and Resend XML still show the initial3/9 failures. Do not claim current email failure or fresh success from these artifacts. No emails were sent; no active browser/destructive/load/regression tests were run in audit. Sandbox uses real Resend; no mocked integration was added.
+- Application code, APIs, DB records, credentials, environment, dependencies and infrastructure were not changed. Only audit/PRD documentation was added/updated. No new auth credentials or test accounts created.
+
+### Prioritized next work — requires user design approval
+
+- **P0:** Review audit; approve tenant resolver + full private-route RBAC/ownership, safe onboarding/bootstrap policy, strict CORS/CSRF and recovery-link handling. Prepare reviewed legacy ownership migration without assigning unknown owners. Add isolated two-organization negative tests when implementation is approved.
+- **P0 next increment:** Awaited index migrations; immediate session revocation/atomic rotation; high-entropy IDs and backward-compatible certificate integrity/public verification design; reachable dependency fixes and resource bounds. Medium-severity findings may still be launch blockers for this domain.
+- **P1:** Central validation/errors/audit, secure parsers/exports, indexed pagination, durable jobs/idempotency/outbox, private artifact storage, configuration/shutdown/health/metrics, retention policy and comprehensive security/lifecycle tests.
+- **P2 / launch gates:** Isolated load measurement, CI/staging, verified production sender, least-privilege/TLS/storage configuration, backup RPO/RTO and restore/rollback drills, updated architecture/API/environment/runbooks. No Redis/microservices/platform changes without demonstrated need.
+- Product enhancement suggestion after hardening: a privacy-minimized verification receipt showing certificate status and the time checked, to improve employer trust without exposing recipient email.
