@@ -396,6 +396,9 @@ function drawTextBlock(doc, field, values, scaleX, scaleY, px, py) {
 // ---------------------------------------------------------------------------
 
 async function renderCertificatePdfBuffer(template, values) {
+  if (require('worker_threads').isMainThread) {
+    return require('../../services/isolatedWork').runIsolated('pdf', { template, values });
+  }
   // values is an object keyed by field type:
   //   { recipient_name, email, event_title, issue_date, certificate_id, verification_url,
   //     organization_name, issuer_name, issuer_title, rank, score, ... }

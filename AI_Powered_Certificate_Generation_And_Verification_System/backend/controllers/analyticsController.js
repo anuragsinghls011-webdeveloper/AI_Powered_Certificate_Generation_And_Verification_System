@@ -1,17 +1,19 @@
 const { getCertificatesCol, getEventsCol, getTemplatesCol } = require('../config/db');
+const { scope, templateScope } = require('../utils/tenant');
 
 // GET /api/analytics
 async function getAnalytics(req, res) {
   try {
     const certificatesCol = getCertificatesCol();
 
-    const totalCerts = await certificatesCol.countDocuments();
-    const totalEvents = await getEventsCol().countDocuments();
-    const totalTemplates = await getTemplatesCol().countDocuments();
-    const revokedCerts = await certificatesCol.countDocuments({ status: 'Revoked' });
+    const totalCerts = await certificatesCol.countDocuments(scope(req));
+    const totalEvents = await getEventsCol().countDocuments(scope(req));
+    const totalTemplates = await getTemplatesCol().countDocuments(templateScope(req));
+    const revokedCerts = await certificatesCol.countDocuments({ ...scope(req), status: 'Revoked' });
     const activeCerts = totalCerts - revokedCerts;
 
     const pipeline = [
+      { $match: scope(req) },
       { $group: { _id: '$event_category', count: { $sum: 1 } } }
     ];
     const categoryStats = await certificatesCol.aggregate(pipeline).toArray();

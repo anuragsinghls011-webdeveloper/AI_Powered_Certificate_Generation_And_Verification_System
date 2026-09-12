@@ -182,6 +182,7 @@ export default function BulkStudio({ notify }) {
       const res = await axios.post(`${API}/bulk/jobs`, {
         upload_id: uploadInfo.upload_id,
         template_id: selectedTemplateId,
+        event_id: selectedEventId,
         mapping, defaults,
         settings: jobSettings,
         skip_invalid: jobSettings.skip_invalid,
@@ -476,7 +477,7 @@ function UploadStep({ uploading, uploadInfo, dragOver, setDragOver, onFile, limi
           <input
             data-testid="bs-file-input"
             type="file"
-            accept=".csv,.xlsx,.xls"
+            accept=".csv,.xlsx"
             onChange={(e) => onFile(e.target.files?.[0])}
             className="hidden"
             disabled={uploading}

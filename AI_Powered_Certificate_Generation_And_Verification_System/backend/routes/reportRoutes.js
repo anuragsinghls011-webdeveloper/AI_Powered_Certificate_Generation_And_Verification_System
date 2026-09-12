@@ -1,6 +1,7 @@
 const express = require('express');
 const mw = require('../middleware/authMiddleware');
 const controller = require('../controllers/reportController');
+const { workLimit } = require('../services/workload');
 
 const router = express.Router();
 let activeDownloads = 0;
@@ -30,7 +31,7 @@ router.use((req, res, next) => {
 router.use(mw.requirePermission('events.read'), mw.requirePermission('certificates.read'));
 router.get('/events', controller.listEvents);
 router.get('/events/:event_id/summary', controller.eventSummary);
-router.get('/events/:event_id', reportCapacity, controller.downloadReport);
+router.get('/events/:event_id', workLimit('report'), reportCapacity, controller.downloadReport);
 router.use((err, req, res, next) => {
   if (res.headersSent) return next(err);
   console.error('Event report request failed:', err.name);

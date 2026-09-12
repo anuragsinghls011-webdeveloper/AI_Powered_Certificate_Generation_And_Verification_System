@@ -35,6 +35,7 @@ function authenticateUser({ optional = false } = {}) {
 
 function resolveOrganization({ optional = false } = {}) {
   return async (req, res, next) => {
+    try {
     if (!req.user) {
       if (optional) return next();
       return res.status(401).json({ error: 'Not authenticated' });
@@ -43,6 +44,11 @@ function resolveOrganization({ optional = false } = {}) {
       req.header('x-organization-id') ||
       req.query.org ||
       req.user.current_org_id;
+    for (const value of [req.header('x-organization-id'), req.query.org, requestedOrgId]) {
+      if (value !== undefined && (typeof value !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(value))) {
+        return res.status(400).json({ error: 'Invalid organization ID' });
+      }
+    }
     if (!requestedOrgId) {
       if (optional) return next();
       return res.status(400).json({ error: 'No organization selected' });
@@ -57,11 +63,12 @@ function resolveOrganization({ optional = false } = {}) {
       if (optional) return next();
       return res.status(403).json({ error: 'Not a member of this organization' });
     }
-    const organization = await db.collection('organizations').findOne({ id: requestedOrgId });
+    const organization = await db.collection('organizations').findOne({ id: membership.organization_id });
     if (!organization) return res.status(404).json({ error: 'Organization not found' });
     req.membership = membership;
     req.organization = organization;
     return next();
+    } catch (err) { return next(err); }
   };
 }
 

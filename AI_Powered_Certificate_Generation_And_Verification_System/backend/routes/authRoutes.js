@@ -14,6 +14,7 @@ const {
 const { hashPassword, verifyPassword, validatePasswordStrength } = require('../utils/passwords');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../utils/emailService');
 const { logAudit } = require('../utils/audit');
+const { workLimit } = require('../services/workload');
 const { ROLE_PERMISSIONS, permissionsForMembership } = require('../utils/rbac');
 
 function nowIso() { return new Date().toISOString(); }
@@ -69,29 +70,6 @@ const mw = require('../middleware/authMiddleware');
     } catch (e) { /* indexes may already exist */ }
   })();
 
-  // Ensure a default organization exists — first user becomes super_admin of it.
-  async function ensureDefaultOrg(creatorId) {
-    let org = await getDB().collection('organizations').findOne({ is_default: true });
-    if (!org) {
-      const doc = {
-        id: uuidv4(),
-        name: process.env.DEFAULT_ORG_NAME || 'CampusCert Demo',
-        slug: 'default',
-        is_default: true,
-        plan: 'free',
-        created_at: nowIso(),
-        created_by: creatorId
-      };
-      await getDB().collection('organizations').insertOne(doc);
-      org = doc;
-    }
-    return org;
-  }
-
-  // Determine whether this is the very first user in the whole system.
-  async function isFirstUser() {
-    return (await getDB().collection('users').countDocuments()) === 0;
-  }
 
   // Brute force helpers
   async function checkLockout(identifier) {
@@ -132,86 +110,8 @@ const mw = require('../middleware/authMiddleware');
   });
 
   // ================= REGISTER =================
-  router.post('/register', registerLimiter, async (req, res) => {
-    try {
-      const email = String(req.body?.email || '').trim().toLowerCase();
-      const password = String(req.body?.password || '');
-      const name = String(req.body?.name || '').trim() || email.split('@')[0];
-
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Invalid email' });
-      const strengthErr = validatePasswordStrength(password);
-      if (strengthErr) return res.status(400).json({ error: strengthErr });
-
-      const existing = await getDB().collection('users').findOne({ email });
-      if (existing) return res.status(409).json({ error: 'Email already registered' });
-
-      const firstUser = await isFirstUser();
-      const userId = uuidv4();
-      const passwordHash = await hashPassword(password);
-
-      const org = await ensureDefaultOrg(userId);
-
-      const userDoc = {
-        id: userId, email, name, password_hash: passwordHash,
-        email_verified: false, status: 'active',
-        current_org_id: org.id,
-        created_at: nowIso(), updated_at: nowIso()
-      };
-      await getDB().collection('users').insertOne(userDoc);
-
-      const role = firstUser ? 'super_admin' : 'editor';
-      await getDB().collection('organization_memberships').insertOne({
-        id: uuidv4(),
-        user_id: userId, organization_id: org.id,
-        role, permissions: [], status: 'active',
-        joined_at: nowIso(), invited_by: null
-      });
-
-      // Verification token
-      const rawToken = randomTokenUrl64();
-      await getDB().collection('email_verification_tokens').insertOne({
-        user_id: userId,
-        token_hash: sha256(rawToken),
-        expires_at: inSecondsFromNow(60 * 60 * 24), // 24h
-        used_at: null, created_at: nowIso()
-      });
-      const emailResult = await sendVerificationEmail(userDoc, rawToken);
-
-      await logAudit(getDB(), {
-        action: 'AUTH_REGISTER', user_id: userId, organization_id: org.id,
-        role, ip: req.ip, user_agent: req.headers['user-agent'] || ''
-      });
-
-      // Auto-login on register (issue tokens + set cookies)
-      const membership = await getDB().collection('organization_memberships').findOne({ user_id: userId, organization_id: org.id });
-      const sessionId = uuidv4();
-      const { token: refresh, jti } = generateRefreshToken(userDoc, sessionId);
-      await getDB().collection('sessions').insertOne({
-        id: sessionId, user_id: userId, jti, token_hash: sha256(refresh),
-        ip: req.ip, user_agent: req.headers['user-agent'] || '',
-        created_at: nowIso(), last_used_at: nowIso(),
-        expires_at: inSecondsFromNow(REFRESH_TOKEN_TTL_ENV()),
-        revoked_at: null, rotated_from: null
-      });
-      const access = signAccessToken(userDoc, membership);
-      setAuthCookies(res, access, refresh);
-
-      return res.json({
-        user: sanitizeUser(userDoc),
-        organization: org,
-        membership: { ...membership, permissions: permissionsForMembership(membership) },
-        access_token: access,
-        // Dev-mode: expose the link so testing agent / user can verify without a real inbox.
-        email_verification: {
-          delivered: emailResult.delivered,
-          dev_mode: emailResult.dev_mode,
-          link: emailResult.dev_mode ? emailResult.link : undefined
-        }
-      });
-    } catch (err) {
-      console.error('register error', err);
-      res.status(500).json({ error: err.message });
-    }
+  router.post('/register', registerLimiter, (req, res) => {
+    res.status(403).json({ error: 'Public registration is disabled. Contact your administrator.', code: 'REGISTRATION_DISABLED' });
   });
 
   function REFRESH_TOKEN_TTL_ENV() {
@@ -455,7 +355,7 @@ const mw = require('../middleware/authMiddleware');
     res.json({ message: 'Email verified' });
   });
 
-  router.post('/resend-verification', mw.authenticateUser(), async (req, res) => {
+  router.post('/resend-verification', mw.authenticateUser(), workLimit('auth-email'), async (req, res) => {
     if (req.user.email_verified) return res.status(400).json({ error: 'Email already verified' });
     const rawToken = randomTokenUrl64();
     await getDB().collection('email_verification_tokens').insertOne({
@@ -465,13 +365,12 @@ const mw = require('../middleware/authMiddleware');
     const emailResult = await sendVerificationEmail(req.user, rawToken);
     res.json({
       message: 'Verification email sent',
-      dev_mode: emailResult.dev_mode,
-      link: emailResult.dev_mode ? emailResult.link : undefined
+      delivered: Boolean(emailResult.delivered)
     });
   });
 
   // ================= FORGOT / RESET PASSWORD =================
-  router.post('/forgot-password', forgotLimiter, async (req, res) => {
+  router.post('/forgot-password', forgotLimiter, workLimit('auth-email'), async (req, res) => {
     const email = String(req.body?.email || '').trim().toLowerCase();
     // Always respond OK to avoid email enumeration
     const user = await getDB().collection('users').findOne({ email });
@@ -483,11 +382,8 @@ const mw = require('../middleware/authMiddleware');
       });
       const emailResult = await sendPasswordResetEmail(user, rawToken);
       await logAudit(getDB(), { action: 'AUTH_PASSWORD_RESET_REQUESTED', user_id: user.id, ip: req.ip });
-      // In dev mode, surface the link so testing agent can verify.
       return res.json({
-        message: 'If that account exists, a reset email has been sent.',
-        dev_mode: emailResult.dev_mode,
-        link: emailResult.dev_mode ? emailResult.link : undefined
+        message: 'If that account exists, a reset email has been sent.'
       });
     }
     res.json({ message: 'If that account exists, a reset email has been sent.' });
@@ -589,6 +485,10 @@ const mw = require('../middleware/authMiddleware');
       // Prevent a non-super-admin from creating super-admins
       if (role === 'super_admin' && req.membership.role !== 'super_admin') {
         return res.status(403).json({ error: 'Only super_admin can grant super_admin' });
+      }
+      const target = await getDB().collection('organization_memberships').findOne({ user_id: req.params.userId, organization_id: req.membership.organization_id });
+      if (req.params.userId === req.user.id || (target?.role === 'super_admin' && req.membership.role !== 'super_admin')) {
+        return res.status(403).json({ error: 'This role change is not permitted' });
       }
       const result = await getDB().collection('organization_memberships').updateOne(
         { user_id: req.params.userId, organization_id: req.membership.organization_id },
