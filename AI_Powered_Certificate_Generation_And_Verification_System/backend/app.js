@@ -14,7 +14,9 @@ const bulkModule = require('./modules/bulkGeneration/routes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
-const trustProxyHops = Number(process.env.TRUST_PROXY_HOPS);
+const trustProxyHops = process.env.TRUST_PROXY_HOPS
+  ? Number(process.env.TRUST_PROXY_HOPS)
+  : 1;
 if (!Number.isInteger(trustProxyHops) || trustProxyHops < 1) {
   throw new Error('TRUST_PROXY_HOPS must be a positive integer');
 }
