@@ -1,8 +1,10 @@
 const { Resend } = require('resend');
+const limits = require('../config/security');
 
 let resendClient = null;
 let nextSendAt = 0;
 let sendChain = Promise.resolve();
+let queuedSends = 0;
 
 const APP_URL = () => process.env.FRONTEND_URL || process.env.APP_URL;
 const HAS_KEY = () => Boolean(process.env.RESEND_API_KEY);
@@ -22,6 +24,8 @@ function client() {
 }
 
 function scheduleSend(task) {
+  if (queuedSends >= limits.queueLimit) return Promise.reject(new Error('Email capacity reached'));
+  queuedSends++;
   const queued = sendChain.then(async () => {
     const wait = Math.max(0, nextSendAt - Date.now());
     if (wait) await new Promise(resolve => setTimeout(resolve, wait));
@@ -29,13 +33,13 @@ function scheduleSend(task) {
     return task();
   });
   sendChain = queued.catch(() => {});
-  return queued;
+  return queued.finally(() => { queuedSends--; });
 }
 
 async function sendEmail({ to, subject, html, text, attachments = [], idempotencyKey }) {
   const intendedRecipients = (Array.isArray(to) ? to : [to]).filter(Boolean);
   if (!intendedRecipients.length) return { delivered: false, error: 'No recipient email address' };
-  if (!HAS_KEY()) return { delivered: false, dev_mode: true, error: 'RESEND_API_KEY is not configured' };
+  if (!HAS_KEY()) return { delivered: false, error: 'Email service is unavailable' };
 
   try {
     const { sender, testMode, testRecipient } = deliveryConfig();
@@ -47,14 +51,14 @@ async function sendEmail({ to, subject, html, text, attachments = [], idempotenc
     const totalBytes = attachments.reduce((sum, item) => sum + (Buffer.isBuffer(item.content) ? item.content.length : 0), 0);
     if (totalBytes > 30 * 1024 * 1024) throw new Error('Email attachments exceed the 30 MB application limit');
 
-    const result = await scheduleSend(() => client().emails.send({
+    const result = await scheduleSend(() => require('../services/workload').withSlot('email', () => client().emails.send({
       from: sender,
       to: actualRecipients,
       subject,
       html,
       text,
       attachments: encodedAttachments
-    }, idempotencyKey ? { idempotencyKey } : undefined));
+    }, { idempotencyKey, signal: AbortSignal.timeout(limits.workTimeout) })));
     if (result.error) throw new Error(result.error.message || 'Resend rejected the email');
     return {
       delivered: true,
@@ -79,7 +83,7 @@ async function sendVerificationEmail(user, token) {
     text: `Verify your email: ${link}`,
     idempotencyKey: `email-verification/${user.id}/${token.slice(0, 12)}`
   });
-  return { ...result, link };
+  return result;
 }
 
 async function sendPasswordResetEmail(user, token) {
@@ -91,7 +95,7 @@ async function sendPasswordResetEmail(user, token) {
     text: `Reset your password: ${link}`,
     idempotencyKey: `password-reset/${user.id}/${token.slice(0, 12)}`
   });
-  return { ...result, link };
+  return result;
 }
 
 function escapeHtml(value) {

@@ -3,7 +3,7 @@ const router = express.Router();
 const { getAllEvents, createEvent, deleteEvent, completeEvent, retryEventReport } = require('../controllers/eventController');
 const { resolveOrganization, requirePermission } = require('../middleware/authMiddleware');
 
-router.get('/', getAllEvents);
+router.get('/', requirePermission('events.read'), getAllEvents);
 // Bind new events to a verified membership, never to a client-supplied owner.
 router.post('/', (req, res, next) => {
   Promise.resolve(resolveOrganization()(req, res, next)).catch(() =>
@@ -17,6 +17,6 @@ const adminEventAction = [
 ];
 router.post('/:id/complete', ...adminEventAction, completeEvent);
 router.post('/:id/report-delivery/retry', ...adminEventAction, retryEventReport);
-router.delete('/:id', deleteEvent);
+router.delete('/:id', requirePermission('events.delete'), deleteEvent);
 
 module.exports = router;

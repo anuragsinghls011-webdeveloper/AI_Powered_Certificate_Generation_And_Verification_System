@@ -1,499 +1,191 @@
-// Bulk certificate generation routes.
-// Mounted at /api/bulk under the main server. See server.js.
-
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
-const crypto = require('crypto');
 const express = require('express');
 const multer = require('multer');
 const archiver = require('archiver');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
 const XLSX = require('xlsx');
-const { parseFile } = require('./spreadsheetParser');
+const limits = require('../../config/security');
+const { tenantDatabase, wrap, id, requirePermission } = require('../../utils/tenant');
+const { workLimit, streamLease } = require('../../services/workload');
+const { runIsolated } = require('../../services/isolatedWork');
+const { submitJob, publicJob } = require('../../services/jobSubmission');
 const { suggestMappings, REQUIRED } = require('./columnMapper');
 const { validateRows, invertMapping } = require('./validationEngine');
 const { renderCertificatePdfBuffer } = require('./certificateRenderer');
-const { processJob, requestCancel } = require('./jobQueue');
 const { deliverCertificate } = require('../../services/certificateEmailService');
 
-const CERT_DIR = process.env.CERT_STORAGE_DIR || '/app/backend/storage/certificates';
-const EXPORT_DIR = process.env.EXPORT_STORAGE_DIR || '/app/backend/storage/exports';
-[CERT_DIR, EXPORT_DIR].forEach((d) => fs.mkdirSync(d, { recursive: true }));
-
-const MAX_FILE_SIZE = parseInt(process.env.BULK_MAX_FILE_SIZE || '10485760', 10); // 10MB
-const MAX_ROWS = parseInt(process.env.BULK_MAX_ROWS || '5000', 10);
-const MAX_COLS = parseInt(process.env.BULK_MAX_COLS || '50', 10);
-
-// Uploaded spreadsheet rows are materialized in MongoDB; the source file only
-// exists in the OS temp directory while it is being parsed.
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: MAX_FILE_SIZE, files: 1 },
-  fileFilter: (req, file, cb) => {
-    const ext = (file.originalname.split('.').pop() || '').toLowerCase();
-    if (!['csv', 'xlsx', 'xls'].includes(ext)) {
-      return cb(new Error('Only CSV / XLSX / XLS files are supported'));
-    }
-    cb(null, true);
-  }
+  limits: { fileSize: limits.uploadBytes, files: 1, fields: 4, parts: 5, fieldSize: 1024 },
+  fileFilter: (req, file, cb) => cb(/\.(csv|xlsx)$/i.test(file.originalname) ? null : Object.assign(new Error('Only CSV and XLSX are supported'), { statusCode: 400 }), /\.(csv|xlsx)$/i.test(file.originalname))
 });
-
-function build(db, deps = {}) {
+const missing = () => Object.assign(new Error('Resource not found'), { statusCode: 404 });
+const object = value => value && typeof value === 'object' && !Array.isArray(value);
+function mappingInput(req) {
+  const { mapping = {}, defaults = {} } = req.body || {};
+  if (!object(mapping) || !object(defaults) || Object.keys(mapping).length > limits.columns || Object.values(defaults).some(v => typeof v !== 'string' || v.length > 500)) throw Object.assign(new Error('Invalid mapping or defaults'), { statusCode: 400 });
+  return { mapping, defaults };
+}
+function pageArgs(req) {
+  const page = Number(req.query.page || 1), size = Number(req.query.size || 25);
+  if (!Number.isSafeInteger(page) || page < 1 || !Number.isSafeInteger(size) || size < 1 || size > 200) throw Object.assign(new Error('Invalid pagination'), { statusCode: 400 });
+  return { page, size };
+}
+function build(rawDb) {
   const router = express.Router();
-  const verifyBase = process.env.APP_URL || 'https://example.com';
-
-  // --- Limits & config ---
-  router.get('/limits', (req, res) => {
-    res.json({
-      max_file_size: MAX_FILE_SIZE,
-      max_rows: MAX_ROWS,
-      max_columns: MAX_COLS,
-      supported_formats: ['csv', 'xlsx', 'xls']
-    });
+  // Every handler gets a deny-by-default organization-scoped database facade.
+  function route(method, url, permission, handler, cost) {
+    router[method](url, requirePermission(permission), ...(cost ? [workLimit(cost)] : []), wrap(async (req, res) => {
+      if (req.params.id) id(req.params.id);
+      return handler(req, res, tenantDatabase(rawDb, req));
+    }));
+  }
+  route('get', '/limits', 'bulk.read', (req, res) => res.json({ max_file_size: limits.uploadBytes, max_rows: limits.rows, max_columns: limits.columns, supported_formats: ['csv', 'xlsx'] }));
+  route('get', '/sample-template', 'bulk.read', (req, res) => {
+    const rows = [['Full Name', 'Email', 'Event', 'Department', 'Rank', 'Score', 'Issue Date'], ['Sample Recipient', 'recipient@example.com', 'Workshop', 'CSE', 'Participant', '90', '2026-09-01']];
+    const sheet = XLSX.utils.aoa_to_sheet(rows);
+    if (req.query.format === 'xlsx') {
+      const book = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(book, sheet, 'Participants');
+      res.type('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet').attachment('bulk-participants-template.xlsx').send(XLSX.write(book, { type: 'buffer', bookType: 'xlsx' }));
+    } else res.type('text/csv').attachment('bulk-participants-template.csv').send(XLSX.utils.sheet_to_csv(sheet));
   });
-
-  // --- Sample CSV / XLSX templates ---
-  router.get('/sample-template', (req, res) => {
-    const fmt = String(req.query.format || 'csv').toLowerCase();
-    const headers = ['Full Name', 'Email', 'Event', 'Department', 'Rank', 'Score', 'Issue Date'];
-    const sampleRows = [
-      ['Anurag Singh', 'anurag@example.com', 'AI Workshop 2026', 'CSE', 'First Place', '92', '2026-08-15'],
-      ['Priya Sharma', 'priya@example.com', 'AI Workshop 2026', 'CSE', 'Second Place', '89', '2026-08-15'],
-      ['Rahul Kumar', 'rahul@example.com', 'AI Workshop 2026', 'IT', 'Participant', '76', '2026-08-15']
-    ];
-    if (fmt === 'xlsx') {
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleRows]);
-      XLSX.utils.book_append_sheet(wb, ws, 'Participants');
-      const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', 'attachment; filename=bulk-participants-template.xlsx');
-      return res.send(buf);
-    }
-    const lines = [headers.join(','), ...sampleRows.map(r => r.map((c) => /[",\n]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c).join(','))];
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename=bulk-participants-template.csv');
-    res.send(lines.join('\n'));
+  route('post', '/upload', 'bulk.create', async (req, res, db) => {
+    await new Promise((resolve, reject) => upload.single('file')(req, res, error => error ? reject(Object.assign(error, { statusCode: 413 })) : resolve()));
+    if (!req.file) throw Object.assign(new Error('No file uploaded'), { statusCode: 400 });
+    const parsed = await runIsolated('parse', { buffer: req.file.buffer, name: req.file.originalname });
+    const uploadId = randomUUID();
+    await db.collection('bulk_uploads').insertOne({ id: uploadId, original_name: req.file.originalname, storage_path: null, file_size: req.file.size, headers: parsed.headers, rows: parsed.rows, row_count: parsed.rows.length, created_at: new Date().toISOString() });
+    res.json({ upload_id: uploadId, file_name: req.file.originalname, file_size: req.file.size, headers: parsed.headers, row_count: parsed.rows.length, preview: parsed.rows.slice(0, 25) });
+  }, 'upload');
+  route('get', '/uploads/:id/preview', 'bulk.read', async (req, res, db) => {
+    const doc = await db.collection('bulk_uploads').findOne({ id: req.params.id }); if (!doc) throw missing();
+    const { page, size } = pageArgs(req);
+    res.json({ file_name: doc.original_name, headers: doc.headers, total: doc.row_count, page, size, rows: doc.rows.slice((page - 1) * size, page * size) });
   });
-
-  // --- Upload & parse ---
-  router.post('/upload', (req, res) => {
-    upload.single('file')(req, res, async (err) => {
-      if (err) return res.status(400).json({ error: err.message });
-      if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-
-      try {
-        const ext = (req.file.originalname.split('.').pop() || '').toLowerCase();
-        const tempPath = path.join(os.tmpdir(), `${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${ext}`);
-        fs.writeFileSync(tempPath, req.file.buffer);
-        let parsed;
-        try { parsed = parseFile(tempPath, req.file.originalname); }
-        finally { try { fs.unlinkSync(tempPath); } catch {} }
-        if (parsed.headers.length > MAX_COLS) {
-          return res.status(400).json({ error: `Too many columns (max ${MAX_COLS})` });
-        }
-        if (parsed.rows.length > MAX_ROWS) {
-          return res.status(400).json({ error: `Too many rows (max ${MAX_ROWS})` });
-        }
-
-        // Persist parsed rows to a temp payload doc
-        const uploadId = uuidv4();
-        await db.collection('bulk_uploads').insertOne({
-          id: uploadId,
-          original_name: req.file.originalname,
-          storage_path: null,
-          file_size: req.file.size,
-          headers: parsed.headers,
-          rows: parsed.rows,
-          row_count: parsed.rows.length,
-          created_at: new Date().toISOString()
-        });
-
-        res.json({
-          upload_id: uploadId,
-          file_name: req.file.originalname,
-          file_size: req.file.size,
-          headers: parsed.headers,
-          row_count: parsed.rows.length,
-          preview: parsed.rows.slice(0, 25)
-        });
-      } catch (e) {
-        res.status(400).json({ error: 'Failed to parse file: ' + e.message });
-      }
-    });
-  });
-
-  // --- Preview a paginated slice ---
-  router.get('/uploads/:id/preview', async (req, res) => {
-    const doc = await db.collection('bulk_uploads').findOne({ id: req.params.id }, { projection: { _id: 0 } });
-    if (!doc) return res.status(404).json({ error: 'Upload not found' });
-    const page = Math.max(1, parseInt(req.query.page || '1', 10));
-    const size = Math.min(200, Math.max(1, parseInt(req.query.size || '25', 10)));
-    const start = (page - 1) * size;
-    res.json({
-      file_name: doc.original_name,
-      headers: doc.headers,
-      total: doc.row_count,
-      page, size,
-      rows: doc.rows.slice(start, start + size)
-    });
-  });
-
-  // --- Auto-suggest mapping ---
-  router.post('/uploads/:id/suggest-mapping', async (req, res) => {
-    const doc = await db.collection('bulk_uploads').findOne({ id: req.params.id });
-    if (!doc) return res.status(404).json({ error: 'Upload not found' });
-    const templateId = req.body?.template_id;
-    let template = null;
-    if (templateId) template = await db.collection('templates').findOne({ id: templateId });
-
-    // Also check saved mappings for a match
-    const savedMappings = await db.collection('bulk_saved_mappings').find({}).toArray();
-    const savedMatch = savedMappings.find((m) => {
-      const savedHeaders = Object.keys(m.mapping || {}).sort().join('|');
-      const currentHeaders = [...doc.headers].sort().join('|');
-      return savedHeaders === currentHeaders;
-    });
-
+  route('post', '/uploads/:id/suggest-mapping', 'bulk.read', async (req, res, db) => {
+    const doc = await db.collection('bulk_uploads').findOne({ id: req.params.id }); if (!doc) throw missing();
+    const template = req.body.template_id ? await db.collection('templates').findOne({ id: id(req.body.template_id) }) : null;
+    if (req.body.template_id && !template) throw missing();
+    const saved = await db.collection('bulk_saved_mappings').find({}).toArray();
+    const match = saved.find(m => Object.keys(m.mapping || {}).sort().join('|') === [...doc.headers].sort().join('|'));
     const auto = suggestMappings(doc.headers, template?.fields || []);
-    res.json({
-      auto_suggestions: auto.suggestions,
-      unresolved_required: auto.unresolvedRequired,
-      required_fields: auto.requiredFields,
-      saved_mapping_match: savedMatch ? { name: savedMatch.name, mapping: savedMatch.mapping } : null
-    });
+    res.json({ auto_suggestions: auto.suggestions, unresolved_required: auto.unresolvedRequired, required_fields: auto.requiredFields, saved_mapping_match: match ? { name: match.name, mapping: match.mapping } : null });
   });
-
-  // --- Validate ---
-  router.post('/uploads/:id/validate', async (req, res) => {
-    const doc = await db.collection('bulk_uploads').findOne({ id: req.params.id });
-    if (!doc) return res.status(404).json({ error: 'Upload not found' });
-
-    const mapping = req.body?.mapping || {};
-    const defaults = req.body?.defaults || {};
-    const requiredExtra = req.body?.required_fields || [];
-    const required = Array.from(new Set([...REQUIRED, ...requiredExtra]));
-
-    const result = validateRows(doc.rows, mapping, required, defaults);
-    // Cache validation on upload doc
-    await db.collection('bulk_uploads').updateOne({ id: req.params.id }, {
-      $set: { last_validation: result.summary, last_mapping: mapping, last_defaults: defaults }
-    });
+  route('post', '/uploads/:id/validate', 'bulk.create', async (req, res, db) => {
+    const doc = await db.collection('bulk_uploads').findOne({ id: req.params.id }); if (!doc) throw missing();
+    const { mapping, defaults } = mappingInput(req);
+    const required = Array.isArray(req.body.required_fields) ? req.body.required_fields.filter(v => typeof v === 'string').slice(0, limits.columns) : [];
+    const result = validateRows(doc.rows, mapping, [...new Set([...REQUIRED, ...required])], defaults);
+    await db.collection('bulk_uploads').updateOne({ id: doc.id }, { $set: { last_validation: result.summary, last_mapping: mapping, last_defaults: defaults } });
     res.json(result);
-  });
-
-  // --- Errors CSV export ---
-  router.get('/uploads/:id/errors.csv', async (req, res) => {
-    const doc = await db.collection('bulk_uploads').findOne({ id: req.params.id });
-    if (!doc) return res.status(404).json({ error: 'Upload not found' });
-    const mapping = doc.last_mapping || {};
-    const defaults = doc.last_defaults || {};
-    const required = Array.from(REQUIRED);
-    const { validated } = validateRows(doc.rows, mapping, required, defaults);
-    const inv = invertMapping(mapping);
+  }, 'validate');
+  route('get', '/uploads/:id/errors.csv', 'bulk.download', async (req, res, db) => {
+    const doc = await db.collection('bulk_uploads').findOne({ id: req.params.id }); if (!doc) throw missing();
+    const { validated } = validateRows(doc.rows, doc.last_mapping || {}, Array.from(REQUIRED), doc.last_defaults || {});
+    const inv = invertMapping(doc.last_mapping || {});
     const lines = ['Row,Name,Email,Error Code,Error Message'];
-    for (const r of validated) {
-      if (r.errors.length === 0) continue;
-      const name = String(r.row[inv.recipient_name] || '').replace(/"/g, '""');
-      const email = String(r.row[inv.email] || '').replace(/"/g, '""');
-      for (const err of r.errors) {
-        lines.push(`${r.rowNumber},"${name}","${email}",${err.code},"${err.message.replace(/"/g, '""')}"`);
-      }
-    }
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename=errors-${req.params.id}.csv`);
-    res.send(lines.join('\n'));
+    for (const row of validated) for (const err of row.errors) lines.push(`${row.rowNumber},"${String(row.row[inv.recipient_name] || '').replace(/"/g, '""')}","${String(row.row[inv.email] || '').replace(/"/g, '""')}",${err.code},"${err.message.replace(/"/g, '""')}"`);
+    res.type('text/csv').attachment(`errors-${req.params.id}.csv`).send(lines.join('\n'));
+  }, 'export');
+  route('post', '/preview-sample', 'bulk.create', async (req, res, db) => {
+    const doc = await db.collection('bulk_uploads').findOne({ id: id(req.body.upload_id) });
+    const template = await db.collection('templates').findOne({ id: id(req.body.template_id) });
+    if (!doc || !template) throw missing();
+    const { mapping, defaults } = mappingInput(req), inv = invertMapping(mapping);
+    const row = doc.rows[Math.min(doc.rows.length - 1, Math.max(0, Number(req.body.row_index) || 0))] || {};
+    const pick = key => row[inv[key]] || defaults[key] || '';
+    const pdf = await renderCertificatePdfBuffer(template, { recipient_name: pick('recipient_name') || 'Sample Recipient', email: pick('email'), event_title: pick('event_title'), issue_date: pick('issue_date'), rank: pick('rank'), score: pick('score'), certificate_id: 'CERT-SAMPLE', verification_url: `${process.env.APP_URL}/verify/CERT-SAMPLE`, issuer_name: template.issuer_name, issuer_title: template.issuer_title });
+    res.type('application/pdf').send(pdf);
+  }, 'pdf');
+  route('get', '/saved-mappings', 'bulk.read', async (req, res, db) => res.json(await db.collection('bulk_saved_mappings').find({}, { projection: { _id: 0 } }).toArray()));
+  route('post', '/saved-mappings', 'bulk.create', async (req, res, db) => {
+    const { mapping, defaults } = mappingInput(req);
+    const doc = { id: randomUUID(), name: String(req.body.name || 'Untitled Mapping').slice(0, 100), mapping, defaults, created_at: new Date().toISOString() };
+    await db.collection('bulk_saved_mappings').insertOne(doc); res.json({ message: 'Mapping saved', mapping: doc });
   });
-
-  // --- Sample certificate preview (before job) ---
-  router.post('/preview-sample', async (req, res) => {
-    try {
-      const { upload_id, template_id, mapping, defaults, row_index } = req.body || {};
-      const upload = await db.collection('bulk_uploads').findOne({ id: upload_id });
-      if (!upload) return res.status(404).json({ error: 'Upload not found' });
-      const template = await db.collection('templates').findOne({ id: template_id });
-      if (!template) return res.status(404).json({ error: 'Template not found' });
-
-      const inv = invertMapping(mapping || {});
-      const idx = Math.min(Math.max(0, parseInt(row_index || 0, 10)), upload.rows.length - 1);
-      const row = upload.rows[idx] || {};
-      const values = {
-        recipient_name: row[inv.recipient_name] || defaults?.recipient_name || 'Sample Recipient',
-        email: row[inv.email] || defaults?.email || '',
-        event_title: row[inv.event_title] || defaults?.event_title || 'Sample Event',
-        issue_date: row[inv.issue_date] || defaults?.issue_date || new Date().toISOString().split('T')[0],
-        organization_name: row[inv.organization_name] || defaults?.organization_name || '',
-        rank: row[inv.rank] || defaults?.rank || 'Participant',
-        certificate_id: 'CERT-SAMPLE-000000',
-        verification_url: `${verifyBase}/verify/CERT-SAMPLE-000000`,
-        issuer_name: template.issuer_name,
-        issuer_title: template.issuer_title
-      };
-      const pdf = await renderCertificatePdfBuffer(template, values);
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'inline; filename=sample-preview.pdf');
-      res.send(pdf);
-    } catch (e) {
-      res.status(500).json({ error: e.message });
-    }
-  });
-
-  // --- Saved mappings ---
-  router.get('/saved-mappings', async (req, res) => {
-    const rows = await db.collection('bulk_saved_mappings').find({}, { projection: { _id: 0 } }).toArray();
-    res.json(rows);
-  });
-  router.post('/saved-mappings', async (req, res) => {
-    const doc = {
-      id: uuidv4(),
-      name: req.body.name || 'Untitled Mapping',
-      mapping: req.body.mapping || {},
-      defaults: req.body.defaults || {},
-      created_at: new Date().toISOString()
-    };
-    await db.collection('bulk_saved_mappings').insertOne(doc);
-    const { _id, ...clean } = doc;
-    res.json({ message: 'Mapping saved', mapping: clean });
-  });
-  router.delete('/saved-mappings/:id', async (req, res) => {
-    const r = await db.collection('bulk_saved_mappings').deleteOne({ id: req.params.id });
-    if (r.deletedCount === 0) return res.status(404).json({ error: 'Not found' });
+  route('delete', '/saved-mappings/:id', 'bulk.create', async (req, res, db) => {
+    if (!(await db.collection('bulk_saved_mappings').deleteOne({ id: req.params.id })).deletedCount) throw missing();
     res.json({ message: 'Deleted' });
   });
-
-  // --- Create bulk job ---
-  router.post('/jobs', async (req, res) => {
-    try {
-      const {
-        upload_id, template_id, event_id,
-        mapping = {}, defaults = {}, settings = {},
-        skip_invalid = true, skip_duplicates = true
-      } = req.body || {};
-
-      const upload = await db.collection('bulk_uploads').findOne({ id: upload_id });
-      if (!upload) return res.status(404).json({ error: 'Upload not found' });
-      const template = await db.collection('templates').findOne({ id: template_id });
-      if (!template) return res.status(404).json({ error: 'Template not found' });
-
-      const validation = validateRows(upload.rows, mapping, Array.from(REQUIRED), defaults);
-      const includable = validation.validated.filter((r) => {
-        if (r.status === 'invalid') return !!settings.include_invalid;
-        if (r.status === 'duplicate') return !skip_duplicates;
-        return true;
-      });
-
-      if (includable.length === 0) {
-        return res.status(400).json({ error: 'No records to generate. Fix validation errors first.' });
-      }
-
-      const jobId = 'BG-' + Date.now() + '-' + crypto.randomBytes(3).toString('hex').toUpperCase();
-      const job = {
-        id: jobId,
-        source_upload_id: upload_id,
-        source_file_name: upload.original_name,
-        template_id,
-        event_id: event_id || null,
-        mapping,
-        defaults,
-        settings: {
-          email_enabled: settings.email_enabled !== false,
-          zip_enabled: settings.zip_enabled !== false,
-          filename_pattern: settings.filename_pattern || '{{recipient_name}}_{{certificate_id}}.pdf',
-          skip_invalid,
-          skip_duplicates,
-          include_invalid: !!settings.include_invalid
-        },
-        status: 'queued',
-        total_records: includable.length,
-        processed_records: 0,
-        successful_records: 0,
-        failed_records: 0,
-        validation_summary: validation.summary,
-        created_at: new Date().toISOString(),
-        started_at: null,
-        completed_at: null
-      };
-      await db.collection('bulk_jobs').insertOne(job);
-
-      // Materialise records
-      const recordDocs = includable.map((r) => ({
-        job_id: jobId,
-        row_number: r.rowNumber,
-        row: r.row,
-        status: 'pending',
-        certificate_id: null,
-        pdf_path: null,
-        pdf_hash: null,
-        email_status: null,
-        error: null,
-        created_at: new Date().toISOString(),
-        processed_at: null
-      }));
-      if (recordDocs.length > 0) await db.collection('bulk_records').insertMany(recordDocs);
-
-      // Audit log
-      await db.collection('audit_logs').insertOne({
-        action: 'BULK_GENERATION_STARTED',
-        job_id: jobId,
-        template_id,
-        total_records: includable.length,
-        timestamp: new Date().toISOString()
-      });
-
-      // Kick off worker (fire-and-forget)
-      setImmediate(() => {
-        processJob(db, jobId, verifyBase).catch(() => {});
-      });
-
-      res.json({ message: 'Bulk job queued', job_id: jobId, total_records: includable.length });
-    } catch (e) {
-      res.status(500).json({ error: e.message });
+  route('post', '/jobs', 'bulk.create', async (req, res, db) => {
+    const doc = await db.collection('bulk_uploads').findOne({ id: id(req.body.upload_id) }); if (!doc) throw missing();
+    const { mapping, defaults } = mappingInput(req);
+    if (req.body.settings?.include_invalid) throw Object.assign(new Error('Invalid records cannot be generated'), { statusCode: 400 });
+    const validation = validateRows(doc.rows, mapping, Array.from(REQUIRED), defaults);
+    const rows = validation.validated.filter(r => r.status.startsWith('valid') || (r.status === 'duplicate' && req.body.skip_duplicates === false && r.errors.every(e => e.code === 'DUPLICATE'))).map(r => r.row);
+    const job = await submitJob(req, { rows, mapping, defaults, event_id: req.body.event_id, template_id: req.body.template_id,
+      settings: { email_enabled: req.body.settings?.email_enabled !== false, zip_enabled: req.body.settings?.zip_enabled !== false }, source: { upload_id: doc.id, name: doc.original_name } });
+    res.status(202).json({ message: 'Bulk job queued', job_id: job.id, total_records: job.total_records });
+  }, 'generation');
+  route('get', '/jobs', 'bulk.read', async (req, res, db) => res.json((await db.collection('bulk_jobs').find({}).sort({ created_at: -1 }).limit(200).toArray()).map(publicJob)));
+  route('get', '/jobs/:id', 'bulk.read', async (req, res, db) => {
+    const job = await db.collection('bulk_jobs').findOne({ id: req.params.id }); if (!job) throw missing();
+    const groups = await db.collection('bulk_records').aggregate([{ $match: { job_id: job.id } }, { $group: { _id: '$status', count: { $sum: 1 } } }]).toArray();
+    res.json({ ...publicJob(job), record_counts: groups });
+  });
+  route('get', '/jobs/:id/records', 'bulk.read', async (req, res, db) => {
+    if (!await db.collection('bulk_jobs').findOne({ id: req.params.id })) throw missing();
+    const { page, size } = pageArgs(req), query = { job_id: req.params.id };
+    if (req.query.status) {
+      if (!['pending', 'success', 'failed'].includes(req.query.status)) throw Object.assign(new Error('Invalid status'), { statusCode: 400 });
+      query.status = req.query.status;
     }
-  });
-
-  // --- List jobs ---
-  router.get('/jobs', async (req, res) => {
-    const jobs = await db.collection('bulk_jobs').find({}, { projection: { _id: 0 } }).sort({ created_at: -1 }).limit(200).toArray();
-    res.json(jobs);
-  });
-
-  // --- Job detail ---
-  router.get('/jobs/:id', async (req, res) => {
-    const job = await db.collection('bulk_jobs').findOne({ id: req.params.id }, { projection: { _id: 0 } });
-    if (!job) return res.status(404).json({ error: 'Job not found' });
-    const recordCounts = await db.collection('bulk_records').aggregate([
-      { $match: { job_id: req.params.id } },
-      { $group: { _id: '$status', count: { $sum: 1 } } }
-    ]).toArray();
-    res.json({ ...job, record_counts: recordCounts });
-  });
-
-  // --- Job records (paginated) ---
-  router.get('/jobs/:id/records', async (req, res) => {
-    const status = req.query.status;
-    const page = Math.max(1, parseInt(req.query.page || '1', 10));
-    const size = Math.min(200, Math.max(1, parseInt(req.query.size || '50', 10)));
-    const q = { job_id: req.params.id };
-    if (status) q.status = status;
-    const total = await db.collection('bulk_records').countDocuments(q);
-    const rows = await db.collection('bulk_records').find(q, { projection: { _id: 0 } })
-      .skip((page - 1) * size).limit(size).toArray();
+    const total = await db.collection('bulk_records').countDocuments(query);
+    const rows = await db.collection('bulk_records').find(query, { projection: { _id: 0 } }).skip((page - 1) * size).limit(size).toArray();
     res.json({ total, page, size, rows });
   });
-
-  // --- Retry failed records ---
-  router.post('/jobs/:id/retry', async (req, res) => {
-    const job = await db.collection('bulk_jobs').findOne({ id: req.params.id });
-    if (!job) return res.status(404).json({ error: 'Job not found' });
-    const failed = await db.collection('bulk_records').countDocuments({ job_id: req.params.id, status: 'failed' });
-    if (failed === 0) return res.status(400).json({ error: 'No failed records to retry' });
-    // Reset counters and mark job processing
-    await db.collection('bulk_jobs').updateOne({ id: req.params.id }, {
-      $set: { status: 'processing', completed_at: null },
-      $inc: { failed_records: -failed, processed_records: -failed }
-    });
-    await db.collection('audit_logs').insertOne({
-      action: 'BULK_GENERATION_RETRIED', job_id: req.params.id, retried: failed, timestamp: new Date().toISOString()
-    });
-    setImmediate(() => processJob(db, req.params.id, verifyBase).catch(() => {}));
-    res.json({ message: `Retrying ${failed} failed records` });
-  });
-
-  // --- Cancel ---
-  router.post('/jobs/:id/cancel', async (req, res) => {
-    const job = await db.collection('bulk_jobs').findOne({ id: req.params.id });
-    if (!job) return res.status(404).json({ error: 'Job not found' });
-    if (['completed', 'completed_with_errors', 'cancelled', 'failed'].includes(job.status)) {
-      return res.status(400).json({ error: 'Job already finished' });
-    }
-    requestCancel(req.params.id);
-    await db.collection('audit_logs').insertOne({
-      action: 'BULK_GENERATION_CANCELLED', job_id: req.params.id, timestamp: new Date().toISOString()
-    });
+  route('post', '/jobs/:id/retry', 'bulk.create', async (req, res, db) => {
+    const job = await db.collection('bulk_jobs').findOne({ id: req.params.id }); if (!job) throw missing();
+    const result = await db.collection('bulk_jobs').updateOne({ id: job.id, status: { $in: ['failed', 'completed_with_errors'] }, attempts: { $lt: limits.jobAttempts }, submission_key: { $type: 'string' } }, { $set: { status: 'queued', next_attempt_at: new Date(), cancel_requested: false, completed_at: null } });
+    if (!result.modifiedCount) throw Object.assign(new Error('Job is not retryable or retry limit reached'), { statusCode: 409 });
+    await db.collection('audit_logs').insertOne({ action: 'BULK_GENERATION_RETRIED', job_id: job.id, timestamp: new Date().toISOString() });
+    res.status(202).json({ message: 'Retry queued' });
+  }, 'generation');
+  route('post', '/jobs/:id/cancel', 'bulk.cancel', async (req, res, db) => {
+    const job = await db.collection('bulk_jobs').findOne({ id: req.params.id }); if (!job) throw missing();
+    const result = await db.collection('bulk_jobs').updateOne({ id: job.id, status: { $in: ['queued', 'processing'] } }, { $set: { cancel_requested: true } });
+    if (!result.matchedCount) throw Object.assign(new Error('Job already finished'), { statusCode: 409 });
+    await db.collection('audit_logs').insertOne({ action: 'BULK_GENERATION_CANCELLED', job_id: job.id, timestamp: new Date().toISOString() });
     res.json({ message: 'Cancellation requested' });
   });
-
-  // --- ZIP download of certificates ---
-  router.get('/jobs/:id/download', async (req, res) => {
-    const job = await db.collection('bulk_jobs').findOne({ id: req.params.id });
-    if (!job) return res.status(404).json({ error: 'Job not found' });
-    const successful = await db.collection('bulk_records').find({ job_id: req.params.id, status: 'success' }).toArray();
-    if (successful.length === 0) return res.status(400).json({ error: 'No successful certificates to download yet' });
-
-    res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', `attachment; filename=${req.params.id}.zip`);
+  route('get', '/jobs/:id/download', 'bulk.download', async (req, res, db) => {
+    if (!await db.collection('bulk_jobs').findOne({ id: req.params.id })) throw missing();
+    const rows = await db.collection('bulk_records').find({ job_id: req.params.id, status: 'success' }).limit(limits.rows).toArray();
+    if (!rows.length) throw Object.assign(new Error('No successful certificates to download yet'), { statusCode: 400 });
+    if (rows.some(r => !r.pdf_path || !fs.existsSync(r.pdf_path))) throw Object.assign(new Error('Certificate artifact unavailable'), { statusCode: 409 });
+    await streamLease(res);
+    res.type('application/zip').attachment(`${req.params.id}.zip`);
     const archive = archiver('zip', { zlib: { level: 6 } });
-    archive.on('error', (err) => { try { res.status(500).end(); } catch {} });
-    archive.pipe(res);
-    for (const rec of successful) {
-      if (rec.pdf_path && fs.existsSync(rec.pdf_path)) {
-        archive.file(rec.pdf_path, { name: path.basename(rec.pdf_path) });
-      }
-    }
-    // Include a summary CSV
-    const summaryLines = ['certificate_id,recipient_name,email,status,email_status,pdf_hash'];
-    for (const rec of successful) {
-      const name = String(rec.row?.recipient_name || Object.values(rec.row || {})[0] || '').replace(/,/g, ' ');
-      summaryLines.push([rec.certificate_id, name, '', rec.status, rec.email_status || '', rec.pdf_hash || ''].join(','));
-    }
-    archive.append(summaryLines.join('\n'), { name: 'summary.csv' });
-    await archive.finalize();
-    // Audit
-    await db.collection('audit_logs').insertOne({
-      action: 'BULK_CERTIFICATES_DOWNLOADED', job_id: req.params.id, count: successful.length, timestamp: new Date().toISOString()
-    });
-  });
-
-  // --- Resend failed emails ---
-  router.post('/jobs/:id/resend-emails', async (req, res) => {
-    const job = await db.collection('bulk_jobs').findOne({ id: req.params.id });
-    if (!job) return res.status(404).json({ error: 'Job not found' });
-    const template = await db.collection('templates').findOne({ id: job.template_id });
-    const records = await db.collection('bulk_records').find({
-      job_id: req.params.id, status: 'success', email_status: { $in: ['failed', 'queued'] }
-    }).limit(100).toArray();
-    let sent = 0;
-    let failed = 0;
+    res.once('close', () => archive.abort()); archive.on('error', () => res.destroy()); archive.pipe(res);
+    for (const record of rows) archive.file(record.pdf_path, { name: `${record.certificate_id}.pdf` });
+    const lines = ['certificate_id,recipient_name,email,status,email_status,pdf_hash'];
+    for (const r of rows) lines.push([r.certificate_id, String(Object.values(r.row || {})[0] || '').replace(/,/g, ' '), '', r.status, r.email_status || '', r.pdf_hash || ''].join(','));
+    archive.append(lines.join('\n'), { name: 'summary.csv' }); await archive.finalize();
+    await db.collection('audit_logs').insertOne({ action: 'BULK_CERTIFICATES_DOWNLOADED', job_id: req.params.id, count: rows.length, timestamp: new Date().toISOString() });
+  }, 'export');
+  route('post', '/jobs/:id/resend-emails', 'certificates.create', async (req, res, db) => {
+    const job = await db.collection('bulk_jobs').findOne({ id: req.params.id }); if (!job) throw missing();
+    const records = await db.collection('bulk_records').find({ job_id: job.id, status: 'success', email_status: { $in: ['failed', 'queued'] } }).limit(limits.rateLimit).toArray();
+    let sent = 0, failed = 0;
     for (const record of records) {
       const cert = await db.collection('certificates').findOne({ cert_id: record.certificate_id });
       if (!cert || !record.pdf_path || !fs.existsSync(record.pdf_path)) { failed++; continue; }
+      const template = await db.collection('templates').findOne({ id: cert.template_id });
       const result = await deliverCertificate({ cert, template, pdfBuffer: fs.readFileSync(record.pdf_path) });
-      const emailStatus = result.delivered ? 'sent' : 'failed';
-      await db.collection('bulk_records').updateOne({ _id: record._id }, { $set: {
-        email_status: emailStatus, email_id: result.email_id || null,
-        email_error: result.delivered ? null : result.error
-      } });
-      await db.collection('certificates').updateOne({ cert_id: record.certificate_id }, { $set: {
-        sent_email: result.delivered, email_status: emailStatus, email_id: result.email_id || null,
-        email_actual_recipient: result.actual_recipients?.[0] || null,
-        email_error: result.delivered ? null : result.error
-      } });
+      const patch = { email_status: result.delivered ? 'sent' : 'failed', email_id: result.email_id || null, email_error: result.delivered ? null : 'Email delivery failed' };
+      await db.collection('bulk_records').updateOne({ _id: record._id }, { $set: patch });
+      await db.collection('certificates').updateOne({ cert_id: cert.cert_id }, { $set: { ...patch, sent_email: result.delivered } });
       result.delivered ? sent++ : failed++;
     }
-    await db.collection('audit_logs').insertOne({
-      action: 'BULK_EMAILS_RESENT', job_id: req.params.id, count: sent, failed, timestamp: new Date().toISOString()
-    });
-    res.json({ message: `Delivered ${sent} email(s); ${failed} failed.`, sent, failed, remaining: Math.max(0, records.length - 100) });
-  });
-
-  // --- Analytics ---
-  router.get('/analytics', async (req, res) => {
+    await db.collection('audit_logs').insertOne({ action: 'BULK_EMAILS_RESENT', job_id: job.id, count: sent, failed, timestamp: new Date().toISOString() });
+    res.json({ message: `Accepted ${sent} email(s); ${failed} failed.`, sent, failed, remaining: await db.collection('bulk_records').countDocuments({ job_id: job.id, status: 'success', email_status: { $in: ['failed', 'queued'] } }) });
+  }, 'email');
+  route('get', '/analytics', 'analytics.read', async (req, res, db) => {
     const jobs = await db.collection('bulk_jobs').find({}).toArray();
-    const totalJobs = jobs.length;
-    const totalGenerated = jobs.reduce((s, j) => s + (j.successful_records || 0), 0);
-    const totalFailed = jobs.reduce((s, j) => s + (j.failed_records || 0), 0);
-    const totalProcessed = totalGenerated + totalFailed;
-    const successRate = totalProcessed > 0 ? Math.round((totalGenerated / totalProcessed) * 1000) / 10 : 100;
-    res.json({
-      total_jobs: totalJobs,
-      total_generated: totalGenerated,
-      total_failed: totalFailed,
-      success_rate: successRate
-    });
+    const generated = jobs.reduce((sum, j) => sum + (j.successful_records || 0), 0), failed = jobs.reduce((sum, j) => sum + (j.failed_records || 0), 0);
+    res.json({ total_jobs: jobs.length, total_generated: generated, total_failed: failed, success_rate: generated + failed ? Math.round(generated * 1000 / (generated + failed)) / 10 : 100 });
   });
-
   return router;
 }
-
 module.exports = { build };

@@ -1,4 +1,5 @@
 const { Worker, isMainThread, parentPort, workerData } = require('worker_threads');
+const limits = require('../config/security');
 
 // XLSX serialization is CPU-bound: keep it off Express's request loop.
 if (!isMainThread) {
@@ -12,13 +13,13 @@ if (!isMainThread) {
 }
 
 let activeWorkers = 0;
-function runReportWorker(data, signal) {
+function isolatedReport(data, signal) {
   if (activeWorkers >= 2) return Promise.reject(Object.assign(new Error('busy'), {
     status: 429, publicMessage: 'Reports are busy right now. Please try again shortly.'
   }));
   return new Promise((resolve, reject) => {
     if (signal?.aborted) return reject(new Error('Download cancelled'));
-    const worker = new Worker(__filename, { workerData: data, resourceLimits: { maxOldGenerationSizeMb: 512 } });
+    const worker = new Worker(__filename, { workerData: data, resourceLimits: { maxOldGenerationSizeMb: limits.workerMemory } });
     activeWorkers++;
     let settled = false;
     const finish = (error, bytes) => {
@@ -32,7 +33,7 @@ function runReportWorker(data, signal) {
     const abort = () => finish(new Error('Download cancelled'));
     const timer = setTimeout(() => finish(Object.assign(new Error('timeout'), {
       status: 503, publicMessage: 'Report generation took too long. Please try again.'
-    })), 120000);
+    })), limits.workTimeout);
     signal?.addEventListener('abort', abort, { once: true });
     worker.once('message', message => message.error
       ? finish(Object.assign(new Error(message.error), { status: message.status, publicMessage: message.error }))
@@ -42,4 +43,5 @@ function runReportWorker(data, signal) {
   });
 }
 
+const runReportWorker = (data, signal) => require('./workload').withSlot('report', () => isolatedReport(data, signal));
 module.exports = { runReportWorker };

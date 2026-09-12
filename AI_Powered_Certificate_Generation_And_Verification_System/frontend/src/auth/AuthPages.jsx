@@ -67,7 +67,6 @@ export default function AuthPages() {
             <h1 className="text-xl font-bold font-serif text-slate-900">CampusCert Pro</h1>
           </div>
           {mode === 'login' && <LoginForm setMode={setMode} setDevLinks={setDevLinks} />}
-          {mode === 'register' && <RegisterForm setMode={setMode} setDevLinks={setDevLinks} />}
           {mode === 'forgot' && <ForgotForm setMode={setMode} setDevLinks={setDevLinks} />}
           {mode === 'reset' && <ResetForm setMode={setMode} />}
           {mode === 'verify' && <VerifyForm setMode={setMode} />}
@@ -147,7 +146,7 @@ function LoginForm({ setMode, setDevLinks }) {
       <SubmitBtn data-testid="login-submit" loading={loading} type="submit">Sign in</SubmitBtn>
       <div className="flex justify-between text-xs">
         <button type="button" data-testid="link-forgot" onClick={() => { setDevLinks(null); setMode('forgot'); }} className="text-brand-600 hover:underline font-semibold">Forgot password?</button>
-        <button type="button" data-testid="link-register" onClick={() => { setDevLinks(null); setMode('register'); }} className="text-slate-600 hover:text-brand-600 font-semibold">Create an account →</button>
+        <span data-testid="registration-disabled-notice" className="text-slate-500">Access is administrator-managed</span>
       </div>
     </form>
   );

@@ -1,4 +1,4 @@
-const MAX_REPORT_ROWS = 100000;
+const MAX_REPORT_ROWS = require('../config/security').reportRows;
 const MAX_METADATA_COLUMNS = 128;
 const BASE_HEADERS = ['Certificate ID', 'Event Name', 'Event Date', 'Recipient Name', 'Recipient Email', 'Issue Date', 'Status', 'Role', 'Grade'];
 

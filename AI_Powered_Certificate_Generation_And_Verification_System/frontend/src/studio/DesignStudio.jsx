@@ -241,13 +241,13 @@ export default function DesignStudio({ notify, onTemplatesChanged }) {
     }
     setSaving(true);
     try {
-      if (template.id) {
+      if (template.id && !template.read_only) {
         await axios.put(`${API}/templates/${template.id}`, savePayload());
         notify?.('Template updated successfully');
       } else {
         const res = await axios.post(`${API}/templates`, savePayload());
         const newId = res.data?.template?.id;
-        if (newId) history.replace((t) => ({ ...t, id: newId }));
+        if (newId) history.replace((t) => ({ ...t, id: newId, read_only: false }));
         notify?.('Template created successfully');
       }
       fetchTemplates();
@@ -265,7 +265,7 @@ export default function DesignStudio({ notify, onTemplatesChanged }) {
       const payload = { ...savePayload(), name: `${template.name} (Copy)` };
       const res = await axios.post(`${API}/templates`, payload);
       const newId = res.data?.template?.id;
-      history.replace((t) => ({ ...t, id: newId || null, name: payload.name }));
+      history.replace((t) => ({ ...t, id: newId || null, name: payload.name, read_only: false }));
       notify?.('Saved as new template');
       fetchTemplates();
       onTemplatesChanged?.();

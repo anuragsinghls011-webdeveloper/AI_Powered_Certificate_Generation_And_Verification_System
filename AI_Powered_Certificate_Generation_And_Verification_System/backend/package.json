@@ -12,18 +12,22 @@
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "csrf-csrf": "4",
     "csv-parse": "^7.0.2",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-rate-limit": "^8.6.2",
+    "image-size": "2",
     "jsonwebtoken": "^9.0.3",
     "mongodb": "^6.5.0",
-    "multer": "^2.2.0",
+    "multer": "2.3.0",
     "p-limit": "3",
     "pdfkit": "^0.15.0",
     "qrcode": "^1.5.3",
+    "qs": "6.16.0",
     "resend": "^6.27.0",
     "uuid": "^9.0.1",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
+    "yauzl": "3"
   }
 }

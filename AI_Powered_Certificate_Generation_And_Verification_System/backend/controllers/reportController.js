@@ -6,7 +6,7 @@ const { summarize, reportFilename, MAX_REPORT_ROWS } = require('../services/even
 const wrap = handler => (req, res, next) => Promise.resolve(handler(req, res)).catch(next);
 const fail = (status, message) => Object.assign(new Error(message), { status, publicMessage: message });
 const scope = req => ({ organization_id: req.organization.id });
-const eventFields = { id: 1, title: 1, name: 1, date: 1 };
+const eventFields = { id: 1, title: 1, name: 1, date: 1, organization_id: 1 };
 const cleanEvent = event => ({
   id: String(event.id || event._id),
   title: typeof (event.title ?? event.name) === 'string' ? (event.title ?? event.name) : 'Untitled event',
@@ -32,7 +32,7 @@ function certificateFilter(event) {
   // but never match on a name, title, or an absent/null relationship.
   const ids = [event._id, String(event._id)];
   if (typeof event.id === 'string' && event.id) ids.push(event.id);
-  return { event_id: { $in: ids } };
+  return { organization_id: event.organization_id, event_id: { $in: ids } };
 }
 
 const listEvents = wrap(async (req, res) => {

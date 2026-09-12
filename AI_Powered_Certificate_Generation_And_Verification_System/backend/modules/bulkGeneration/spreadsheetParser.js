@@ -2,6 +2,7 @@
 const fs = require('fs');
 const XLSX = require('xlsx');
 const { parse: parseCsvSync } = require('csv-parse/sync');
+const limits = require('../../config/security');
 
 const CSV_INJECTION_PREFIX = /^[=+\-@\t\r]/;
 
@@ -39,6 +40,7 @@ function parseCsvBuffer(buf) {
     skip_empty_lines: true,
     relax_column_count: true,
     trim: true
+    , to: limits.rows + 2, max_record_size: limits.columns * 1000
   });
   if (records.length === 0) return { headers: [], rows: [] };
   const headers = normaliseHeaders(records[0]);
@@ -51,7 +53,7 @@ function parseCsvBuffer(buf) {
 
 function parseXlsxBuffer(buf) {
   // { cellFormula: false } prevents formula evaluation
-  const wb = XLSX.read(buf, { type: 'buffer', cellFormula: false, cellDates: true, cellText: false });
+  const wb = XLSX.read(buf, { type: 'buffer', cellFormula: false, cellDates: true, cellText: false, sheetRows: limits.rows + 2, sheets: 0 });
   const firstSheet = wb.SheetNames[0];
   if (!firstSheet) return { headers: [], rows: [] };
   const sheet = wb.Sheets[firstSheet];
@@ -73,4 +75,29 @@ function parseFile(filePath, originalName) {
   throw new Error(`Unsupported file extension: .${ext}`);
 }
 
-module.exports = { parseFile, parseCsvBuffer, parseXlsxBuffer, sanitizeCell };
+async function parseUpload(buffer, name) {
+  const ext = name.split('.').pop().toLowerCase();
+  if (buffer.length > limits.uploadBytes) throw new Error('Upload too large');
+  if (ext === 'xlsx') {
+    if (buffer.readUInt16LE(0) !== 0x4b50) throw new Error('Invalid workbook');
+    await new Promise((resolve, reject) => {
+      require('yauzl').fromBuffer(buffer, { lazyEntries: true }, (error, zip) => {
+        if (error) return reject(error);
+        let total = 0, entries = 0, finished = false;
+        const fail = err => { if (!finished) { finished = true; zip.close(); reject(err); } };
+        zip.on('error', fail);
+        zip.on('entry', entry => {
+          total += entry.uncompressedSize; entries++;
+          if (total > limits.expandedBytes || entries > limits.columns * 20 || (entry.generalPurposeBitFlag & 1)) return fail(new Error('Workbook expansion limit exceeded'));
+          zip.readEntry();
+        });
+        zip.on('end', () => { if (!finished) { finished = true; resolve(); } });
+        zip.readEntry();
+      });
+    });
+  } else if (ext !== 'csv' || buffer.includes(0)) throw new Error('Unsupported file content');
+  const result = ext === 'csv' ? parseCsvBuffer(buffer) : parseXlsxBuffer(buffer);
+  if (result.rows.length > limits.rows || result.headers.length > limits.columns || Buffer.byteLength(JSON.stringify(result)) > limits.payloadBytes) throw new Error('Spreadsheet limits exceeded');
+  return result;
+}
+module.exports = { parseFile, parseCsvBuffer, parseXlsxBuffer, sanitizeCell, parseUpload };

@@ -1,10 +1,11 @@
 const { getEventsCol } = require('../config/db');
 const { uuidv4, nowISO } = require('../utils/helpers');
+const { scope } = require('../utils/tenant');
 
 // GET /api/events
 async function getAllEvents(req, res) {
   try {
-    const events = await getEventsCol().find({}, { projection: { _id: 0 } }).toArray();
+    const events = await getEventsCol().find(scope(req), { projection: { _id: 0 } }).toArray();
     res.json(events);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -87,7 +88,7 @@ async function retryEventReport(req, res) {
 // DELETE /api/events/:id
 async function deleteEvent(req, res) {
   try {
-    const result = await getEventsCol().deleteOne({ id: req.params.id });
+    const result = await getEventsCol().deleteOne({ ...scope(req), id: req.params.id });
     if (result.deletedCount === 0) return res.status(404).json({ error: 'Event not found' });
     res.json({ message: 'Event deleted successfully' });
   } catch (err) {

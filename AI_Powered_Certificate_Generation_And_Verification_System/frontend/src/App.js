@@ -33,6 +33,7 @@ export default function App() {
   const [templates, setTemplates] = useState([]);
   const [certificates, setCertificates] = useState([]);
   const [analytics, setAnalytics] = useState(null);
+  const [generationJob, setGenerationJob] = useState(null);
   const [loading, setLoading] = useState(false);
   const { notification, showNotification } = useNotification();
 
@@ -62,7 +63,27 @@ export default function App() {
     // Reports fetch their own scoped events/summary; never preload the certificate collection.
     if (!authLoading && user && !reportsOpen) fetchAllData();
     // Existing mutation handlers explicitly refresh dashboard data when needed.
-  }, [authLoading, user?.id, reportsOpen]);
+  }, [authLoading, user?.id, membership?.organization_id, reportsOpen]);
+
+  useEffect(() => {
+    if (!generationJob?.id || !['queued', 'processing'].includes(generationJob.status)) return undefined;
+    let disposed = false;
+    const timer = setInterval(async () => {
+      try {
+        const { data } = await axios.get(`${API}/bulk/jobs/${generationJob.id}`);
+        if (disposed) return;
+        setGenerationJob(data);
+        if (!['queued', 'processing'].includes(data.status)) {
+          clearInterval(timer);
+          showNotification(`${data.successful_records} certificate(s) generated; ${data.failed_records} failed.`, data.failed_records ? 'error' : 'success');
+          fetchAllData();
+        }
+      } catch (error) {
+        if (!disposed) { clearInterval(timer); setGenerationJob(job => ({ ...job, status: 'unavailable' })); showNotification('Unable to read job progress. Open Smart Bulk Studio to check the job.', 'error'); }
+      }
+    }, 1500);
+    return () => { disposed = true; clearInterval(timer); };
+  }, [generationJob?.id, generationJob?.status]);
 
   useEffect(() => {
     const url = `${window.location.pathname}${window.location.search}${reportsOpen ? '#reports' : ''}`;
@@ -197,10 +218,9 @@ export default function App() {
         issue_date: bulkData.issue_date
       });
       showNotification(res.data.message);
-      setActiveTab('repository');
-      fetchAllData();
+      setGenerationJob({ id: res.data.job_id, status: 'queued', total_records: res.data.count, processed_records: 0, successful_records: 0, failed_records: 0 });
     } catch (err) {
-      showNotification('Error generating certificates', 'error');
+      showNotification(err.response?.data?.error || 'Error generating certificates', 'error');
     } finally {
       setLoading(false);
     }
@@ -230,6 +250,7 @@ export default function App() {
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { showNotification('File exceeds the 5 MB upload limit.', 'error'); e.target.value = null; return; }
 
     const reader = new FileReader();
     reader.onload = (evt) => {
@@ -320,6 +341,9 @@ export default function App() {
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-8">
+        {generationJob && <div data-testid="certificate-generation-progress" role="status" className="mb-4 border-l-4 border-teal-600 bg-teal-50 p-4 text-sm break-words">
+          <span data-testid="certificate-job-status">{generationJob.status}</span> · <span data-testid="certificate-job-counts">{generationJob.processed_records || 0} / {generationJob.total_records} processed · {generationJob.successful_records || 0} successful · {generationJob.failed_records || 0} failed</span>
+        </div>}
         {activeTab === 'reports' && <EventReportsPage />}
         {activeTab === 'dashboard' && (
           <DashboardPage
@@ -357,7 +381,7 @@ export default function App() {
             templates={templates}
             bulkData={bulkData}
             setBulkData={setBulkData}
-            loading={loading}
+            loading={loading || ['queued', 'processing'].includes(generationJob?.status)}
             onBulkGenerate={handleBulkGenerate}
             onFileUpload={handleFileUpload}
           />
