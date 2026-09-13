@@ -166,7 +166,7 @@ function build(rawDb) {
   }, 'export');
   route('post', '/jobs/:id/resend-emails', 'certificates.create', async (req, res, db) => {
     const job = await db.collection('bulk_jobs').findOne({ id: req.params.id }); if (!job) throw missing();
-    const records = await db.collection('bulk_records').find({ job_id: job.id, status: 'success', email_status: { $in: ['failed', 'queued'] } }).limit(limits.rateLimit).toArray();
+    const records = await db.collection('bulk_records').find({ job_id: job.id, status: 'success', email_status: { $in: ['failed', 'queued', 'skipped'] } }).limit(limits.rateLimit).toArray();
     let sent = 0, failed = 0;
     for (const record of records) {
       const cert = await db.collection('certificates').findOne({ cert_id: record.certificate_id });

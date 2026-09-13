@@ -37,7 +37,7 @@ const generateBulkCertificates = handle(async (req, res) => {
   if (!Array.isArray(req.body.participants) || req.body.participants.length > limits.rows) throw Object.assign(new Error('Participant limit exceeded'), { statusCode: 413 });
   const rows = req.body.participants.map(participant);
   const job = await submitJob(req, { rows, event_id: req.body.event_id, template_id: req.body.template_id,
-    mapping: { name: 'recipient_name', email: 'email', role: 'rank', grade: 'score' }, defaults: { issue_date: req.body.issue_date || todayISO() }, settings: { email_enabled: true, zip_enabled: true }, action: 'simple-bulk' });
+    mapping: { name: 'recipient_name', email: 'email', role: 'rank', grade: 'score' }, defaults: { issue_date: req.body.issue_date || todayISO() }, settings: { email_enabled: false, zip_enabled: true }, action: 'simple-bulk' });
   res.status(202).json({ message: 'Certificate job queued', job_id: job.id, count: job.total_records });
 });
 const createCertificate = handle(async (req, res) => {
@@ -84,6 +84,11 @@ const sendEmail = handle(async (req, res) => {
 });
 const downloadPdf = handle(async (req, res) => {
   const cert = await selectedCertificate(req);
+  if (cert.pdf_path && require('fs').existsSync(cert.pdf_path)) {
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=Certificate_${cert.cert_id}.pdf`);
+    return res.sendFile(require('path').resolve(cert.pdf_path));
+  }
   const template = await getTemplatesCol().findOne(scoped({ id: cert.template_id }, templateScope(req)));
   await streamCertificatePdf(cert, template, res);
 });

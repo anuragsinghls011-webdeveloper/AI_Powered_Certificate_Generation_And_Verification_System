@@ -50,7 +50,16 @@ export const num = (v, fallback = 0) => {
 const FONT_METRICS = {
   Helvetica: { asc: 0.718, desc: 0.207, bAsc: 0.90527, bDesc: 0.21191, stack: 'Arial, Helvetica, sans-serif' },
   Times: { asc: 0.683, desc: 0.217, bAsc: 0.89111, bDesc: 0.21631, stack: '"Times New Roman", Times, serif' },
-  Courier: { asc: 0.629, desc: 0.157, bAsc: 0.83252, bDesc: 0.30029, stack: '"Courier New", Courier, monospace' }
+  Courier: { asc: 0.629, desc: 0.157, bAsc: 0.83252, bDesc: 0.30029, stack: '"Courier New", Courier, monospace' },
+  Montserrat: { asc: 0.768, desc: 0.232, bAsc: 0.958, bDesc: 0.24, stack: '"Montserrat", sans-serif' },
+  PlayfairDisplay: { asc: 0.762, desc: 0.238, bAsc: 0.95, bDesc: 0.25, stack: '"Playfair Display", serif' },
+  GreatVibes: { asc: 0.8, desc: 0.2, bAsc: 0.9, bDesc: 0.2, stack: '"Great Vibes", cursive' },
+  Oswald: { asc: 0.8, desc: 0.2, bAsc: 0.95, bDesc: 0.25, stack: '"Oswald", sans-serif' },
+  Lato: { asc: 0.75, desc: 0.2, bAsc: 0.95, bDesc: 0.22, stack: '"Lato", sans-serif' },
+  Merriweather: { asc: 0.984, desc: 0.273, bAsc: 0.984, bDesc: 0.273, stack: '"Merriweather", serif' },
+  Cinzel: { asc: 0.75, desc: 0.25, bAsc: 0.9, bDesc: 0.25, stack: '"Cinzel", serif' },
+  Lora: { asc: 0.95, desc: 0.3, bAsc: 1.05, bDesc: 0.35, stack: '"Lora", serif' },
+  AlexBrush: { asc: 1.05, desc: 0.45, bAsc: 1.15, bDesc: 0.45, stack: '"Alex Brush", cursive' },
 };
 
 /** Base family of a stored fontFamily value, tolerating legacy '-Bold' names. */
@@ -58,6 +67,15 @@ export function fontBase(family) {
   const lower = String(family || 'Helvetica').toLowerCase();
   if (lower.includes('times')) return 'Times';
   if (lower.includes('courier')) return 'Courier';
+  if (lower.includes('montserrat')) return 'Montserrat';
+  if (lower.includes('playfair')) return 'PlayfairDisplay';
+  if (lower.includes('greatvibes')) return 'GreatVibes';
+  if (lower.includes('oswald')) return 'Oswald';
+  if (lower.includes('lato')) return 'Lato';
+  if (lower.includes('merriweather')) return 'Merriweather';
+  if (lower.includes('cinzel')) return 'Cinzel';
+  if (lower.includes('lora')) return 'Lora';
+  if (lower.includes('alexbrush')) return 'AlexBrush';
   return 'Helvetica';
 }
 
@@ -93,13 +111,18 @@ export function textLayout(field, lineHeight = 1) {
 }
 
 export const FONT_FAMILIES = [
+  { value: 'Merriweather', label: 'Merriweather (Elegant Serif)' },
+  { value: 'PlayfairDisplay', label: 'Playfair Display (Elegant Serif)' },
+  { value: 'Lora', label: 'Lora (Contemporary Serif)' },
+  { value: 'Cinzel', label: 'Cinzel (Classic Roman)' },
+  { value: 'Montserrat', label: 'Montserrat (Modern Sans)' },
+  { value: 'Lato', label: 'Lato (Clean Sans)' },
+  { value: 'Oswald', label: 'Oswald (Bold Condensed)' },
+  { value: 'GreatVibes', label: 'Great Vibes (Cursive)' },
+  { value: 'AlexBrush', label: 'Alex Brush (Calligraphy)' },
   { value: 'Helvetica', label: 'Helvetica · sans' },
-  { value: 'Helvetica-Bold', label: 'Helvetica Bold' },
   { value: 'Times-Roman', label: 'Times · serif' },
-  { value: 'Times-Bold', label: 'Times Bold' },
-  { value: 'Times-Italic', label: 'Times Italic' },
-  { value: 'Courier', label: 'Courier · mono' },
-  { value: 'Courier-Bold', label: 'Courier Bold' }
+  { value: 'Courier', label: 'Courier · mono' }
 ];
 
 export function applyTextTransform(text, transform) {
@@ -168,9 +191,9 @@ export function fieldSampleText(field, template = {}) {
     case 'text_block':
       return field.text || '';
     case 'issuer_name':
-      return template.issuer_name || 'Authorised Signatory';
+      return field.text || template.issuer_name || 'Authorised Signatory';
     case 'issuer_title':
-      return template.issuer_title || 'Issuing Authority';
+      return field.text || template.issuer_title || 'Issuing Authority';
     default:
       return SAMPLE_VALUES[field.type] || field.label || '';
   }
@@ -202,6 +225,12 @@ export function makeField(typeDef, overrides = {}) {
     rotation: 0,
     visible: true,
     locked: false,
+    shadowColor: '',
+    shadowOffsetX: 2,
+    shadowOffsetY: 2,
+    shadowBlur: 2,
+    strokeColor: '',
+    strokeWidth: 0,
     ...def.defaults,
     ...overrides
   };

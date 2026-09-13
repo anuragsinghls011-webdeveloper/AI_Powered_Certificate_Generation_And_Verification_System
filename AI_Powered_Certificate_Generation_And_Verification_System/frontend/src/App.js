@@ -17,6 +17,7 @@ import BulkGeneratorPage from './pages/BulkGeneratorPage';
 import RepositoryPage from './pages/RepositoryPage';
 import VerifyPage from './pages/VerifyPage';
 import EventReportsPage from './pages/EventReportsPage';
+import { downloadEventReport, reportError } from './services/eventReports';
 
 // Feature Components (already standalone)
 import DesignStudio from './studio/DesignStudio';
@@ -118,7 +119,7 @@ export default function App() {
       }
     } catch (err) {
       console.error(err);
-      showNotification('Failed to connect to backend server', 'error');
+      showNotification(`Failed to load data: ${err.message}`, 'error');
     } finally {
       setLoading(false);
     }
@@ -180,7 +181,22 @@ export default function App() {
       showNotification(res.data.message);
       await fetchAllData();
     } catch (err) {
-      showNotification(err.response?.data?.error || 'Unable to retry report delivery', 'error');
+      showNotification(err.response?.data?.error || 'Unable to retry report', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGenerateReport = async (eventId) => {
+    if (!membership?.organization_id) return;
+    try {
+      setLoading(true);
+      showNotification('Generating report...');
+      await downloadEventReport(eventId, 'xlsx', membership.organization_id);
+      showNotification('Report downloaded successfully!');
+    } catch (err) {
+      const msg = await reportError(err);
+      showNotification(msg, 'error');
     } finally {
       setLoading(false);
     }
@@ -327,6 +343,17 @@ export default function App() {
     e.target.value = null;
   };
 
+  const handleSendAllEmails = async () => {
+    if (!generationJob?.id) return;
+    try {
+      showNotification('Starting to send emails...');
+      await axios.post(`${API}/bulk/jobs/${generationJob.id}/resend-emails`);
+      showNotification('Emails queued for sending successfully!');
+    } catch (err) {
+      showNotification(err.response?.data?.error || 'Failed to send emails', 'error');
+    }
+  };
+
   if (authLoading) return <div className="flex h-screen items-center justify-center text-slate-500">Loading...</div>;
   if (!user) return <AuthPages />;
 
@@ -341,8 +368,18 @@ export default function App() {
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-8">
-        {generationJob && <div data-testid="certificate-generation-progress" role="status" className="mb-4 border-l-4 border-teal-600 bg-teal-50 p-4 text-sm break-words">
-          <span data-testid="certificate-job-status">{generationJob.status}</span> · <span data-testid="certificate-job-counts">{generationJob.processed_records || 0} / {generationJob.total_records} processed · {generationJob.successful_records || 0} successful · {generationJob.failed_records || 0} failed</span>
+        {generationJob && <div data-testid="certificate-generation-progress" role="status" className="mb-4 border-l-4 border-teal-600 bg-teal-50 p-4 text-sm break-words flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <span data-testid="certificate-job-status" className="font-semibold">{generationJob.status}</span> · <span data-testid="certificate-job-counts">{generationJob.processed_records || 0} / {generationJob.total_records} processed · {generationJob.successful_records || 0} successful · {generationJob.failed_records || 0} failed</span>
+          </div>
+          {(generationJob.status === 'completed' || generationJob.status === 'completed_with_errors') && (
+            <button 
+              onClick={handleSendAllEmails}
+              className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-medium shadow-sm transition-colors"
+            >
+              Send Emails to All
+            </button>
+          )}
         </div>}
         {activeTab === 'reports' && <EventReportsPage />}
         {activeTab === 'dashboard' && (
@@ -367,6 +404,7 @@ export default function App() {
             onDeleteEvent={handleDeleteEvent}
             onCompleteEvent={handleCompleteEvent}
             onRetryEventReport={handleRetryEventReport}
+            onGenerateReport={handleGenerateReport}
             completing={loading}
             canComplete={['admin', 'super_admin'].includes(membership?.role)}
             setBulkData={setBulkData}

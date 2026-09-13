@@ -4,18 +4,22 @@ const { createHash } = require('crypto');
 const config = require('../config/security');
 const { verifyAccessToken } = require('../utils/tokens');
 
-const cookieOptions = { httpOnly: true, secure: true, sameSite: 'none', path: '/' };
+const isProd = process.env.NODE_ENV === 'production';
+const cookieOptions = { httpOnly: true, secure: isProd, sameSite: isProd ? 'none' : 'lax', path: '/' };
 const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
   getSecret: () => config.csrfSecret,
   getSessionIdentifier: req => createHash('sha256').update(req.cookies?.access_token || 'anonymous').digest('hex'),
-  cookieName: '__Host-campuscert-csrf', cookieOptions,
+  cookieName: isProd ? '__Host-campuscert-csrf' : 'campuscert-csrf', cookieOptions,
   errorConfig: { statusCode: 403, message: 'Security token is missing or expired.', code: 'CSRF_INVALID' }
 });
 const allowed = origin => typeof origin === 'string' && config.origins.includes(origin);
 
 function originGuard(req, res, next) {
   if (Object.keys(req.query).some(key => /[\[\]]/.test(key))) return res.status(400).json({ error: 'Nested query parameters are not supported' });
-  if (req.headers.origin && !allowed(req.headers.origin)) return res.status(403).json({ error: 'Origin not allowed', code: 'ORIGIN_DENIED' });
+  if (req.headers.origin && !allowed(req.headers.origin)) {
+    console.error(`[CORS REJECTED] Origin sent by client: "${req.headers.origin}"`);
+    return res.status(403).json({ error: `Origin not allowed: ${req.headers.origin}`, code: 'ORIGIN_DENIED' });
+  }
   next();
 }
 const corsPolicy = cors({
@@ -32,7 +36,7 @@ function csrfGuard(req, res, next) {
     try { verifyAccessToken(req.headers.authorization.slice(7)); return next(); }
     catch { return res.status(401).json({ error: 'Invalid or expired token' }); }
   }
-  if (!allowed(req.headers.origin)) return res.status(403).json({ error: 'Trusted Origin required', code: 'ORIGIN_DENIED' });
+  if (!allowed(req.headers.origin)) return res.status(403).json({ error: `Trusted Origin required: ${req.headers.origin}`, code: 'ORIGIN_DENIED' });
   doubleCsrfProtection(req, res, err => err
     ? res.status(403).json({ error: 'Security token is missing or expired.', code: 'CSRF_INVALID' }) : next());
 }

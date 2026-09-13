@@ -59,6 +59,14 @@ export default function FieldView({
       whiteSpace: isBlock ? 'pre-wrap' : 'nowrap',
       width: field.width ? num(field.width) : undefined
     });
+    
+    if (field.shadowColor && num(field.shadowOffsetX) !== 0) {
+      style.textShadow = `${num(field.shadowOffsetX, 2)}px ${num(field.shadowOffsetY, 2)}px ${num(field.shadowBlur, 2)}px ${field.shadowColor}`;
+    }
+    if (num(field.strokeWidth) > 0 && field.strokeColor) {
+      style.WebkitTextStroke = `${num(field.strokeWidth, 1)}px ${field.strokeColor}`;
+    }
+    
     inner = text || <span className="text-slate-300 italic">{field.label || 'Empty text'}</span>;
   } else if (field.type === 'certificate_qr') {
     // The renderer draws the QR square, sized from width only.

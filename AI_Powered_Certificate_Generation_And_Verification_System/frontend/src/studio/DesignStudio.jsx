@@ -239,6 +239,14 @@ export default function DesignStudio({ notify, onTemplatesChanged }) {
       notify?.('Template name is required', 'error');
       return;
     }
+    // Warn if the template has fields but none are text/data fields
+    const TEXT_TYPES = ['recipient_name', 'recipient_email', 'organization_name', 'rank', 'score',
+      'event_title', 'issue_date', 'certificate_id', 'certificate_link',
+      'certificate_qr', 'issuer_name', 'issuer_title', 'custom_text', 'text_block'];
+    const hasTextFields = fields.some(f => TEXT_TYPES.includes(f.type));
+    if (fields.length > 0 && !hasTextFields) {
+      notify?.('⚠️ Template has no text fields (like Recipient Name, Event Title). Default text layout will be auto-added during PDF generation. Add text fields for full control.', 'error');
+    }
     setSaving(true);
     try {
       if (template.id && !template.read_only) {
@@ -257,7 +265,7 @@ export default function DesignStudio({ notify, onTemplatesChanged }) {
     } finally {
       setSaving(false);
     }
-  }, [template, savePayload, history, notify, fetchTemplates, onTemplatesChanged]);
+  }, [template, fields, savePayload, history, notify, fetchTemplates, onTemplatesChanged]);
 
   const saveAsCopy = useCallback(async () => {
     setSaving(true);

@@ -38,10 +38,6 @@ function resolvePdfFont(family, weight, style) {
   if (lower.startsWith('zapf')) return 'ZapfDingbats';
   if (lower === 'symbol') return 'Symbol';
 
-  let base = 'Helvetica';
-  if (lower.includes('times')) base = 'Times';
-  else if (lower.includes('courier')) base = 'Courier';
-
   const bold =
     weight === 'bold' ||
     weight === 'bolder' ||
@@ -52,6 +48,34 @@ function resolvePdfFont(family, weight, style) {
     style === 'oblique' ||
     lower.includes('italic') ||
     lower.includes('oblique');
+
+  // Custom Google Fonts
+  if (lower.includes('montserrat')) return italic ? 'Montserrat-Italic' : 'Montserrat';
+  if (lower.includes('playfair')) return italic ? 'PlayfairDisplay-Italic' : 'PlayfairDisplay';
+  if (lower.includes('greatvibes')) return 'GreatVibes';
+  if (lower.includes('oswald')) return 'Oswald';
+  if (lower.includes('lato')) {
+    if (bold && italic) return 'Lato-BoldItalic';
+    if (bold) return 'Lato-Bold';
+    if (italic) return 'Lato-Italic';
+    return 'Lato';
+  }
+  if (lower.includes('merriweather')) {
+    if (bold && italic) return 'Merriweather-BoldItalic';
+    if (bold) return 'Merriweather-Bold';
+    if (italic) return 'Merriweather-Italic';
+    return 'Merriweather';
+  }
+  if (lower.includes('cinzel')) return 'Cinzel';
+  if (lower.includes('lora')) {
+    if (italic) return 'Lora-Italic';
+    return 'Lora';
+  }
+  if (lower.includes('alexbrush')) return 'AlexBrush';
+
+  let base = 'Helvetica';
+  if (lower.includes('times')) base = 'Times';
+  else if (lower.includes('courier')) base = 'Courier';
 
   if (base === 'Times') {
     if (bold && italic) return 'Times-BoldItalic';
@@ -193,8 +217,8 @@ function resolveFieldText(field, values) {
     case 'issue_date': return values.issue_date || '';
     case 'certificate_id': return values.certificate_id || '';
     case 'certificate_link': return values.verification_url || '';
-    case 'issuer_name': return values.issuer_name || '';
-    case 'issuer_title': return values.issuer_title || '';
+    case 'issuer_name': return field.text || values.issuer_name || '';
+    case 'issuer_title': return field.text || values.issuer_title || '';
     case 'custom_text':
     case 'text_block': return field.text || '';
     default: return field.label || '';
@@ -346,6 +370,11 @@ function applyTextStyle(doc, field, scaleY) {
     .font(resolvePdfFont(field.fontFamily, field.fontWeight, field.fontStyle))
     .fontSize(fontSize)
     .fillColor(field.color || '#111827');
+    
+  if (num(field.strokeWidth) > 0 && field.strokeColor) {
+    doc.lineWidth(num(field.strokeWidth) * scaleY);
+    doc.strokeColor(field.strokeColor);
+  }
   return fontSize;
 }
 
@@ -353,7 +382,7 @@ function drawSingleLineText(doc, field, values, scaleX, scaleY, px, py) {
   const text = applyTextTransform(resolveFieldText(field, values), field.textTransform);
   if (!text) return;
 
-  applyTextStyle(doc, field, scaleY);
+  const fontSize = applyTextStyle(doc, field, scaleY);
   const characterSpacing = num(field.letterSpacing, 0) * scaleX;
   const align = field.textAlign || 'left';
   const boxW = field.width ? num(field.width) * scaleX : 0;
@@ -366,11 +395,26 @@ function drawSingleLineText(doc, field, values, scaleX, scaleY, px, py) {
     x = align === 'center' ? px + (boxW - textW) / 2 : px + boxW - textW;
   }
 
-  doc.text(text, x, py, {
+  const options = {
     lineBreak: false,
     characterSpacing,
     underline: !!field.underline
-  });
+  };
+  
+  if (num(field.strokeWidth) > 0) {
+    options.stroke = true;
+    options.fill = true;
+  }
+
+  if (field.shadowColor && num(field.shadowOffsetX) !== 0) {
+    const sx = num(field.shadowOffsetX, 2) * scaleX;
+    const sy = num(field.shadowOffsetY, 2) * scaleY;
+    doc.fillColor(field.shadowColor);
+    doc.text(text, x + sx, py + sy, { ...options, stroke: false });
+    doc.fillColor(field.color || '#111827'); // restore
+  }
+
+  doc.text(text, x, py, options);
 }
 
 function drawTextBlock(doc, field, values, scaleX, scaleY, px, py) {
@@ -378,17 +422,89 @@ function drawTextBlock(doc, field, values, scaleX, scaleY, px, py) {
   if (!text) return;
 
   const fontSize = applyTextStyle(doc, field, scaleY);
-  // PDFKit advances by currentLineHeight(true) + lineGap, and currentLineHeight
-  // already folds in the font's own lineGap. Subtracting it here makes the
-  // advance exactly lineHeight * fontSize, matching CSS line-height on canvas.
   const advance = Math.max(0.1, num(field.lineHeight, 1.35)) * fontSize;
-  doc.text(text, px, py, {
+  
+  const options = {
     width: Math.max(1, num(field.width, 300) * scaleX),
     align: field.textAlign || 'left',
     characterSpacing: num(field.letterSpacing, 0) * scaleX,
     lineGap: advance - doc.currentLineHeight(true),
     underline: !!field.underline
+  };
+
+  if (num(field.strokeWidth) > 0) {
+    options.stroke = true;
+    options.fill = true;
+  }
+
+  if (field.shadowColor && num(field.shadowOffsetX) !== 0) {
+    const sx = num(field.shadowOffsetX, 2) * scaleX;
+    const sy = num(field.shadowOffsetY, 2) * scaleY;
+    doc.fillColor(field.shadowColor);
+    doc.text(text, px + sx, py + sy, { ...options, stroke: false });
+    doc.fillColor(field.color || '#111827'); // restore
+  }
+
+  doc.text(text, px, py, options);
+}
+
+// ---------------------------------------------------------------------------
+// Essential field defaults — injected when a custom template omits them
+// ---------------------------------------------------------------------------
+
+// Centred column for auto-injected fields: x 96, width 600 centres text at 396 = 792/2
+const COL = { x: 96, width: 600, textAlign: 'center' };
+
+const ESSENTIAL_DEFAULTS = [
+  { type: 'custom_text', ...COL, y: 78, text: 'Certificate of Achievement', fontSize: 28, fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: 3 },
+  { type: 'custom_text', ...COL, y: 132, text: 'This certificate is proudly presented to', fontSize: 12, color: '#4b5563' },
+  { type: 'recipient_name', ...COL, y: 162, fontSize: 40, fontWeight: 'bold', color: '#111827' },
+  { type: 'custom_text', ...COL, y: 228, text: 'for outstanding performance as', fontSize: 11, color: '#4b5563' },
+  { type: 'rank', ...COL, y: 250, fontSize: 18, fontWeight: 'bold' },
+  { type: 'event_title', ...COL, y: 284, fontSize: 20, fontWeight: 'bold' },
+  { type: 'issue_date', ...COL, y: 324, fontSize: 11, color: '#6b7280' },
+  { type: 'issuer_name', x: 110, y: 432, width: 190, textAlign: 'center', fontSize: 12, fontWeight: 'bold' },
+  { type: 'issuer_title', x: 110, y: 452, width: 190, textAlign: 'center', fontSize: 10, color: '#6b7280' },
+  { type: 'certificate_qr', x: 620, y: 396, width: 84, height: 84 },
+  { type: 'certificate_id', ...COL, y: 498, fontSize: 9, color: '#9ca3af' }
+];
+
+// Non-visual field types that carry certificate data (text, QR, etc.)
+const DATA_FIELD_TYPES = new Set([
+  'recipient_name', 'recipient_email', 'organization_name', 'rank', 'score',
+  'event_title', 'issue_date', 'certificate_id', 'certificate_link',
+  'certificate_qr', 'issuer_name', 'issuer_title', 'custom_text', 'text_block'
+]);
+
+/**
+ * Returns the field list to render. If the template has at least one data/text
+ * field, it is used as-is. Otherwise essential defaults are appended so the
+ * certificate is never blank — the user's visual-only fields (logos, dividers)
+ * are preserved and rendered first, then the injected text appears on top.
+ */
+function resolveFields(template) {
+  const fields = (template && Array.isArray(template.fields)) ? template.fields : [];
+  const hasDataFields = fields.some(f => DATA_FIELD_TYPES.has(f.type));
+  if (hasDataFields) return fields;
+  if (fields.length === 0) return [];
+
+  // Template has visual fields (logos/dividers) but no text/data fields.
+  // Inject essential defaults, applying the template's color scheme.
+  const primary = template.primary_color || '#1e3a8a';
+  const secondary = template.secondary_color || '#eab308';
+  const injected = ESSENTIAL_DEFAULTS.map(f => {
+    const clone = { ...f, id: `auto_${f.type}_${f.y}`, visible: true };
+    // Apply the template's primary colour to heading-weight fields.
+    if (!clone.color) {
+      clone.color = (clone.fontWeight === 'bold' && clone.fontSize >= 18) ? primary : '#111827';
+    }
+    // Use the secondary colour for rank emphasis.
+    if (clone.type === 'rank') clone.color = secondary;
+    // Use the primary colour for the heading custom_text.
+    if (clone.type === 'custom_text' && clone.fontSize >= 28) clone.color = primary;
+    return clone;
   });
+  return [...fields, ...injected];
 }
 
 // ---------------------------------------------------------------------------
@@ -403,6 +519,34 @@ async function renderCertificatePdfBuffer(template, values) {
   //   { recipient_name, email, event_title, issue_date, certificate_id, verification_url,
   //     organization_name, issuer_name, issuer_title, rank, score, ... }
   const doc = new PDFDocument({ layout: 'landscape', size: 'LETTER', margin: 0 });
+  const path = require('path');
+  const fs = require('fs');
+  const fontsDir = path.join(__dirname, '..', '..', 'storage', 'fonts');
+  if (fs.existsSync(fontsDir)) {
+    try {
+      doc.registerFont('Montserrat', path.join(fontsDir, 'Montserrat.ttf'));
+      doc.registerFont('Montserrat-Italic', path.join(fontsDir, 'Montserrat-Italic.ttf'));
+      doc.registerFont('PlayfairDisplay', path.join(fontsDir, 'PlayfairDisplay.ttf'));
+      doc.registerFont('PlayfairDisplay-Italic', path.join(fontsDir, 'PlayfairDisplay-Italic.ttf'));
+      doc.registerFont('GreatVibes', path.join(fontsDir, 'GreatVibes.ttf'));
+      doc.registerFont('Oswald', path.join(fontsDir, 'Oswald.ttf'));
+      doc.registerFont('Lato', path.join(fontsDir, 'Lato.ttf'));
+      doc.registerFont('Lato-Bold', path.join(fontsDir, 'Lato-Bold.ttf'));
+      doc.registerFont('Lato-Italic', path.join(fontsDir, 'Lato-Italic.ttf'));
+      doc.registerFont('Lato-BoldItalic', path.join(fontsDir, 'Lato-BoldItalic.ttf'));
+      doc.registerFont('Merriweather', path.join(fontsDir, 'Merriweather.ttf'));
+      doc.registerFont('Merriweather-Bold', path.join(fontsDir, 'Merriweather-Bold.ttf'));
+      doc.registerFont('Merriweather-Italic', path.join(fontsDir, 'Merriweather-Italic.ttf'));
+      doc.registerFont('Merriweather-BoldItalic', path.join(fontsDir, 'Merriweather-BoldItalic.ttf'));
+      doc.registerFont('Cinzel', path.join(fontsDir, 'Cinzel.ttf'));
+      doc.registerFont('Lora', path.join(fontsDir, 'Lora.ttf'));
+      doc.registerFont('Lora-Italic', path.join(fontsDir, 'Lora-Italic.ttf'));
+      doc.registerFont('AlexBrush', path.join(fontsDir, 'AlexBrush.ttf'));
+    } catch (e) {
+      console.error('Warning: Failed to register custom fonts', e);
+    }
+  }
+
   const chunks = [];
   doc.on('data', (c) => chunks.push(c));
   const done = new Promise((resolve, reject) => {
@@ -413,7 +557,8 @@ async function renderCertificatePdfBuffer(template, values) {
   const pageW = doc.page.width;
   const pageH = doc.page.height;
 
-  const hasCustomFields = template && Array.isArray(template.fields) && template.fields.length > 0;
+  const fieldsToRender = resolveFields(template);
+  const hasCustomFields = fieldsToRender.length > 0;
 
   if (hasCustomFields) {
     drawBackground(doc, template, pageW, pageH);
@@ -424,7 +569,7 @@ async function renderCertificatePdfBuffer(template, values) {
     const scaleY = pageH / DESIGN_H;
 
     // Array order is paint order, i.e. the layer stack from the Design Studio.
-    for (const f of template.fields) {
+    for (const f of fieldsToRender) {
       if (f.visible === false) continue;
       await drawField(doc, f, values, scaleX, scaleY);
     }

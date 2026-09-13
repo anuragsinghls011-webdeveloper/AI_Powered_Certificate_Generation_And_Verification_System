@@ -9,3 +9,6 @@ node_modules
 frontend/build/
 backend/tests/__pycache__/
 !frontend/.env.production
+backend/storage/*
+!backend/storage/fonts/
+!backend/storage/fonts/*.ttf

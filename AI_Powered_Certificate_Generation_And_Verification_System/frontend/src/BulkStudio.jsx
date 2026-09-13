@@ -216,8 +216,12 @@ export default function BulkStudio({ notify }) {
 
   const cancelJob = async () => {
     if (!activeJobId) return;
-    await axios.post(`${API}/bulk/jobs/${activeJobId}/cancel`);
-    notify?.('Cancellation requested');
+    try {
+      await axios.post(`${API}/bulk/jobs/${activeJobId}/cancel`);
+      notify?.('Cancellation requested');
+    } catch (err) {
+      notify?.(err.response?.data?.error || 'Cancellation failed', 'error');
+    }
   };
 
   const retryFailed = async () => {
@@ -233,8 +237,12 @@ export default function BulkStudio({ notify }) {
 
   const resendEmails = async () => {
     if (!activeJobId) return;
-    const res = await axios.post(`${API}/bulk/jobs/${activeJobId}/resend-emails`);
-    notify?.(res.data.message);
+    try {
+      const res = await axios.post(`${API}/bulk/jobs/${activeJobId}/resend-emails`);
+      notify?.(res.data.message);
+    } catch (err) {
+      notify?.(err.response?.data?.error || 'Failed to resend emails', 'error');
+    }
   };
 
   const downloadZip = (jobId) => {
@@ -249,10 +257,14 @@ export default function BulkStudio({ notify }) {
   const saveCurrentMapping = async () => {
     const name = window.prompt('Mapping name:', uploadInfo?.file_name || 'My mapping');
     if (!name) return;
-    await axios.post(`${API}/bulk/saved-mappings`, { name, mapping, defaults });
-    const sm = await axios.get(`${API}/bulk/saved-mappings`);
-    setSavedMappings(sm.data);
-    notify?.('Mapping saved');
+    try {
+      await axios.post(`${API}/bulk/saved-mappings`, { name, mapping, defaults });
+      const sm = await axios.get(`${API}/bulk/saved-mappings`);
+      setSavedMappings(sm.data);
+      notify?.('Mapping saved');
+    } catch (err) {
+      notify?.(err.response?.data?.error || 'Failed to save mapping', 'error');
+    }
   };
 
   const applySavedMapping = (id) => {

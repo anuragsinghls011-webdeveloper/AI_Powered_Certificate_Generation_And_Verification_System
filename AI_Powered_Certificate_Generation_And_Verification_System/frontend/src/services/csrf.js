@@ -1,11 +1,12 @@
 import axios from 'axios';
 
-const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
+const API = `${BACKEND_URL}/api`;
 let csrfRequest;
 // Register once, before React mounts. Cookies remain HttpOnly; no tokens in storage.
 axios.interceptors.request.use(async config => {
   const url = new URL(config.url, window.location.origin);
-  if (!url.href.startsWith(`${API}/`)) return config;
+  if (!url.pathname.startsWith('/api/')) return config;
   config.withCredentials = true;
   if (['get', 'head', 'options'].includes((config.method || 'get').toLowerCase())) return config;
   if (!csrfRequest) csrfRequest = axios.get(`${API}/auth/csrf`).then(r => r.data.csrf_token).finally(() => { csrfRequest = null; });

@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const { renderCertificatePdfBuffer } = require('../modules/bulkGeneration/certificateRenderer');
 const { sendEmail } = require('../utils/emailService');
 const { certificateTemplate } = require('./emailTemplates');
@@ -27,11 +28,14 @@ async function deliverCertificate({ cert, template, pdfBuffer }) {
     certificateId: cert.cert_id,
     verificationUrl: cert.verification_url
   });
+  
+  const pdfHash = crypto.createHash('sha256').update(pdf).digest('hex').substring(0, 12);
+  
   return sendEmail({
     to: cert.recipient_email,
     ...content,
     attachments: [{ filename: `${cert.cert_id}.pdf`, content: pdf }],
-    idempotencyKey: `certificate/${cert.cert_id}/delivery-v1`
+    idempotencyKey: `certificate/${cert.cert_id}/delivery-${pdfHash}`
   });
 }
 

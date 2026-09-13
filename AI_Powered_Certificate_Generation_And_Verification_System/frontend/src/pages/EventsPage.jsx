@@ -1,11 +1,11 @@
 import React from 'react';
 import {
-  Calendar, Plus, Trash2, Award, Building2, Layers, CheckCircle2, MailCheck, RefreshCw, Loader2
+  Calendar, Plus, Trash2, Award, Building2, Layers, CheckCircle2, MailCheck, RefreshCw, Loader2, FileSpreadsheet
 } from 'lucide-react';
 
 export default function EventsPage({
   events, newEvent, setNewEvent, onCreateEvent, onDeleteEvent, onCompleteEvent,
-  onRetryEventReport, completing, canComplete,
+  onRetryEventReport, onGenerateReport, completing, canComplete,
   setBulkData, bulkData, setActiveTab
 }) {
   return (
@@ -137,6 +137,16 @@ export default function EventsPage({
                   >
                     <Award className="w-4 h-4" /> Issue Certificates
                   </button>
+                  {canComplete && (
+                    <button
+                      data-testid={`generate-report-${ev.id}`}
+                      disabled={completing}
+                      onClick={() => onGenerateReport(ev.id)}
+                      className="text-xs font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-1 disabled:opacity-50"
+                    >
+                      <FileSpreadsheet className="w-4 h-4" /> Generate Report
+                    </button>
+                  )}
                   {canComplete && ev.status !== 'completed' && (
                     <button
                       data-testid={`complete-event-${ev.id}`}
@@ -160,7 +170,7 @@ export default function EventsPage({
                   <button 
                     data-testid={`delete-event-${ev.id}`}
                     onClick={() => onDeleteEvent(ev.id)}
-                    className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                    className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition ml-auto"
                     title="Delete Event"
                   >
                     <Trash2 className="w-4 h-4" />

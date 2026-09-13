@@ -103,16 +103,22 @@ async function processJob(db, job, owner) {
     } }, upsert: true
   } }));
   await db.collection('bulk_records').bulkWrite(operations, { ordered: false });
-  const records = db.collection('bulk_records').find({ job_id: job.id, organization_id: job.organization_id, status: { $in: ['pending', 'failed'] } }).limit(config.rows);
+  const allRecords = await db.collection('bulk_records').find({ job_id: job.id, organization_id: job.organization_id, status: { $in: ['pending', 'failed'] } }).limit(config.rows).toArray();
   let cancelled = false;
-  for await (const record of records) {
+  const CHUNK_SIZE = 10;
+  for (let i = 0; i < allRecords.length; i += CHUNK_SIZE) {
     const current = await owned(db, job, owner);
     if (current.cancel_requested) { cancelled = true; break; }
-    try { await processRecord(db, job, record, owner); }
-    catch (error) {
-      await owned(db, job, owner); // A lost owner cannot mark or count a replacement worker's record.
-      await db.collection('bulk_records').updateOne({ _id: record._id, organization_id: job.organization_id }, { $set: { status: 'failed', error: 'Certificate processing failed', processed_at: now() } });
-    }
+    
+    const chunk = allRecords.slice(i, i + CHUNK_SIZE);
+    await Promise.all(chunk.map(async (record) => {
+      try {
+        await processRecord(db, job, record, owner);
+      } catch (error) {
+        await owned(db, job, owner).catch(() => {});
+        await db.collection('bulk_records').updateOne({ _id: record._id, organization_id: job.organization_id }, { $set: { status: 'failed', error: error.message || 'Certificate processing failed', processed_at: now() } });
+      }
+    }));
     await db.collection('bulk_jobs').updateOne({ id: job.id, lease_owner: owner }, { $set: await counts(db, job) });
   }
   const summary = await counts(db, job);

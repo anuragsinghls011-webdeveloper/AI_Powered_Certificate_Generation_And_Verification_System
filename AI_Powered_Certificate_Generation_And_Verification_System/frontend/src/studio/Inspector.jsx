@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Type, Move, Palette, Sparkles, Layers, Copy, Trash2, Bold, Italic, Underline,
-  AlignLeft, AlignCenter, AlignRight, AlignCenterHorizontal, ArrowUpToLine,
+  AlignLeft, AlignCenter, AlignRight, AlignJustify, AlignCenterHorizontal, ArrowUpToLine,
   ArrowDownToLine, AlignHorizontalSpaceAround, AlignVerticalSpaceAround,
   ChevronsUp, ChevronsDown, ArrowUp, ArrowDown, Eye, EyeOff, Lock, Unlock,
   Upload, MousePointerClick, Minus
@@ -207,7 +207,7 @@ export default function Inspector({
   const isBlock = field.type === 'text_block';
   const isQr = field.type === 'certificate_qr';
   const isDivider = field.type === 'divider';
-  const editableText = field.type === 'custom_text' || isBlock;
+  const editableText = field.type === 'custom_text' || isBlock || field.type === 'issuer_name' || field.type === 'issuer_title';
 
   const put = (patch, key) => updateField(field.id, patch, key);
 
@@ -464,7 +464,8 @@ export default function Inspector({
               options={[
                 { value: 'left', label: '', title: 'Left', icon: AlignLeft },
                 { value: 'center', label: '', title: 'Center', icon: AlignCenter },
-                { value: 'right', label: '', title: 'Right', icon: AlignRight }
+                { value: 'right', label: '', title: 'Right', icon: AlignRight },
+                ...(isBlock ? [{ value: 'justify', label: '', title: 'Justify', icon: AlignJustify }] : [])
               ]}
             />
           </div>
@@ -507,6 +508,79 @@ export default function Inspector({
               format={(v) => `${v.toFixed(2)}×`}
             />
           )}
+        </Section>
+      )}
+
+      {/* ---------------- Text Effects ---------------- */}
+      {text && (
+        <Section icon={Sparkles} title="Text Effects" testId="ds-section-texteffects" defaultOpen={false}>
+          <div className="space-y-4">
+            <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="!mb-0">Drop Shadow</Label>
+                <Swatch
+                  testId="ds-field-shadow-color"
+                  value={field.shadowColor || ''}
+                  onChange={(v) => put({ shadowColor: v }, `${field.id}:shadowColor`)}
+                />
+              </div>
+              {field.shadowColor && (
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label>Offset X</Label>
+                      <NumberInput
+                        testId="ds-field-shadow-x"
+                        value={num(field.shadowOffsetX, 2)}
+                        onChange={(v) => put({ shadowOffsetX: v }, `${field.id}:shadowOffsetX`)}
+                      />
+                    </div>
+                    <div>
+                      <Label>Offset Y</Label>
+                      <NumberInput
+                        testId="ds-field-shadow-y"
+                        value={num(field.shadowOffsetY, 2)}
+                        onChange={(v) => put({ shadowOffsetY: v }, `${field.id}:shadowOffsetY`)}
+                      />
+                    </div>
+                  </div>
+                  <Slider
+                    label="Blur"
+                    testId="ds-field-shadow-blur"
+                    min={0}
+                    max={20}
+                    step={1}
+                    value={num(field.shadowBlur, 2)}
+                    onChange={(v) => put({ shadowBlur: v }, `${field.id}:shadowBlur`)}
+                    format={(v) => `${v}px`}
+                  />
+                </>
+              )}
+            </div>
+
+            <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="!mb-0">Outline (Stroke)</Label>
+                <Swatch
+                  testId="ds-field-stroke-color"
+                  value={field.strokeColor || ''}
+                  onChange={(v) => put({ strokeColor: v }, `${field.id}:strokeColor`)}
+                />
+              </div>
+              {field.strokeColor && (
+                <Slider
+                  label="Thickness"
+                  testId="ds-field-stroke-width"
+                  min={0.5}
+                  max={10}
+                  step={0.5}
+                  value={num(field.strokeWidth, 1)}
+                  onChange={(v) => put({ strokeWidth: v }, `${field.id}:strokeWidth`)}
+                  format={(v) => `${v}pt`}
+                />
+              )}
+            </div>
+          </div>
         </Section>
       )}
 
