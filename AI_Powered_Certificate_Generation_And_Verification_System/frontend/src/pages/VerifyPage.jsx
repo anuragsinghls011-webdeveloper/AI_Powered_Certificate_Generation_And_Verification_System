@@ -15,7 +15,7 @@ export default function VerifyPage({ apiBase }) {
     setVerifyError('');
     setVerifiedCert(null);
     try {
-      const res = await axios.get(`${apiBase}/certificates/${verifySearchId.trim()}`);
+      const res = await axios.get(`${apiBase}/verify/${verifySearchId.trim()}`);
       setVerifiedCert(res.data);
     } catch (err) {
       setVerifyError('Certificate not found or ID is invalid. Please check and try again.');
@@ -88,10 +88,18 @@ export default function VerifyPage({ apiBase }) {
               <p className="font-bold text-brand-600 mt-1">{verifiedCert.role}</p>
               <p className="text-xs text-slate-600 mt-0.5">{verifiedCert.grade}</p>
             </div>
+            
+            <div className="md:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-100">
+              <p className="text-xs font-semibold text-slate-400 uppercase">Complete Details & Description</p>
+              <p className="text-sm text-slate-700 mt-1 leading-relaxed">{verifiedCert.event_description}</p>
+            </div>
+            
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase">Authorized Signatory</p>
-              <p className="font-bold text-slate-800 mt-1">{verifiedCert.issuer_name}</p>
-              <p className="text-xs text-slate-600 mt-0.5">{verifiedCert.issuer_title}</p>
+              <p className="font-bold text-slate-800 mt-1">{verifiedCert.organization_name}</p>
+              <p className="text-xs text-slate-600 mt-0.5">
+                {verifiedCert.issuer_name}{verifiedCert.issuer_title ? ` - ${verifiedCert.issuer_title}` : ''}
+              </p>
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase">Status</p>

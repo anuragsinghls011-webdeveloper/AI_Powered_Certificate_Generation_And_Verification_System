@@ -9,6 +9,7 @@ const eventRoutes = require('./routes/eventRoutes');
 const templateRoutes = require('./routes/templateRoutes');
 const certificateRoutes = require('./routes/certificateRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
+const verifyRoutes = require('./routes/verifyRoutes');
 const bulkModule = require('./modules/bulkGeneration/routes');
 
 // Middleware imports
@@ -35,6 +36,8 @@ app.use('/api', browser.csrfGuard);
 const authMw = require('./middleware/authMiddleware');
 
 app.use('/api/auth', authRoutes);
+app.use('/api/verify', verifyRoutes);
+
 const privateBoundary = [authMw.authenticateUser(), authMw.resolveOrganization()];
 app.use('/api/events', ...privateBoundary, eventRoutes);
 app.use('/api/templates', ...privateBoundary, templateRoutes);

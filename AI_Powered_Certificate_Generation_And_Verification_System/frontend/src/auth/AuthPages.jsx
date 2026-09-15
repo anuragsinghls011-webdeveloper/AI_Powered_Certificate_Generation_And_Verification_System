@@ -9,16 +9,14 @@ import { useAuth } from './AuthContext';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const API = `${BACKEND_URL}/api`;
 
-export default function AuthPages() {
-  const [mode, setMode] = useState('login'); // 'login' | 'register' | 'forgot' | 'reset' | 'verify'
+export default function AuthPages({ initialMode = 'login', onBack }) {
+  const [mode, setMode] = useState(initialMode); // 'login' | 'register' | 'forgot' | 'reset' | 'verify'
   const [devLinks, setDevLinks] = useState(null);
 
   // Auto-detect verify/reset token in URL (?token=)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (window.location.pathname.includes('/auth/verify-email') && params.get('token')) {
-      setMode('verify');
-    } else if (window.location.pathname.includes('/auth/reset-password') && params.get('token')) {
+    if (window.location.pathname.includes('/auth/reset-password') && params.get('token')) {
       setMode('reset');
     }
   }, []);
@@ -60,16 +58,21 @@ export default function AuthPages() {
       </div>
 
       {/* Right panel */}
-      <div className="flex items-center justify-center p-6 md:p-12 bg-slate-50">
-        <div className="w-full max-w-md">
+      <div className="flex items-center justify-center p-6 md:p-12 bg-slate-50 relative">
+        {onBack && (
+          <button onClick={onBack} className="absolute top-6 left-6 md:top-8 md:left-8 text-sm font-semibold text-slate-500 hover:text-brand-600 transition flex items-center gap-1">
+            ← Back to Home
+          </button>
+        )}
+        <div className="w-full max-w-md mt-10 md:mt-0">
           <div className="lg:hidden flex items-center gap-3 mb-6">
             <div className="p-2 bg-brand-600 text-white rounded-xl"><Award className="w-6 h-6" /></div>
             <h1 className="text-xl font-bold font-serif text-slate-900">CampusCert Pro</h1>
           </div>
           {mode === 'login' && <LoginForm setMode={setMode} setDevLinks={setDevLinks} />}
+          {mode === 'register' && <RegisterForm setMode={setMode} setDevLinks={setDevLinks} />}
           {mode === 'forgot' && <ForgotForm setMode={setMode} setDevLinks={setDevLinks} />}
           {mode === 'reset' && <ResetForm setMode={setMode} />}
-          {mode === 'verify' && <VerifyForm setMode={setMode} />}
           {devLinks && (
             <div data-testid="auth-dev-links" className="mt-5 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
               <p className="font-bold mb-1 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> Dev-mode link (email provider not configured)</p>
@@ -123,12 +126,13 @@ function LoginForm({ setMode, setDevLinks }) {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [organizationName, setOrganizationName] = useState('');
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
   const submit = async (e) => {
     e.preventDefault();
     setDevLinks(null); setErr(''); setLoading(true);
-    const res = await login(email, password);
+    const res = await login(email, password, organizationName);
     setLoading(false);
     if (!res.ok) setErr(res.error);
   };
@@ -142,45 +146,116 @@ function LoginForm({ setMode, setDevLinks }) {
         data-testid="login-email" value={email} onChange={(e) => setEmail(e.target.value)} />
       <Field icon={Lock} label="Password" type="password" required autoComplete="current-password"
         data-testid="login-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+      <Field icon={ShieldCheck} label="Organization Name (Optional)" type="text"
+        data-testid="login-org" value={organizationName} onChange={(e) => setOrganizationName(e.target.value)} placeholder="Leave blank for default" />
       <FieldError>{err}</FieldError>
       <SubmitBtn data-testid="login-submit" loading={loading} type="submit">Sign in</SubmitBtn>
       <div className="flex justify-between text-xs">
         <button type="button" data-testid="link-forgot" onClick={() => { setDevLinks(null); setMode('forgot'); }} className="text-brand-600 hover:underline font-semibold">Forgot password?</button>
-        <span data-testid="registration-disabled-notice" className="text-slate-500">Access is administrator-managed</span>
+        <button type="button" data-testid="link-register" onClick={() => { setDevLinks(null); setMode('register'); }} className="text-brand-600 hover:underline font-semibold">Create account</button>
       </div>
     </form>
   );
 }
 
 function RegisterForm({ setMode, setDevLinks }) {
-  const { register } = useAuth();
+  const { register, sendRegistrationCode } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [organizationName, setOrganizationName] = useState('');
+  const [code, setCode] = useState('');
+  const [codeSent, setCodeSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState('');
+  const [msg, setMsg] = useState('');
+
+  const handleSendCode = async () => {
+    setErr('');
+    setMsg('');
+    const sanitizedName = name.trim().replace(/[<>]/g, '');
+    const sanitizedEmail = email.trim().toLowerCase();
+
+    if (sanitizedName.length < 2) {
+      setErr('Name must be at least 2 characters long');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sanitizedEmail)) {
+      setErr('Please enter a valid email address');
+      return;
+    }
+
+    setLoading(true);
+    const res = await sendRegistrationCode(sanitizedEmail, sanitizedName);
+    setLoading(false);
+
+    if (!res.ok) {
+      setErr(res.error);
+    } else {
+      setCodeSent(true);
+      setMsg('Verification code sent to your email.');
+      if (res.data?.dev_code) {
+        setDevLinks(res.data.dev_code);
+      }
+    }
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setErr(''); setLoading(true);
-    const res = await register({ name, email, password });
+
+    const sanitizedName = name.trim().replace(/[<>]/g, '');
+    const sanitizedEmail = email.trim().toLowerCase();
+
+    const res = await register({ name: sanitizedName, email: sanitizedEmail, password, organizationName, code });
     setLoading(false);
-    if (!res.ok) setErr(res.error);
-    else if (res.data?.email_verification?.link) setDevLinks(res.data.email_verification.link);
+    if (!res.ok) {
+      setErr(res.error);
+    }
+    // If OK, AuthContext handles the redirect
   };
+
   return (
     <form data-testid="register-form" onSubmit={submit} className="space-y-4">
       <div>
         <h3 className="text-2xl font-bold font-serif text-slate-900">Create your account</h3>
         <p className="text-sm text-slate-500 mt-1">The very first user becomes the workspace super-admin.</p>
       </div>
-      <Field icon={User} label="Full name" type="text" required autoComplete="name"
+      <Field icon={User} label="Full name" type="text" required autoComplete="name" disabled={codeSent}
         data-testid="register-name" value={name} onChange={(e) => setName(e.target.value)} />
-      <Field icon={Mail} label="Email" type="email" required autoComplete="email"
+      <Field icon={Mail} label="Email" type="email" required autoComplete="email" disabled={codeSent}
         data-testid="register-email" value={email} onChange={(e) => setEmail(e.target.value)} />
-      <Field icon={Lock} label="Password (min 8, letter + digit)" type="password" required autoComplete="new-password"
-        data-testid="register-password" value={password} onChange={(e) => setPassword(e.target.value)} />
-      <FieldError>{err}</FieldError>
-      <SubmitBtn data-testid="register-submit" loading={loading} type="submit">Create account</SubmitBtn>
+      
+      {!codeSent ? (
+        <>
+          <FieldError>{err}</FieldError>
+          <SubmitBtn type="button" onClick={handleSendCode} loading={loading}>Send Verification Code</SubmitBtn>
+        </>
+      ) : (
+        <>
+          <Field icon={Lock} label="Password (min 8, letter + digit)" type="password" required autoComplete="new-password"
+            data-testid="register-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <Field icon={ShieldCheck} label="Organization Name" type="text" required
+            data-testid="register-org" value={organizationName} onChange={(e) => setOrganizationName(e.target.value)} placeholder="e.g. Acme Corp" />
+          
+          <label className="block">
+            <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Verification Code</span>
+            <div className="mt-1 relative">
+              <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
+              <input
+                type="text" required maxLength={6} placeholder="000000"
+                className="w-full pl-9 pr-3 py-3 font-mono tracking-widest text-lg rounded-xl border border-slate-200 focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
+                value={code} onChange={(e) => setCode(e.target.value)}
+              />
+            </div>
+          </label>
+          
+          {msg && <div className="mt-2 p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-800">{msg}</div>}
+          <FieldError>{err}</FieldError>
+          <SubmitBtn data-testid="register-submit" loading={loading} type="submit">Verify & Create account</SubmitBtn>
+        </>
+      )}
+
       <button type="button" data-testid="link-login" onClick={() => setMode('login')} className="text-xs text-slate-600 hover:text-brand-600 font-semibold w-full text-center">
         Already have an account? Sign in →
       </button>
@@ -249,27 +324,3 @@ function ResetForm({ setMode }) {
   );
 }
 
-function VerifyForm() {
-  const [token] = useState(new URLSearchParams(window.location.search).get('token') || '');
-  const [status, setStatus] = useState('checking');
-  const [err, setErr] = useState('');
-  useEffect(() => {
-    (async () => {
-      try {
-        await axios.post(`${API}/auth/verify-email`, { token });
-        setStatus('ok');
-        setTimeout(() => { window.location.href = '/'; }, 1500);
-      } catch (e) {
-        setErr(e.response?.data?.error || 'Verification failed');
-        setStatus('err');
-      }
-    })();
-  }, [token]);
-  return (
-    <div data-testid="verify-view" className="text-center space-y-4 py-8">
-      {status === 'checking' && (<><Loader2 className="w-10 h-10 mx-auto text-brand-600 animate-spin" /><p className="text-slate-600">Verifying your email…</p></>)}
-      {status === 'ok' && (<><CheckCircle2 className="w-12 h-12 mx-auto text-emerald-600" /><h3 className="text-xl font-bold text-slate-900">Email verified!</h3><p className="text-sm text-slate-500">Redirecting…</p></>)}
-      {status === 'err' && (<><AlertTriangle className="w-12 h-12 mx-auto text-rose-600" /><h3 className="text-xl font-bold text-slate-900">Verification failed</h3><p className="text-sm text-rose-700">{err}</p></>)}
-    </div>
-  );
-}

@@ -105,7 +105,7 @@ export function textLayout(field, lineHeight = 1) {
     fontSize: size,
     lineHeightPx: lineHeight * size,
     topOffset,
-    fontWeight: isBold(field) ? 700 : 400,
+    fontWeight: field.fontWeight === 'bold' ? 700 : field.fontWeight === 'normal' ? 400 : num(field.fontWeight, 400),
     fontStyle: isItalic(field) ? 'italic' : 'normal'
   };
 }

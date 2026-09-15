@@ -86,10 +86,10 @@ export function AuthProvider({ children }) {
     return () => axios.interceptors.response.eject(id);
   }, [silentRefresh]);
 
-  const login = async (email, password) => {
+  const login = async (email, password, organizationName) => {
     setError('');
     try {
-      const res = await axios.post(`${API}/auth/login`, { email, password });
+      const res = await axios.post(`${API}/auth/login`, { email, password, organizationName });
       setUser(res.data.user);
       setMembership(res.data.membership);
       setOrganization(res.data.organization);
@@ -101,10 +101,19 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const register = async (payload) => {
+  const sendRegistrationCode = async (email, name) => {
+    try {
+      const res = await axios.post(`${API}/auth/send-registration-otp`, { email, name });
+      return { ok: true, data: res.data };
+    } catch (err) {
+      return { ok: false, error: err.response?.data?.error || 'Failed to send verification code' };
+    }
+  };
+
+  const register = async (userData) => {
     setError('');
     try {
-      const res = await axios.post(`${API}/auth/register`, payload);
+      const res = await axios.post(`${API}/auth/register`, userData);
       setUser(res.data.user);
       setMembership(res.data.membership);
       setOrganization(res.data.organization);
@@ -144,7 +153,7 @@ export function AuthProvider({ children }) {
   return (
     <AuthCtx.Provider value={{
       user, membership, memberships, organization, loading, error,
-      login, register, logout, logoutAll, switchOrg, hasPermission, bootstrap
+      login, register, sendRegistrationCode, logout, logoutAll, switchOrg, hasPermission, bootstrap
     }}>
       {children}
     </AuthCtx.Provider>

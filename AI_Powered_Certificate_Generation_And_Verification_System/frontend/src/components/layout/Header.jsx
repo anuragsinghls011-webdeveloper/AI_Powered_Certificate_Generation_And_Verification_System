@@ -4,7 +4,7 @@ import UserMenu from '../../auth/UserMenu';
 import { useAuth } from '../../auth/AuthContext';
 
 export default function Header({ activeTab, setActiveTab, certificateCount }) {
-  const { membership } = useAuth();
+  const { membership, hasPermission } = useAuth();
   const canReport = ['admin', 'super_admin'].includes(membership?.role);
   return (
     <header className="bg-slate-900 text-white shadow-md border-b border-slate-800">
@@ -75,6 +75,15 @@ export default function Header({ activeTab, setActiveTab, certificateCount }) {
           >
             Verify Portal
           </button>
+          {hasPermission('members.manage') && (
+            <button 
+              data-testid="nav-team"
+              onClick={() => setActiveTab('team')}
+              className={`px-3 py-2 rounded-lg text-sm font-medium transition ${activeTab === 'team' ? 'bg-brand-600 text-white shadow' : 'text-slate-300 hover:text-white'}`}
+            >
+              Team
+            </button>
+          )}
         </nav>
         
         <UserMenu />

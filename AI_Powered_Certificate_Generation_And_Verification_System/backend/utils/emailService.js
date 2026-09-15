@@ -74,15 +74,15 @@ async function sendEmail({ to, subject, html, text, attachments = [], idempotenc
   }
 }
 
-async function sendVerificationEmail(user, token) {
-  const link = `${APP_URL()}/auth/verify-email?token=${token}`;
+async function sendVerificationEmail(user, code) {
   const result = await sendEmail({
     to: user.email,
     subject: 'Verify your CampusCert email',
-    html: `<div style="font-family:Arial,sans-serif"><h2>Welcome, ${escapeHtml(user.name)}</h2><p>Confirm your email to activate your CampusCert account.</p><p><a href="${link}">Verify email</a></p></div>`,
-    text: `Verify your email: ${link}`,
-    idempotencyKey: `email-verification/${user.id}/${token.slice(0, 12)}`
+    html: `<div style="font-family:Arial,sans-serif"><h2>Welcome, ${escapeHtml(user.name)}</h2><p>Your verification code is:</p><h1 style="letter-spacing: 4px; color: #4f46e5;">${code}</h1><p>Enter this code to activate your account.</p></div>`,
+    text: `Your verification code is: ${code}`,
+    idempotencyKey: `email-verification/${user.id}/${code}`
   });
+  if (result.delivered) result.code = code;
   return result;
 }
 
@@ -98,8 +98,41 @@ async function sendPasswordResetEmail(user, token) {
   return result;
 }
 
+async function sendInviteEmail(email, inviterName, organizationName, role, tempPassword = null) {
+  const loginLink = `${APP_URL()}`;
+  let html = `<div style="font-family:Arial,sans-serif">
+    <h2>You have been invited to join ${escapeHtml(organizationName)}</h2>
+    <p><b>${escapeHtml(inviterName)}</b> has invited you to collaborate as a <b>${escapeHtml(role)}</b>.</p>`;
+  
+  let text = `You have been invited to join ${organizationName} by ${inviterName} as a ${role}.`;
+
+  if (tempPassword) {
+    html += `<p>Your account has been created securely. You can log in using your email and the following temporary password:</p>
+             <div style="background-color: #f1f5f9; padding: 12px; border-radius: 8px; font-family: monospace; font-size: 18px; letter-spacing: 2px; color: #0f172a; margin: 16px 0;">
+               ${escapeHtml(tempPassword)}
+             </div>
+             <p>Please change this password after you log in.</p>`;
+    text += `\n\nYour temporary password is: ${tempPassword}\nPlease log in and change your password.`;
+  } else {
+    html += `<p>You can use your existing CampusCert Pro account to log in.</p>`;
+    text += `\n\nYou can use your existing CampusCert Pro account to log in.`;
+  }
+
+  html += `<p><a href="${loginLink}" style="display:inline-block;background-color:#4f46e5;color:#ffffff;padding:10px 20px;text-decoration:none;border-radius:6px;margin-top:12px;">Log in to CampusCert Pro</a></p></div>`;
+  text += `\n\nLog in here: ${loginLink}`;
+
+  const result = await sendEmail({
+    to: email,
+    subject: `Invitation to join ${organizationName}`,
+    html,
+    text,
+    idempotencyKey: `invite/${email}/${Date.now()}`
+  });
+  return result;
+}
+
 function escapeHtml(value) {
   return String(value || '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 }
 
-module.exports = { sendEmail, sendVerificationEmail, sendPasswordResetEmail, HAS_KEY, escapeHtml };
+module.exports = { sendEmail, sendVerificationEmail, sendPasswordResetEmail, sendInviteEmail, HAS_KEY, escapeHtml };

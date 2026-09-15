@@ -17,6 +17,8 @@ import BulkGeneratorPage from './pages/BulkGeneratorPage';
 import RepositoryPage from './pages/RepositoryPage';
 import VerifyPage from './pages/VerifyPage';
 import EventReportsPage from './pages/EventReportsPage';
+import LandingPage from './pages/LandingPage';
+import TeamPage from './pages/TeamPage';
 import { downloadEventReport, reportError } from './services/eventReports';
 
 // Feature Components (already standalone)
@@ -37,6 +39,8 @@ export default function App() {
   const [generationJob, setGenerationJob] = useState(null);
   const [loading, setLoading] = useState(false);
   const { notification, showNotification } = useNotification();
+  const [showAuth, setShowAuth] = useState(false);
+  const [authMode, setAuthMode] = useState('login');
 
   // Event form state
   const [newEvent, setNewEvent] = useState({
@@ -355,7 +359,17 @@ export default function App() {
   };
 
   if (authLoading) return <div className="flex h-screen items-center justify-center text-slate-500">Loading...</div>;
-  if (!user) return <AuthPages />;
+  if (!user) {
+    if (showAuth) {
+      return <AuthPages initialMode={authMode} onBack={() => setShowAuth(false)} />;
+    }
+    return (
+      <LandingPage 
+        onLogin={() => { setAuthMode('login'); setShowAuth(true); }} 
+        onRegister={() => { setAuthMode('register'); setShowAuth(true); }} 
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-900">
@@ -446,6 +460,10 @@ export default function App() {
 
         {activeTab === 'verify' && (
           <VerifyPage apiBase={API} />
+        )}
+        
+        {activeTab === 'team' && (
+          <TeamPage apiBase={API} />
         )}
       </main>
 

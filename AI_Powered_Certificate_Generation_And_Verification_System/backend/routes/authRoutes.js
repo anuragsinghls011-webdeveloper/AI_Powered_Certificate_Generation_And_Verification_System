@@ -12,7 +12,7 @@ const {
   sha256, randomTokenUrl64, ACCESS_TTL, REFRESH_TTL
 } = require('../utils/tokens');
 const { hashPassword, verifyPassword, validatePasswordStrength } = require('../utils/passwords');
-const { sendVerificationEmail, sendPasswordResetEmail } = require('../utils/emailService');
+const { sendVerificationEmail, sendPasswordResetEmail, sendInviteEmail } = require('../utils/emailService');
 const { logAudit } = require('../utils/audit');
 const { workLimit } = require('../services/workload');
 const { ROLE_PERMISSIONS, permissionsForMembership } = require('../utils/rbac');
@@ -61,6 +61,8 @@ const mw = require('../middleware/authMiddleware');
       await getDB().collection('sessions').createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 });
       await getDB().collection('email_verification_tokens').createIndex({ token_hash: 1 });
       await getDB().collection('email_verification_tokens').createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 });
+      await getDB().collection('registration_otps').createIndex({ email: 1 }, { unique: true });
+      await getDB().collection('registration_otps').createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 });
       await getDB().collection('password_reset_tokens').createIndex({ token_hash: 1 });
       await getDB().collection('password_reset_tokens').createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 });
       await getDB().collection('login_attempts').createIndex({ identifier: 1 });
@@ -108,10 +110,161 @@ const mw = require('../middleware/authMiddleware');
     windowMs: 60 * 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false,
     message: { error: 'Too many password reset requests.' }
   });
+  const otpLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, max: 5, standardHeaders: true, legacyHeaders: false,
+    message: { error: 'Too many OTP requests from this IP.' }
+  });
+
+  // ================= SEND REGISTRATION OTP =================
+  router.post('/send-registration-otp', otpLimiter, async (req, res) => {
+    try {
+      const email = String(req.body?.email || '').trim().toLowerCase();
+      const name = String(req.body?.name || '').trim().replace(/[<>]/g, '');
+      if (!email || !name) return res.status(400).json({ error: 'Email and name are required' });
+      
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) return res.status(400).json({ error: 'Invalid email format' });
+
+      const existingUser = await getDB().collection('users').findOne({ email });
+      if (existingUser) return res.status(400).json({ error: 'Email already registered' });
+
+      const rawCode = crypto.randomInt(100000, 1000000).toString();
+      const expiresAt = inSecondsFromNow(600); // 10 minutes expiry
+
+      // Upsert into registration_otps
+      await getDB().collection('registration_otps').updateOne(
+        { email },
+        { $set: { code_hash: sha256(rawCode), expires_at: expiresAt } },
+        { upsert: true }
+      );
+
+      let verificationCode = null;
+      try {
+        const emailResult = await sendVerificationEmail({ email, name, id: 'registration' }, rawCode);
+        if (emailResult && emailResult.code) verificationCode = emailResult.code;
+      } catch (e) {
+        console.error('Failed to send OTP email', e);
+      }
+
+      const responsePayload = { message: 'OTP sent successfully' };
+      if (verificationCode || !require('../utils/emailService').HAS_KEY()) {
+        responsePayload.dev_code = rawCode;
+      }
+      res.json(responsePayload);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 
   // ================= REGISTER =================
-  router.post('/register', registerLimiter, (req, res) => {
-    res.status(403).json({ error: 'Public registration is disabled. Contact your administrator.', code: 'REGISTRATION_DISABLED' });
+  router.post('/register', registerLimiter, async (req, res) => {
+    try {
+      const email = String(req.body?.email || '').trim().toLowerCase();
+      const password = String(req.body?.password || '');
+      const name = String(req.body?.name || '').trim().replace(/[<>]/g, '');
+      const orgNameInput = String(req.body?.organizationName || '').trim().replace(/[<>]/g, '');
+      const code = String(req.body?.code || '').trim();
+
+      if (!email || !password || !name || !code) {
+        return res.status(400).json({ error: 'Email, password, name, and verification code are required' });
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ error: 'Invalid email format' });
+      }
+
+      const strengthErr = validatePasswordStrength(password);
+      if (strengthErr) {
+        return res.status(400).json({ error: strengthErr });
+      }
+
+      const existingUser = await getDB().collection('users').findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ error: 'Email already registered' });
+      }
+      
+      // Verify OTP
+      const otpRecord = await getDB().collection('registration_otps').findOne({ email });
+      if (!otpRecord) {
+        return res.status(400).json({ error: 'Verification code expired or not found. Please request a new one.' });
+      }
+      if (otpRecord.code_hash !== sha256(code)) {
+        return res.status(400).json({ error: 'Invalid verification code' });
+      }
+      if (new Date(otpRecord.expires_at) < new Date()) {
+        return res.status(400).json({ error: 'Verification code expired' });
+      }
+
+      // Code is valid, remove it
+      await getDB().collection('registration_otps').deleteOne({ email });
+
+      const userCount = await getDB().collection('users').countDocuments({});
+      const isFirstUser = userCount === 0;
+
+      const passwordHash = await hashPassword(password);
+      const userId = uuidv4();
+      const orgId = uuidv4();
+
+      const newUser = {
+        id: userId,
+        name,
+        email,
+        password_hash: passwordHash,
+        email_verified: true,
+        status: 'active',
+        current_org_id: orgId,
+        created_at: nowIso(),
+        updated_at: nowIso()
+      };
+
+      const newOrg = {
+        id: orgId,
+        name: orgNameInput || (isFirstUser ? 'Main Workspace' : `${name}'s Workspace`),
+        slug: (orgNameInput || (isFirstUser ? 'main-workspace' : name)).toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now().toString(36),
+        created_at: nowIso()
+      };
+
+      const newMembership = {
+        user_id: userId,
+        organization_id: orgId,
+        role: 'super_admin',
+        status: 'active',
+        created_at: nowIso(),
+        updated_at: nowIso()
+      };
+
+      await getDB().collection('users').insertOne(newUser);
+      await getDB().collection('organizations').insertOne(newOrg);
+      await getDB().collection('organization_memberships').insertOne(newMembership);
+
+      const sessionId = uuidv4();
+      const { token: refresh, jti } = generateRefreshToken(newUser, sessionId);
+      await getDB().collection('sessions').insertOne({
+        id: sessionId, user_id: userId, jti, token_hash: sha256(refresh),
+        ip: req.ip, user_agent: req.headers['user-agent'] || '',
+        created_at: nowIso(), last_used_at: nowIso(),
+        expires_at: inSecondsFromNow(REFRESH_TOKEN_TTL_ENV()),
+        revoked_at: null, rotated_from: null
+      });
+      const access = signAccessToken(newUser, newMembership);
+      setAuthCookies(res, access, refresh);
+
+      await logAudit(getDB(), { action: 'AUTH_REGISTER', user_id: userId, organization_id: orgId, ip: req.ip });
+
+      const responsePayload = {
+        message: 'Registration successful',
+        user: sanitizeUser(newUser),
+        organization: newOrg,
+        membership: { ...newMembership, permissions: permissionsForMembership(newMembership) },
+        access_token: access
+      };
+
+      res.status(200).json(responsePayload);
+    } catch (err) {
+      console.error('registration error', err);
+      res.status(500).json({ error: err.message });
+    }
   });
 
   function REFRESH_TOKEN_TTL_ENV() {
@@ -123,6 +276,7 @@ const mw = require('../middleware/authMiddleware');
     try {
       const email = String(req.body?.email || '').trim().toLowerCase();
       const password = String(req.body?.password || '');
+      const orgNameInput = String(req.body?.organizationName || '').trim();
       if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
 
       const identifier = `${req.ip}:${email}`;
@@ -145,6 +299,28 @@ const mw = require('../middleware/authMiddleware');
         return res.status(401).json({ error: 'Invalid credentials' });
       }
       await clearAttempts(identifier);
+
+      let targetOrgId = user.current_org_id;
+      if (orgNameInput) {
+        const targetOrg = await getDB().collection('organizations').findOne({ 
+          name: { $regex: new RegExp(`^${orgNameInput}$`, 'i') } 
+        });
+        if (!targetOrg) {
+          return res.status(401).json({ error: 'Organization not found' });
+        }
+        const checkMembership = await getDB().collection('organization_memberships').findOne({
+          user_id: user.id, organization_id: targetOrg.id, status: 'active'
+        });
+        if (!checkMembership) {
+          return res.status(403).json({ error: `You are not a member of ${targetOrg.name}` });
+        }
+        targetOrgId = targetOrg.id;
+        await getDB().collection('users').updateOne(
+          { id: user.id },
+          { $set: { current_org_id: targetOrgId, updated_at: nowIso() } }
+        );
+        user.current_org_id = targetOrgId;
+      }
 
       const membership = await getDB().collection('organization_memberships').findOne({
         user_id: user.id, organization_id: user.current_org_id, status: 'active'
@@ -357,7 +533,7 @@ const mw = require('../middleware/authMiddleware');
 
   router.post('/resend-verification', mw.authenticateUser(), workLimit('auth-email'), async (req, res) => {
     if (req.user.email_verified) return res.status(400).json({ error: 'Email already verified' });
-    const rawToken = randomTokenUrl64();
+    const rawToken = crypto.randomInt(100000, 1000000).toString();
     await getDB().collection('email_verification_tokens').insertOne({
       user_id: req.user.id, token_hash: sha256(rawToken),
       expires_at: inSecondsFromNow(60 * 60 * 24), used_at: null, created_at: nowIso()
@@ -482,13 +658,15 @@ const mw = require('../middleware/authMiddleware');
     async (req, res) => {
       const role = String(req.body?.role || '');
       if (!ROLE_PERMISSIONS[role]) return res.status(400).json({ error: 'Invalid role' });
-      // Prevent a non-super-admin from creating super-admins
-      if (role === 'super_admin' && req.membership.role !== 'super_admin') {
-        return res.status(403).json({ error: 'Only super_admin can grant super_admin' });
+      // Only super_admin can change roles
+      if (req.membership.role !== 'super_admin') {
+        return res.status(403).json({ error: 'Only super_admin can change roles' });
       }
       const target = await getDB().collection('organization_memberships').findOne({ user_id: req.params.userId, organization_id: req.membership.organization_id });
-      if (req.params.userId === req.user.id || (target?.role === 'super_admin' && req.membership.role !== 'super_admin')) {
-        return res.status(403).json({ error: 'This role change is not permitted' });
+      
+      // Prevent users from changing their own role, UNLESS they are super_admin
+      if (req.params.userId === req.user.id && req.membership.role !== 'super_admin') {
+        return res.status(403).json({ error: 'You cannot change your own role' });
       }
       const result = await getDB().collection('organization_memberships').updateOne(
         { user_id: req.params.userId, organization_id: req.membership.organization_id },
@@ -501,6 +679,120 @@ const mw = require('../middleware/authMiddleware');
       });
       res.json({ message: 'Role updated' });
     });
+
+  router.post('/invite',
+    mw.authenticateUser(),
+    mw.resolveOrganization(),
+    mw.requirePermission('members.manage'),
+    async (req, res) => {
+      const email = String(req.body?.email || '').trim().toLowerCase();
+      const role = String(req.body?.role || 'viewer');
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ error: 'Valid email is required' });
+      }
+      if (!ROLE_PERMISSIONS[role]) return res.status(400).json({ error: 'Invalid role' });
+      if (role === 'super_admin' && req.membership.role !== 'super_admin') {
+        return res.status(403).json({ error: 'Only super_admin can grant super_admin' });
+      }
+
+      let user = await getDB().collection('users').findOne({ email });
+      let tempPassword = null;
+      let isNewUser = false;
+
+      if (!user) {
+        isNewUser = true;
+        tempPassword = crypto.randomBytes(6).toString('hex'); // 12 chars
+        const passwordHash = await hashPassword(tempPassword);
+        const userId = uuidv4();
+        
+        user = {
+          id: userId,
+          name: email.split('@')[0], // placeholder name
+          email,
+          password_hash: passwordHash,
+          email_verified: false,
+          status: 'active',
+          current_org_id: req.membership.organization_id,
+          created_at: nowIso(),
+          updated_at: nowIso()
+        };
+        await getDB().collection('users').insertOne(user);
+      }
+
+      const existingMembership = await getDB().collection('organization_memberships').findOne({
+        user_id: user.id, organization_id: req.membership.organization_id
+      });
+
+      if (existingMembership) {
+        return res.status(400).json({ error: 'User is already a member of this organization' });
+      }
+
+      const newMembership = {
+        user_id: user.id,
+        organization_id: req.membership.organization_id,
+        role: role,
+        status: 'active',
+        created_at: nowIso(),
+        updated_at: nowIso()
+      };
+      await getDB().collection('organization_memberships').insertOne(newMembership);
+
+      await logAudit(getDB(), {
+        action: 'MEMBER_INVITED', user_id: req.user.id,
+        target_user_id: user.id, organization_id: req.membership.organization_id, new_role: role
+      });
+
+      try {
+        const organization = await getDB().collection('organizations').findOne({ id: req.membership.organization_id });
+        await sendInviteEmail(email, req.user.name, organization?.name || 'an organization', role, tempPassword);
+      } catch (err) {
+        console.error('Failed to send invite email:', err);
+      }
+
+      res.json({
+        message: 'User invited successfully',
+        is_new_user: isNewUser,
+        temp_password: tempPassword
+      });
+    }
+  );
+
+  router.delete('/members/:userId',
+    mw.authenticateUser(),
+    mw.resolveOrganization(),
+    mw.requirePermission('members.manage'),
+    async (req, res) => {
+      // Only super_admin can delete members
+      if (req.membership.role !== 'super_admin') {
+        return res.status(403).json({ error: 'Only super_admin can remove members' });
+      }
+
+      // Cannot delete self
+      if (req.params.userId === req.user.id) {
+        return res.status(400).json({ error: 'You cannot remove yourself' });
+      }
+
+      const target = await getDB().collection('organization_memberships').findOne({ user_id: req.params.userId, organization_id: req.membership.organization_id });
+      if (!target) {
+        return res.status(404).json({ error: 'Membership not found' });
+      }
+
+      await getDB().collection('organization_memberships').deleteOne({ user_id: req.params.userId, organization_id: req.membership.organization_id });
+
+      // If the user's current_org_id was this org, clear it so they are prompted to switch on next login
+      await getDB().collection('users').updateOne(
+        { id: req.params.userId, current_org_id: req.membership.organization_id },
+        { $set: { current_org_id: null } }
+      );
+
+      await logAudit(getDB(), {
+        action: 'MEMBER_REMOVED', user_id: req.user.id,
+        target_user_id: req.params.userId, organization_id: req.membership.organization_id
+      });
+
+      res.json({ message: 'Member removed successfully' });
+    }
+  );
 
   // ================= AUDIT LOGS =================
   router.get('/audit-logs',

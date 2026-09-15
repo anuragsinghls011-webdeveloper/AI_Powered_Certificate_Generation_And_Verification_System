@@ -397,14 +397,33 @@ export default function Inspector({
       {/* ---------------- Typography ---------------- */}
       {text && (
         <Section icon={Palette} title="Typography" testId="ds-section-typography">
-          <div>
-            <Label>Font</Label>
-            <Select
-              testId="ds-field-font"
-              value={field.fontFamily || 'Helvetica'}
-              onChange={(e) => put({ fontFamily: e.target.value }, `${field.id}:fontFamily`)}
-              options={FONT_FAMILIES}
-            />
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label>Font</Label>
+              <Select
+                testId="ds-field-font"
+                value={field.fontFamily || 'Helvetica'}
+                onChange={(e) => put({ fontFamily: e.target.value }, `${field.id}:fontFamily`)}
+                options={FONT_FAMILIES}
+              />
+            </div>
+            <div>
+              <Label>Weight</Label>
+              <Select
+                testId="ds-field-fontweight"
+                value={field.fontWeight === 'bold' ? '700' : field.fontWeight === 'normal' ? '400' : String(field.fontWeight || '400')}
+                onChange={(e) => put({ fontWeight: e.target.value }, `${field.id}:fontWeight`)}
+                options={[
+                  { value: '300', label: 'Light (300)' },
+                  { value: '400', label: 'Normal (400)' },
+                  { value: '500', label: 'Medium (500)' },
+                  { value: '600', label: 'Semi Bold (600)' },
+                  { value: '700', label: 'Bold (700)' },
+                  { value: '800', label: 'Extra Bold (800)' },
+                  { value: '900', label: 'Black (900)' }
+                ]}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
@@ -428,15 +447,7 @@ export default function Inspector({
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-1">
-            <ToggleButton
-              testId="ds-field-bold"
-              title="Bold"
-              active={field.fontWeight === 'bold'}
-              onClick={() => put({ fontWeight: field.fontWeight === 'bold' ? 'normal' : 'bold' })}
-            >
-              <Bold className="w-4 h-4" />
-            </ToggleButton>
+          <div className="grid grid-cols-2 gap-1">
             <ToggleButton
               testId="ds-field-italic"
               title="Italic"
