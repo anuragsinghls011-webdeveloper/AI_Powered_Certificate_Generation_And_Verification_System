@@ -1,8 +1,12 @@
 {
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "https://ai-powered-certificate-generation-and.onrender.com/api/$1"
+      "source": "/api/:match*",
+      "destination": "https://internalinternship2026.onrender.com/api/:match*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
