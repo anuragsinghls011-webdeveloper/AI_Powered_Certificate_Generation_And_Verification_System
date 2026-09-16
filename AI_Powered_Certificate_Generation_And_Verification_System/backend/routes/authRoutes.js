@@ -360,7 +360,7 @@ const mw = require('../middleware/authMiddleware');
   // ================= REFRESH =================
   router.post('/refresh', async (req, res) => {
     try {
-      const raw = req.cookies?.refresh_token || req.body?.refresh_token;
+      const raw = req.body?.refresh_token || req.cookies?.refresh_token;
       if (!raw) return res.status(401).json({ error: 'No refresh token' });
 
       let decoded;
@@ -415,7 +415,7 @@ const mw = require('../middleware/authMiddleware');
   // ================= LOGOUT =================
   router.post('/logout', mw.authenticateUser({ optional: true }), async (req, res) => {
     try {
-      const raw = req.cookies?.refresh_token;
+      const raw = req.body?.refresh_token || req.cookies?.refresh_token;
       if (raw) {
         await getDB().collection('sessions').updateOne(
           { token_hash: sha256(raw), revoked_at: null },

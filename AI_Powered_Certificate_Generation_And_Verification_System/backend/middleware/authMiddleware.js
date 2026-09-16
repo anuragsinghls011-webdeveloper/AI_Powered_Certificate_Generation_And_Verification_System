@@ -4,9 +4,11 @@ const { getDB } = require('../config/db');
 
 function authenticateUser({ optional = false } = {}) {
   return async (req, res, next) => {
-    let token = req.cookies?.access_token;
-    if (!token && req.headers.authorization?.startsWith('Bearer ')) {
+    let token = null;
+    if (req.headers.authorization?.startsWith('Bearer ')) {
       token = req.headers.authorization.slice(7);
+    } else if (req.cookies?.access_token) {
+      token = req.cookies.access_token;
     }
     if (!token) {
       if (optional) return next();
