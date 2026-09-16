@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://ai-powered-certificate-generation-and.onrender.com/api/$1"
+    }
+  ]
+}
