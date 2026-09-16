@@ -56,19 +56,6 @@ async function seedInitialData() {
     ]);
   }
 
-  const evCount = await eventsCol.countDocuments();
-  if (evCount === 0) {
-    await eventsCol.insertOne({
-      id: 'evt-hack-2025',
-      title: 'Global AI Hackathon 2025',
-      category: 'Hackathon',
-      date: '2025-10-15',
-      description: '48-hour intense coding and LLM integration challenge.',
-      organizer: 'Department of Computer Science',
-      location: 'Main Auditorium & Virtual',
-      created_at: new Date().toISOString()
-    });
-  }
 }
 
 module.exports = { seedInitialData };
