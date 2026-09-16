@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:match*",
-      "destination": "https://internalinternship2026.onrender.com/api/:match*"
+      "destination": "https://ai-powered-certificate-generation-and.onrender.com/api/:match*"
     },
     {
       "source": "/(.*)",
