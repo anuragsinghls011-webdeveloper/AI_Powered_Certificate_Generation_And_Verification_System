@@ -15,6 +15,7 @@ import FieldView from './FieldView';
  */
 export default function CertificateSurface({
   template,
+  cert = null,
   scale = 1,
   interactive = false,
   selectedIds = [],
@@ -97,6 +98,7 @@ export default function CertificateSurface({
               key={f.id}
               field={f}
               template={template}
+              cert={cert}
               scale={scale}
               interactive={interactive}
               selected={selected.has(f.id)}

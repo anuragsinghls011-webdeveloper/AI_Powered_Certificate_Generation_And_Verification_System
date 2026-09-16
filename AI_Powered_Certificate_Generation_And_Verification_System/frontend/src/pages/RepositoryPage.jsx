@@ -111,14 +111,18 @@ export default function RepositoryPage({
                       >
                         <FileText className="w-4 h-4" />
                       </button>
-                      <a 
+                      <button 
                         data-testid={`download-pdf-${cert.cert_id}`}
-                        href={`${apiBase}/certificates/${cert.cert_id}/download-pdf`}
+                        onClick={() => {
+                          import('../services/api').then(module => {
+                            module.downloadCertificatePdf(cert.cert_id);
+                          });
+                        }}
                         className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition inline-flex"
                         title="Download PDF"
                       >
                         <Download className="w-4 h-4" />
-                      </a>
+                      </button>
                       <button 
                         data-testid={`send-email-${cert.cert_id}`}
                         onClick={() => onSendEmail(cert.cert_id)}

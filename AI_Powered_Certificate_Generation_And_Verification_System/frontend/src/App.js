@@ -469,6 +469,7 @@ export default function App() {
 
       <PreviewModal
         cert={previewCert}
+        template={previewCert ? templates.find(t => t.id === previewCert.template_id) : null}
         onClose={() => setPreviewCert(null)}
         apiBase={API}
       />

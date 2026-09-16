@@ -121,13 +121,17 @@ export default function DashboardPage({
                     >
                       <FileText className="w-4 h-4" />
                     </button>
-                    <a 
-                      href={`${apiBase}/certificates/${cert.cert_id}/download-pdf`}
+                    <button 
+                      onClick={() => {
+                        import('../services/api').then(module => {
+                          module.downloadCertificatePdf(cert.cert_id);
+                        });
+                      }}
                       className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
                       title="Download PDF"
                     >
                       <Download className="w-4 h-4" />
-                    </a>
+                    </button>
                   </div>
                 </div>
               ))}

@@ -1,13 +1,32 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import {
-  ShieldCheck, CheckCircle2, AlertTriangle, Download
+  ShieldCheck, CheckCircle2, AlertTriangle, Download, Linkedin, Twitter
 } from 'lucide-react';
 
 export default function VerifyPage({ apiBase }) {
   const [verifySearchId, setVerifySearchId] = useState('');
   const [verifiedCert, setVerifiedCert] = useState(null);
   const [verifyError, setVerifyError] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const handleLinkedInPost = async (e) => {
+    e.preventDefault();
+    if (!verifiedCert) return;
+    
+    const text = `🎉 I'm excited to share that I have successfully completed ${verifiedCert.event_title} from ${verifiedCert.organization_name}.\n\nThis credential recognizes my achievement as a ${verifiedCert.role} with a grade of ${verifiedCert.grade}.\n\n🔗 Verify my credential: ${verifiedCert.verification_url}\n\n#${verifiedCert.event_category.replace(/[^a-zA-Z0-9]/g, '') || 'Achievement'} #Certification #Learning #${verifiedCert.organization_name.replace(/[^a-zA-Z0-9]/g, '') || 'Success'}`;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+      
+      const shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(verifiedCert.verification_url)}`;
+      window.open(shareUrl, '_blank');
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+  };
 
   const handleVerifyCertificate = async (e) => {
     e.preventDefault();
@@ -20,6 +39,26 @@ export default function VerifyPage({ apiBase }) {
     } catch (err) {
       setVerifyError('Certificate not found or ID is invalid. Please check and try again.');
     }
+  };
+
+  const getLinkedInUrl = () => {
+    if (!verifiedCert) return '#';
+    const baseUrl = 'https://www.linkedin.com/profile/add?startTask=CERTIFICATION_NAME';
+    const name = encodeURIComponent(verifiedCert.event_title);
+    const org = encodeURIComponent(verifiedCert.organization_name);
+    const certId = encodeURIComponent(verifiedCert.cert_id);
+    const certUrl = encodeURIComponent(verifiedCert.verification_url);
+    const issueDate = new Date(verifiedCert.issue_date);
+    const year = issueDate.getFullYear() || '';
+    const month = issueDate.getMonth() + 1 || '';
+    return `${baseUrl}&name=${name}&organizationName=${org}&issueYear=${year}&issueMonth=${month}&certId=${certId}&certUrl=${certUrl}`;
+  };
+
+  const getTwitterUrl = () => {
+    if (!verifiedCert) return '#';
+    const text = encodeURIComponent(`I just earned the ${verifiedCert.event_title} certificate from ${verifiedCert.organization_name}!`);
+    const certUrl = encodeURIComponent(verifiedCert.verification_url);
+    return `https://twitter.com/intent/tweet?text=${text}&url=${certUrl}`;
   };
 
   return (
@@ -109,12 +148,38 @@ export default function VerifyPage({ apiBase }) {
             </div>
           </div>
 
-          <div className="mt-8 flex gap-4">
-            <a 
-              href={`${apiBase}/certificates/${verifiedCert.cert_id}/download-pdf`}
-              className="flex-1 py-3 bg-brand-600 text-white font-semibold rounded-xl text-center hover:bg-brand-700 transition flex items-center justify-center gap-2"
+          <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button 
+              onClick={() => {
+                import('../services/api').then(module => {
+                  module.downloadCertificatePdf(verifiedCert.cert_id);
+                });
+              }}
+              className="py-3 bg-brand-600 text-white font-semibold rounded-xl text-center hover:bg-brand-700 transition flex items-center justify-center gap-2"
             >
-              <Download className="w-5 h-5" /> Download Official PDF Certificate
+              <Download className="w-5 h-5" /> Download PDF
+            </button>
+            <button 
+              onClick={handleLinkedInPost}
+              className="py-3 bg-[#0077b5] text-white font-semibold rounded-xl text-center hover:bg-[#006396] transition flex items-center justify-center gap-2 relative overflow-hidden"
+            >
+              <Linkedin className="w-5 h-5" /> {copied ? 'Post Text Copied!' : 'Share Post (LinkedIn)'}
+            </button>
+            <a 
+              href={getLinkedInUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="py-3 bg-slate-100 border border-slate-200 text-slate-700 font-semibold rounded-xl text-center hover:bg-slate-200 transition flex items-center justify-center gap-2"
+            >
+              <Linkedin className="w-5 h-5 text-[#0077b5]" /> Add to Profile
+            </a>
+            <a 
+              href={getTwitterUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="py-3 bg-[#1DA1F2] text-white font-semibold rounded-xl text-center hover:bg-[#1a91da] transition flex items-center justify-center gap-2"
+            >
+              <Twitter className="w-5 h-5" /> Share Tweet
             </a>
           </div>
         </div>

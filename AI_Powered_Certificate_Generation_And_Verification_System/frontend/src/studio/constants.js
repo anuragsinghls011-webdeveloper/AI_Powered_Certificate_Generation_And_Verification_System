@@ -184,8 +184,20 @@ export const SAMPLE_VALUES = FIELD_TYPES.reduce((acc, t) => {
   return acc;
 }, {});
 
-/** What a field should display on the canvas. */
-export function fieldSampleText(field, template = {}) {
+export function fieldSampleText(field, template = {}, cert = null) {
+  if (cert) {
+    if (field.type === 'recipient_name') return cert.recipient_name || '';
+    if (field.type === 'recipient_email') return cert.recipient_email || '';
+    if (field.type === 'rank' || field.type === 'role') return cert.role || '';
+    if (field.type === 'score' || field.type === 'grade') return cert.grade || '';
+    if (field.type === 'event_title') return cert.event_title || '';
+    if (field.type === 'issue_date') return cert.issue_date || '';
+    if (field.type === 'certificate_id') return cert.cert_id || '';
+    if (field.type === 'certificate_link') return cert.verification_url ? cert.verification_url.replace(/^https?:\/\//, '') : '';
+    if (field.type === 'issuer_name') return field.text || cert.issuer_name || template.issuer_name || '';
+    if (field.type === 'issuer_title') return field.text || cert.issuer_title || template.issuer_title || '';
+  }
+
   switch (field.type) {
     case 'custom_text':
     case 'text_block':

@@ -4,6 +4,7 @@ const path = require('path');
 const crypto = require('crypto');
 const QRCode = require('qrcode');
 const { renderCertificatePdfBuffer } = require('./certificateRenderer');
+const storageService = require('../../services/storageService');
 const { invertMapping } = require('./validationEngine');
 const { deliverCertificate } = require('../../services/certificateEmailService');
 const { acquireSlot } = require('../../services/workload');
@@ -56,12 +57,21 @@ async function processRecord(db, job, record, owner) {
   const values = valuesFor(job, record, certId);
   if (!values.recipient_name) throw new Error('Recipient name is required');
   const directory = path.join(config.certDir, job.id);
-  fs.mkdirSync(directory, { recursive: true });
+  const fileName = `${record._id}.pdf`;
+
   // Stable immutable row key: an ambiguous display filename cannot alias another row.
-  const filePath = path.join(directory, `${record._id}.pdf`);
-  const pdf = fs.existsSync(filePath) ? fs.readFileSync(filePath) : await renderCertificatePdfBuffer(job.template_snapshot, values);
-  await owned(db, job, owner);
-  if (!fs.existsSync(filePath)) fs.writeFileSync(filePath, pdf, { flag: 'wx', mode: 0o600 });
+  const pdfCheck = await storageService.checkPdfExists(directory, fileName);
+  let filePath = pdfCheck.path;
+  let pdf = null;
+
+  if (pdfCheck.exists) {
+    pdf = await storageService.getPdfBuffer(filePath);
+  } else {
+    pdf = await renderCertificatePdfBuffer(job.template_snapshot, values);
+    await owned(db, job, owner);
+    filePath = await storageService.uploadPdf(directory, fileName, pdf);
+  }
+
   const qr = await QRCode.toDataURL(values.verification_url);
   const certificate = {
     issuance_key: record._id, organization_id: job.organization_id, created_by: job.created_by,

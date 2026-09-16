@@ -23,7 +23,8 @@ export default function FieldView({
   scale = 1,
   onPointerDown,
   onDoubleClick,
-  registerNode
+  registerNode,
+  cert = null
 }) {
   const pageY = num(field.y) * SCALE_Y;
   const pageX = num(field.x);
@@ -31,7 +32,7 @@ export default function FieldView({
   const opacity = field.visible === false ? 0 : num(field.opacity, 1);
 
   const text = isTextField(field)
-    ? applyTextTransform(fieldSampleText(field, template), field.textTransform)
+    ? applyTextTransform(fieldSampleText(field, template, cert), field.textTransform)
     : '';
   const isBlock = field.type === 'text_block';
   const layout = isTextField(field) ? textLayout(field, isBlock ? num(field.lineHeight, 1.35) : 1) : null;
@@ -72,7 +73,9 @@ export default function FieldView({
     // The renderer draws the QR square, sized from width only.
     const size = Math.max(16, num(field.width, 80));
     Object.assign(style, { width: size, height: size });
-    inner = (
+    inner = cert?.qr_code_b64 ? (
+      <img src={`data:image/png;base64,${cert.qr_code_b64}`} alt="QR Code" className="w-full h-full object-contain" />
+    ) : (
       <div className="w-full h-full bg-white border border-slate-800 grid place-items-center overflow-hidden">
         <div className="text-center leading-none">
           <QrCode className="mx-auto text-slate-900" style={{ width: size * 0.6, height: size * 0.6 }} />

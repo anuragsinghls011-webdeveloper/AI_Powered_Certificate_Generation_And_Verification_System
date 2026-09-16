@@ -82,12 +82,20 @@ const sendEmail = handle(async (req, res) => {
   if (!result.delivered) return res.status(502).json({ error: 'Certificate email could not be sent. Please retry.' });
   res.json({ message: 'Certificate email accepted', cert_id: cert.cert_id, email_id: result.email_id });
 });
+const storageService = require('../services/storageService');
+
 const downloadPdf = handle(async (req, res) => {
   const cert = await selectedCertificate(req);
-  if (cert.pdf_path && require('fs').existsSync(cert.pdf_path)) {
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=Certificate_${cert.cert_id}.pdf`);
-    return res.sendFile(require('path').resolve(cert.pdf_path));
+  if (cert.pdf_path) {
+    try {
+      const { stream, length } = await storageService.downloadPdfStream(cert.pdf_path);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=Certificate_${cert.cert_id}.pdf`);
+      if (length) res.setHeader('Content-Length', length);
+      return stream.pipe(res);
+    } catch (e) {
+      console.warn('Failed to fetch PDF from storage, generating on-the-fly:', e.message);
+    }
   }
   const template = await getTemplatesCol().findOne(scoped({ id: cert.template_id }, templateScope(req)));
   await streamCertificatePdf(cert, template, res);
