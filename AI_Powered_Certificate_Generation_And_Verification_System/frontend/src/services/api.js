@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://ai-powered-certificate-generation-and.onrender.com';
 const API = `${BACKEND_URL}/api`;
 
 // Pre-configured axios instance (optional usage)
@@ -11,11 +11,14 @@ const apiClient = axios.create({
   }
 });
 
-axios.interceptors.request.use(config => {
+const tokenInterceptor = config => {
   const token = localStorage.getItem('access_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
-});
+};
+
+axios.interceptors.request.use(tokenInterceptor);
+apiClient.interceptors.request.use(tokenInterceptor);
 
 
 export async function downloadCertificatePdf(certId) {
