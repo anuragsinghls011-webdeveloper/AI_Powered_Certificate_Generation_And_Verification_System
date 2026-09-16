@@ -6,11 +6,17 @@ const API = `${BACKEND_URL}/api`;
 // Pre-configured axios instance (optional usage)
 const apiClient = axios.create({
   baseURL: API,
-  withCredentials: true,
   headers: {
     'Content-Type': 'application/json'
   }
 });
+
+axios.interceptors.request.use(config => {
+  const token = localStorage.getItem('access_token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
 
 export async function downloadCertificatePdf(certId) {
   try {

@@ -31,8 +31,8 @@ const corsPolicy = cors({
 function csrfGuard(req, res, next) {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
   const cookieAuth = Boolean(req.cookies?.access_token || req.cookies?.refresh_token);
-  // Only cryptographically valid, cookie-free bearer requests may bypass browser CSRF.
-  if (!cookieAuth && !req.headers.origin && req.headers.authorization?.startsWith('Bearer ')) {
+  // Cryptographically valid Bearer tokens are immune to CSRF (not automatically sent).
+  if (!cookieAuth && req.headers.authorization?.startsWith('Bearer ')) {
     try { verifyAccessToken(req.headers.authorization.slice(7)); return next(); }
     catch { return res.status(401).json({ error: 'Invalid or expired token' }); }
   }

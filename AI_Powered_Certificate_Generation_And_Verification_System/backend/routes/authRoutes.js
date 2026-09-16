@@ -257,7 +257,8 @@ const mw = require('../middleware/authMiddleware');
         user: sanitizeUser(newUser),
         organization: newOrg,
         membership: { ...newMembership, permissions: permissionsForMembership(newMembership) },
-        access_token: access
+        access_token: access,
+        refresh_token: refresh
       };
 
       res.status(200).json(responsePayload);
@@ -347,7 +348,8 @@ const mw = require('../middleware/authMiddleware');
         user: sanitizeUser(user),
         organization,
         membership: membership ? { ...membership, permissions: permissionsForMembership(membership) } : null,
-        access_token: access
+        access_token: access,
+        refresh_token: refresh
       });
     } catch (err) {
       console.error('login error', err);
@@ -404,7 +406,7 @@ const mw = require('../middleware/authMiddleware');
       });
       const access = signAccessToken(user, membership);
       setAuthCookies(res, access, newRefresh);
-      res.json({ access_token: access, expires_in: ACCESS_TTL });
+      res.json({ access_token: access, refresh_token: newRefresh, expires_in: ACCESS_TTL });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }

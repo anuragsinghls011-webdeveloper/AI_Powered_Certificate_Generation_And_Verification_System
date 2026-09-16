@@ -7,8 +7,8 @@ import '../services/csrf';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const API = `${BACKEND_URL}/api`;
 
-// Global axios: send cookies with every request
-axios.defaults.withCredentials = true;
+// Use api.js which has the Bearer interceptor configured
+import { apiClient as axios } from '../services/api';
 
 const AuthCtx = createContext(null);
 export const useAuth = () => useContext(AuthCtx);
@@ -46,7 +46,11 @@ export function AuthProvider({ children }) {
     if (refreshingRef.current) return refreshingRef.current;
     refreshingRef.current = (async () => {
       try {
-        await axios.post(`${API}/auth/refresh`);
+        const refreshToken = localStorage.getItem('refresh_token');
+        if (!refreshToken) throw new Error('No refresh token');
+        const resRefresh = await axios.post(`${API}/auth/refresh`, { refresh_token: refreshToken });
+        localStorage.setItem('access_token', resRefresh.data.access_token);
+        localStorage.setItem('refresh_token', resRefresh.data.refresh_token);
         // Re-fetch me
         const res = await axios.get(`${API}/auth/me`);
         setUser(res.data.user);
@@ -90,6 +94,8 @@ export function AuthProvider({ children }) {
     setError('');
     try {
       const res = await axios.post(`${API}/auth/login`, { email, password, organizationName });
+      localStorage.setItem('access_token', res.data.access_token);
+      localStorage.setItem('refresh_token', res.data.refresh_token);
       setUser(res.data.user);
       setMembership(res.data.membership);
       setOrganization(res.data.organization);
@@ -114,6 +120,8 @@ export function AuthProvider({ children }) {
     setError('');
     try {
       const res = await axios.post(`${API}/auth/register`, userData);
+      localStorage.setItem('access_token', res.data.access_token);
+      localStorage.setItem('refresh_token', res.data.refresh_token);
       setUser(res.data.user);
       setMembership(res.data.membership);
       setOrganization(res.data.organization);
@@ -127,11 +135,15 @@ export function AuthProvider({ children }) {
 
   const logout = async () => {
     try { await axios.post(`${API}/auth/logout`); } catch (e) { /* ignore */ }
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     setUser(null); setMembership(null); setMemberships([]); setOrganization(null);
   };
 
   const logoutAll = async () => {
     try { await axios.post(`${API}/auth/logout-all`); } catch (e) { /* ignore */ }
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     setUser(null); setMembership(null); setMemberships([]); setOrganization(null);
   };
 
