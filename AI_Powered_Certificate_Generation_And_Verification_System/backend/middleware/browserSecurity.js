@@ -12,7 +12,12 @@ const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
   cookieName: isProd ? '__Host-campuscert-csrf' : 'campuscert-csrf', cookieOptions,
   errorConfig: { statusCode: 403, message: 'Security token is missing or expired.', code: 'CSRF_INVALID' }
 });
-const allowed = origin => typeof origin === 'string' && config.origins.includes(origin);
+const allowed = origin => {
+  if (typeof origin !== 'string') return false;
+  if (config.origins.includes(origin)) return true;
+  if (origin.endsWith('.vercel.app')) return true;
+  return false;
+};
 
 function originGuard(req, res, next) {
   if (Object.keys(req.query).some(key => /[\[\]]/.test(key))) return res.status(400).json({ error: 'Nested query parameters are not supported' });
