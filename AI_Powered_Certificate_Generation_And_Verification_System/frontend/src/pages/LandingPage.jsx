@@ -136,7 +136,7 @@ export default function LandingPage({ onLogin, onRegister }) {
               <Award className="w-16 h-16 text-amber-500 mb-4 drop-shadow-md" />
               <h2 className="text-3xl font-serif font-bold text-slate-800 mb-2">Certificate of Excellence</h2>
               <p className="text-sm text-brand-600 mb-8 uppercase tracking-widest font-bold">This certifies that</p>
-              <h3 className="text-4xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-brand-700 to-pink-600 mb-8 italic border-b border-brand-200 pb-2 px-12 drop-shadow-sm">Jane Doe</h3>
+              <h3 className="text-4xl font-serif text-transparent bg-clip-text bg-gradient-to-r from-brand-700 to-pink-600 mb-8 italic border-b border-brand-200 pb-2 px-12 drop-shadow-sm">Recieptent Name</h3>
               <p className="text-sm text-slate-700 max-w-sm mb-12 font-medium">Has successfully completed the advanced training program with outstanding performance and dedication.</p>
               
               <div className="flex justify-between w-full px-8 mt-auto">
