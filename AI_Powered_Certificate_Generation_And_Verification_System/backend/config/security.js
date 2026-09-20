@@ -8,7 +8,8 @@ const integer = name => {
   if (!Number.isSafeInteger(value) || value < 1) throw new Error(`${name} must be a positive integer`);
   return value;
 };
-const origins = required('CORS_ALLOWED_ORIGINS').split(',').map(value => value.trim());
+const envOrigins = (process.env.CORS_ALLOWED_ORIGINS || '').split(',').map(value => value.trim()).filter(Boolean);
+const origins = Array.from(new Set([...envOrigins, 'https://internalinternship2026.vercel.app', 'http://localhost:3000']));
 for (const origin of origins) {
   const parsed = new URL(origin);
   if (!['https:', 'http:'].includes(parsed.protocol) || parsed.origin !== origin) throw new Error('Invalid CORS origin');
