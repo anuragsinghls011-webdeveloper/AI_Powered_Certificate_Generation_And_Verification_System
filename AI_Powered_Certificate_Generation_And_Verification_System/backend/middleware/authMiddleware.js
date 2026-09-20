@@ -7,8 +7,6 @@ function authenticateUser({ optional = false } = {}) {
     let token = null;
     if (req.headers.authorization?.startsWith('Bearer ')) {
       token = req.headers.authorization.slice(7);
-    } else if (req.cookies?.access_token) {
-      token = req.cookies.access_token;
     }
     if (!token) {
       if (optional) return next();

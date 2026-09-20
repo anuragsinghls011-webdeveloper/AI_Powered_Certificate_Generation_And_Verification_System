@@ -31,15 +31,15 @@ function cookieOptions() {
 }
 
 function setAuthCookies(res, accessToken, refreshToken) {
-  const base = cookieOptions();
-  res.cookie('access_token', accessToken, { ...base, maxAge: ACCESS_TTL * 1000 });
-  res.cookie('refresh_token', refreshToken, { ...base, maxAge: REFRESH_TTL * 1000, path: '/api/auth' });
+  // const base = cookieOptions();
+  // res.cookie('access_token', accessToken, { ...base, maxAge: ACCESS_TTL * 1000 });
+  // res.cookie('refresh_token', refreshToken, { ...base, maxAge: REFRESH_TTL * 1000, path: '/api/auth' });
 }
 
 function clearAuthCookies(res) {
-  const base = cookieOptions();
-  res.clearCookie('access_token', base);
-  res.clearCookie('refresh_token', { ...base, path: '/api/auth' });
+  // const base = cookieOptions();
+  // res.clearCookie('access_token', base);
+  // res.clearCookie('refresh_token', { ...base, path: '/api/auth' });
 }
 
 function sanitizeUser(u) {
@@ -360,7 +360,7 @@ const mw = require('../middleware/authMiddleware');
   // ================= REFRESH =================
   router.post('/refresh', async (req, res) => {
     try {
-      const raw = req.body?.refresh_token || req.cookies?.refresh_token;
+      const raw = req.body?.refresh_token;
       if (!raw) return res.status(401).json({ error: 'No refresh token' });
 
       let decoded;
@@ -415,7 +415,7 @@ const mw = require('../middleware/authMiddleware');
   // ================= LOGOUT =================
   router.post('/logout', mw.authenticateUser({ optional: true }), async (req, res) => {
     try {
-      const raw = req.body?.refresh_token || req.cookies?.refresh_token;
+      const raw = req.body?.refresh_token;
       if (raw) {
         await getDB().collection('sessions').updateOne(
           { token_hash: sha256(raw), revoked_at: null },

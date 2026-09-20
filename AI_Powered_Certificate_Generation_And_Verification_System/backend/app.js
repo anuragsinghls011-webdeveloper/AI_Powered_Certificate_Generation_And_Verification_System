@@ -29,8 +29,9 @@ const smallJson = express.json({ limit: config.jsonBytes });
 const templateJson = express.json({ limit: config.templateBytes });
 app.use((req, res, next) => (req.path.startsWith('/api/templates') ? templateJson : smallJson)(req, res, next));
 app.use(cookieParser());
-app.get('/api/auth/csrf', browser.csrfToken);
-app.use('/api', browser.csrfGuard);
+// CSRF is no longer needed since we use localStorage (Bearer tokens) exclusively
+// app.get('/api/auth/csrf', browser.csrfToken);
+// app.use('/api', browser.csrfGuard);
 
 // --- API Routes ---
 const authMw = require('./middleware/authMiddleware');
