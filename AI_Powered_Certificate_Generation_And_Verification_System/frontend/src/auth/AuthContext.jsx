@@ -1,16 +1,29 @@
-// Auth context + axios interceptor for cookie-based JWT with silent refresh.
+// Auth context + axios interceptor for JWT (Bearer) with silent refresh.
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
-import axios from 'axios';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
-const API = `${BACKEND_URL}/api`;
-
-// Use api.js which has the Bearer interceptor configured
-import { apiClient as axios } from '../services/api';
+import axios, { API } from '../services/api';
 
 const AuthCtx = createContext(null);
 export const useAuth = () => useContext(AuthCtx);
+
+function storeTokens(data) {
+  if (data?.access_token) localStorage.setItem('access_token', data.access_token);
+  if (data?.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
+}
+
+function clearTokens() {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+}
+
+function applySession(setters, data) {
+  setters.setUser(data.user);
+  setters.setMembership(data.membership || data.active_membership || null);
+  setters.setMemberships(data.memberships || []);
+  setters.setOrganization(
+    data.organization || data.active_membership?.organization || null
+  );
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -20,26 +33,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const refreshingRef = useRef(null);
-
-  // Fetch current user on boot
-  const bootstrap = useCallback(async () => {
-    try {
-      const res = await axios.get(`${API}/auth/me`);
-      setUser(res.data.user);
-      setMembership(res.data.active_membership);
-      setMemberships(res.data.memberships);
-      setOrganization(res.data.active_membership?.organization || null);
-    } catch (e) {
-      // Try silent refresh once
-      if (e.response?.status === 401) {
-        const refreshed = await silentRefresh();
-        if (refreshed) return; // bootstrap already re-runs on refresh success
-      }
-      setUser(null); setMembership(null); setMemberships([]); setOrganization(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const sessionSetters = { setUser, setMembership, setMemberships, setOrganization };
 
   const silentRefresh = useCallback(async () => {
     if (refreshingRef.current) return refreshingRef.current;
@@ -48,14 +42,9 @@ export function AuthProvider({ children }) {
         const refreshToken = localStorage.getItem('refresh_token');
         if (!refreshToken) throw new Error('No refresh token');
         const resRefresh = await axios.post(`${API}/auth/refresh`, { refresh_token: refreshToken });
-        localStorage.setItem('access_token', resRefresh.data.access_token);
-        localStorage.setItem('refresh_token', resRefresh.data.refresh_token);
-        // Re-fetch me
+        storeTokens(resRefresh.data);
         const res = await axios.get(`${API}/auth/me`);
-        setUser(res.data.user);
-        setMembership(res.data.active_membership);
-        setMemberships(res.data.memberships);
-        setOrganization(res.data.active_membership?.organization || null);
+        applySession(sessionSetters, res.data);
         return true;
       } catch {
         return false;
@@ -66,10 +55,27 @@ export function AuthProvider({ children }) {
     return refreshingRef.current;
   }, []);
 
+  const bootstrap = useCallback(async () => {
+    try {
+      const res = await axios.get(`${API}/auth/me`);
+      applySession(sessionSetters, res.data);
+    } catch (e) {
+      if (e.response?.status === 401) {
+        const refreshed = await silentRefresh();
+        if (refreshed) return;
+        clearTokens();
+        setUser(null);
+        setMembership(null);
+        setMemberships([]);
+        setOrganization(null);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [silentRefresh]);
+
   useEffect(() => { bootstrap(); }, [bootstrap]);
 
-  // Global axios interceptor: on 401 for /api/* (except /auth/login|register|refresh),
-  // try a single silent refresh then replay the original request.
   useEffect(() => {
     const id = axios.interceptors.response.use(
       (r) => r,
@@ -77,7 +83,7 @@ export function AuthProvider({ children }) {
         const cfg = err.config;
         if (!cfg || cfg._retried) return Promise.reject(err);
         const url = cfg.url || '';
-        const isAuthCall = /\/api\/auth\/(login|register|refresh|logout|logout-all|forgot-password|reset-password|verify-email)/.test(url);
+        const isAuthCall = /\/auth\/(login|register|refresh|logout|logout-all|forgot-password|reset-password|verify-email|send-registration-otp)/.test(url);
         if (err.response?.status === 401 && !isAuthCall) {
           cfg._retried = true;
           const ok = await silentRefresh();
@@ -92,17 +98,22 @@ export function AuthProvider({ children }) {
   const login = async (email, password, organizationName) => {
     setError('');
     try {
-      const res = await axios.post(`${API}/auth/login`, { email, password, organizationName });
-      localStorage.setItem('access_token', res.data.access_token);
-      localStorage.setItem('refresh_token', res.data.refresh_token);
-      setUser(res.data.user);
-      setMembership(res.data.membership);
-      setOrganization(res.data.organization);
-      await bootstrap();
+      const payload = { email, password };
+      const org = String(organizationName || '').trim();
+      if (org) payload.organizationName = org;
+      const res = await axios.post(`${API}/auth/login`, payload);
+      storeTokens(res.data);
+      applySession(sessionSetters, res.data);
+      try {
+        await bootstrap();
+      } catch {
+        /* session already applied from login body */
+      }
       return { ok: true };
     } catch (e) {
-      setError(formatErr(e));
-      return { ok: false, error: formatErr(e) };
+      const message = formatErr(e);
+      setError(message);
+      return { ok: false, error: message };
     }
   };
 
@@ -119,35 +130,38 @@ export function AuthProvider({ children }) {
     setError('');
     try {
       const res = await axios.post(`${API}/auth/register`, userData);
-      localStorage.setItem('access_token', res.data.access_token);
-      localStorage.setItem('refresh_token', res.data.refresh_token);
-      setUser(res.data.user);
-      setMembership(res.data.membership);
-      setOrganization(res.data.organization);
-      await bootstrap();
+      storeTokens(res.data);
+      applySession(sessionSetters, res.data);
+      try {
+        await bootstrap();
+      } catch {
+        /* session already applied from register body */
+      }
       return { ok: true, data: res.data };
     } catch (e) {
-      setError(formatErr(e));
-      return { ok: false, error: formatErr(e) };
+      const message = formatErr(e);
+      setError(message);
+      return { ok: false, error: message };
     }
   };
 
   const logout = async () => {
-    try { await axios.post(`${API}/auth/logout`); } catch (e) { /* ignore */ }
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+    try {
+      await axios.post(`${API}/auth/logout`, { refresh_token: localStorage.getItem('refresh_token') });
+    } catch (e) { /* ignore */ }
+    clearTokens();
     setUser(null); setMembership(null); setMemberships([]); setOrganization(null);
   };
 
   const logoutAll = async () => {
     try { await axios.post(`${API}/auth/logout-all`); } catch (e) { /* ignore */ }
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+    clearTokens();
     setUser(null); setMembership(null); setMemberships([]); setOrganization(null);
   };
 
   const switchOrg = async (orgId) => {
     const res = await axios.post(`${API}/auth/switch-organization`, { organization_id: orgId });
+    storeTokens(res.data);
     await bootstrap();
     return res.data;
   };
@@ -175,5 +189,6 @@ function formatErr(e) {
   const detail = e.response?.data?.error || e.response?.data?.detail;
   if (typeof detail === 'string') return detail;
   if (Array.isArray(detail)) return detail.map((x) => x.msg || JSON.stringify(x)).join(' ');
+  if (e.response?.status === 404) return 'Sign-in service was not found. Please refresh and try again.';
   return e.message || 'Something went wrong';
 }

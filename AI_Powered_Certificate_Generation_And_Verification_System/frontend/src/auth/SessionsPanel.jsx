@@ -1,11 +1,8 @@
 // Sessions panel — list active sessions, revoke individually.
 
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import axios, { API } from '../services/api';
 import { Monitor, X, Trash2, Clock, MapPin, CheckCircle2 } from 'lucide-react';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
-const API = `${BACKEND_URL}/api`;
 
 export default function SessionsPanel({ onClose }) {
   const [sessions, setSessions] = useState([]);

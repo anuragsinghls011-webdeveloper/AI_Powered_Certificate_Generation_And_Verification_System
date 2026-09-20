@@ -2,12 +2,9 @@
 // Presented at top of the app when there is no logged-in user, or from user-menu links.
 
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axios, { API } from '../services/api';
 import { Mail, Lock, User, ShieldCheck, KeyRound, ArrowRight, CheckCircle2, AlertTriangle, Award, Loader2 } from 'lucide-react';
 import { useAuth } from './AuthContext';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
-const API = `${BACKEND_URL}/api`;
 
 export default function AuthPages({ initialMode = 'login', onBack }) {
   const [mode, setMode] = useState(initialMode); // 'login' | 'register' | 'forgot' | 'reset' | 'verify'

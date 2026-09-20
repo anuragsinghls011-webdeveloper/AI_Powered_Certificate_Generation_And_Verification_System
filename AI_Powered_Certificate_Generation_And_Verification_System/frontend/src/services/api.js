@@ -1,25 +1,27 @@
 import axios from 'axios';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'https://ai-powered-certificate-generation-and.onrender.com';
-const API = `${BACKEND_URL}/api`;
+const RENDER_URL = 'https://ai-powered-certificate-generation-and.onrender.com';
+const API = (process.env.REACT_APP_BACKEND_URL || RENDER_URL).replace(/\/+$/, '') + '/api';
+const BACKEND_URL = API.replace(/\/api$/, '');
 
-// Pre-configured axios instance (optional usage)
+axios.defaults.headers.common['Content-Type'] = 'application/json';
+
 const apiClient = axios.create({
   baseURL: API,
-  headers: {
-    'Content-Type': 'application/json'
-  }
+  headers: { 'Content-Type': 'application/json' }
 });
 
-const tokenInterceptor = config => {
+const tokenInterceptor = (config) => {
   const token = localStorage.getItem('access_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 };
 
 axios.interceptors.request.use(tokenInterceptor);
 apiClient.interceptors.request.use(tokenInterceptor);
-
 
 export async function downloadCertificatePdf(certId) {
   try {
