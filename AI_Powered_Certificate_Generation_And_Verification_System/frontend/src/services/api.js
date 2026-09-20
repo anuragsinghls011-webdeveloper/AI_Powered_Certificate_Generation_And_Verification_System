@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-const RENDER_URL = 'https://ai-powered-certificate-generation-and.onrender.com';
-const API = (process.env.REACT_APP_BACKEND_URL || RENDER_URL).replace(/\/+$/, '') + '/api';
-const BACKEND_URL = API.replace(/\/api$/, '');
+// HARDCODED: Always call Render backend directly. Never go through Vercel proxy.
+const API = 'https://ai-powered-certificate-generation-and.onrender.com/api';
+const BACKEND_URL = 'https://ai-powered-certificate-generation-and.onrender.com';
 
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 
