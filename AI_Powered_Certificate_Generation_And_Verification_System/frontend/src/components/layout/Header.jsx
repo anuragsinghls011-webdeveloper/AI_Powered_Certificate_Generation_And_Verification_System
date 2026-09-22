@@ -1,15 +1,15 @@
 import React from 'react';
-import { Award, Wand2, Rocket } from 'lucide-react';
+import { Award, Wand2, Rocket, Building2 } from 'lucide-react';
 import UserMenu from '../../auth/UserMenu';
 import { useAuth } from '../../auth/AuthContext';
 
 export default function Header({ activeTab, setActiveTab, certificateCount }) {
-  const { membership, hasPermission } = useAuth();
+  const { membership, hasPermission, organization } = useAuth();
   const canReport = ['admin', 'super_admin'].includes(membership?.role);
   return (
     <header className="bg-slate-900 text-white shadow-md border-b border-slate-800">
       <div className="max-w-7xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center gap-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-grow">
           <div className="bg-brand-600 p-2.5 rounded-xl shadow-inner text-white">
             <Award className="w-8 h-8" />
           </div>
@@ -17,6 +17,18 @@ export default function Header({ activeTab, setActiveTab, certificateCount }) {
             <h1 className="text-2xl font-bold font-serif tracking-tight">CampusCert Pro</h1>
             <p className="text-xs text-slate-400">Centralized Certificate Generation & Management System</p>
           </div>
+          
+          {organization && (
+            <div className="hidden md:flex items-center gap-2 ml-4 pl-4 md:ml-6 md:pl-6 border-l border-slate-700 animate-fade-in">
+              <div className="bg-slate-800 p-1.5 rounded-lg border border-slate-700 shadow-sm">
+                 <Building2 className="w-4 h-4 text-emerald-400" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Workspace</span>
+                <span className="text-sm font-bold text-slate-100 tracking-wide">{organization.name}</span>
+              </div>
+            </div>
+          )}
         </div>
 
         <nav aria-label="Main navigation" className="order-3 w-full flex flex-wrap items-center gap-1 sm:gap-2 bg-slate-800 p-1 rounded-xl border border-slate-700">

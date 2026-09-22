@@ -6,6 +6,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
+const dns = require('dns').promises;
 
 const {
   signAccessToken, generateRefreshToken, verifyRefreshToken,
@@ -692,6 +693,17 @@ const mw = require('../middleware/authMiddleware');
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         return res.status(400).json({ error: 'Valid email is required' });
       }
+      
+      try {
+        const domain = email.split('@')[1];
+        const mxRecords = await dns.resolveMx(domain);
+        if (!mxRecords || mxRecords.length === 0) {
+          return res.status(400).json({ error: 'Invalid email id: domain does not exist or cannot receive emails' });
+        }
+      } catch (err) {
+        return res.status(400).json({ error: 'Invalid email id: domain does not exist or cannot receive emails' });
+      }
+
       if (!ROLE_PERMISSIONS[role]) return res.status(400).json({ error: 'Invalid role' });
       if (role === 'super_admin' && req.membership.role !== 'super_admin') {
         return res.status(403).json({ error: 'Only super_admin can grant super_admin' });
@@ -752,9 +764,8 @@ const mw = require('../middleware/authMiddleware');
       }
 
       res.json({
-        message: 'User invited successfully',
-        is_new_user: isNewUser,
-        temp_password: tempPassword
+        message: 'User invited successfully. An email with login instructions has been sent.',
+        is_new_user: isNewUser
       });
     }
   );

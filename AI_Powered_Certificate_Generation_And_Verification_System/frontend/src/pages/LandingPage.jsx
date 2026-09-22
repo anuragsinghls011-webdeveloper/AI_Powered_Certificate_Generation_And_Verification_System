@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Award, ShieldCheck, KeyRound, ArrowRight, Zap, CheckCircle2 } from 'lucide-react';
 
-export default function LandingPage({ onLogin, onRegister }) {
+export default function LandingPage({ onLogin, onRegister, onVerify }) {
   const containerRef = useRef(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -38,6 +38,9 @@ export default function LandingPage({ onLogin, onRegister }) {
           <span className="text-lg md:text-xl font-bold font-serif text-white">CampusCert Pro</span>
         </div>
         <div className="flex items-center gap-3 md:gap-4">
+          <button onClick={onVerify} className="px-3 py-2 md:px-4 md:py-2 text-sm font-semibold text-emerald-400 hover:text-emerald-300 transition flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4" /> Verify
+          </button>
           <button onClick={onLogin} className="px-3 py-2 md:px-4 md:py-2 text-sm font-semibold text-slate-300 hover:text-white transition">Sign In</button>
           <button onClick={onRegister} className="px-4 py-2 text-sm font-bold bg-white text-slate-900 rounded-lg hover:bg-slate-200 transition shadow-md hover:shadow-lg">Get Started</button>
         </div>

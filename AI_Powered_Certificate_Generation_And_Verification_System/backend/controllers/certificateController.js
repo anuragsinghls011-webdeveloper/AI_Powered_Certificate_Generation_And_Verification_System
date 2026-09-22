@@ -71,6 +71,17 @@ const revokeCertificate = handle(async (req, res) => {
   await getCertificatesCol().updateOne({ ...scope(req), cert_id: cert.cert_id }, { $set: { status: 'Revoked' } });
   res.json({ message: 'Certificate revoked successfully' });
 });
+const revokeBulkCertificates = handle(async (req, res) => {
+  const { cert_ids } = req.body;
+  if (!Array.isArray(cert_ids) || cert_ids.length === 0 || cert_ids.length > 5000) {
+    throw invalid('Invalid or too many certificate IDs');
+  }
+  await getCertificatesCol().updateMany(
+    { ...scope(req), cert_id: { $in: cert_ids.map(id => String(id)) } },
+    { $set: { status: 'Revoked' } }
+  );
+  res.json({ message: `${cert_ids.length} certificates revoked successfully` });
+});
 const sendEmail = handle(async (req, res) => {
   const cert = await selectedCertificate(req);
   const template = await getTemplatesCol().findOne(scoped({ id: cert.template_id }, templateScope(req)));
@@ -100,4 +111,4 @@ const downloadPdf = handle(async (req, res) => {
   const template = await getTemplatesCol().findOne(scoped({ id: cert.template_id }, templateScope(req)));
   await streamCertificatePdf(cert, template, res);
 });
-module.exports = { getAllCertificates, generateBulkCertificates, createCertificate, getCertificateById, revokeCertificate, sendEmail, downloadPdf };
+module.exports = { getAllCertificates, generateBulkCertificates, createCertificate, getCertificateById, revokeCertificate, revokeBulkCertificates, sendEmail, downloadPdf };

@@ -9,7 +9,8 @@ const {
   getCertificateById,
   revokeCertificate,
   sendEmail,
-  downloadPdf
+  downloadPdf,
+  revokeBulkCertificates
 } = require('../controllers/certificateController');
 
 router.get('/', requirePermission('certificates.read'), getAllCertificates);
@@ -19,5 +20,6 @@ router.get('/:cert_id', requirePermission('certificates.read'), getCertificateBy
 router.delete('/:cert_id', requirePermission('certificates.delete'), revokeCertificate);
 router.post('/:cert_id/send-email', requirePermission('certificates.create'), workLimit('email'), sendEmail);
 router.get('/:cert_id/download-pdf', requirePermission('certificates.read'), workLimit('pdf'), downloadPdf);
+router.post('/bulk-revoke', requirePermission('certificates.delete'), revokeBulkCertificates);
 
 module.exports = router;

@@ -205,22 +205,14 @@ function InviteModal({ apiBase, onClose, onSuccess, membership }) {
           <h3 className="text-2xl font-bold font-serif text-slate-900 mb-2">Member Invited!</h3>
           <p className="text-slate-600 mb-6">{successData.message}</p>
           
-          {successData.is_new_user && successData.temp_password && (
+          {successData.is_new_user && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-left">
               <p className="text-sm font-semibold text-amber-800 flex items-center gap-2 mb-2">
-                <AlertTriangle className="w-4 h-4" /> Important: Temporary Password
+                <AlertTriangle className="w-4 h-4" /> Invitation Sent Securely
               </p>
-              <p className="text-xs text-amber-700 mb-3">
-                Since this is a new user, a temporary password has been generated. Please copy and securely share it with them. They should change it upon login.
+              <p className="text-xs text-amber-700 mb-0">
+                Since this is a new user, a temporary password has been generated and emailed directly to them. They must use it to log in and change their password.
               </p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 bg-white border border-amber-200 rounded-lg px-3 py-2 text-sm font-mono text-slate-800">
-                  {successData.temp_password}
-                </code>
-                <button onClick={copyPassword} className="p-2 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg transition" title="Copy Password">
-                  <Copy className="w-4 h-4" />
-                </button>
-              </div>
             </div>
           )}
           

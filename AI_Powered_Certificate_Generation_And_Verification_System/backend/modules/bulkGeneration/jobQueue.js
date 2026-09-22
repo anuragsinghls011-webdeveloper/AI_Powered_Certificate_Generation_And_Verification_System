@@ -47,7 +47,6 @@ async function counts(db, job) {
   return { successful_records: successful, failed_records: failed, processed_records: successful + failed };
 }
 async function processRecord(db, job, record, owner) {
-  await owned(db, job, owner);
   let certId = record.certificate_id;
   if (!certId) {
     const candidate = await nextCertificateId(db);
@@ -68,7 +67,6 @@ async function processRecord(db, job, record, owner) {
     pdf = await storageService.getPdfBuffer(filePath);
   } else {
     pdf = await renderCertificatePdfBuffer(job.template_snapshot, values);
-    await owned(db, job, owner);
     filePath = await storageService.uploadPdf(directory, fileName, pdf);
   }
 
@@ -83,22 +81,18 @@ async function processRecord(db, job, record, owner) {
     status: 'Active', pdf_hash: hash(pdf), pdf_path: filePath, bulk_job_id: job.id,
     sent_email: false, email_status: job.settings.email_enabled !== false && values.email ? 'queued' : 'skipped', created_at: job.created_at
   };
-  await owned(db, job, owner);
   try { await db.collection('certificates').updateOne({ issuance_key: record._id }, { $setOnInsert: certificate }, { upsert: true }); }
   catch (error) { if (error.code !== 11000) throw error; }
   const stored = await db.collection('certificates').findOne({ issuance_key: record._id, organization_id: job.organization_id });
   let emailStatus = stored.email_status;
   if (job.settings.email_enabled !== false && values.email && emailStatus !== 'sent') {
-    await owned(db, job, owner);
     const result = await deliverCertificate({ cert: stored, template: job.template_snapshot, pdfBuffer: pdf });
-    await owned(db, job, owner);
     emailStatus = result.delivered ? 'sent' : 'failed';
     await db.collection('certificates').updateOne({ issuance_key: record._id, organization_id: job.organization_id }, { $set: {
       sent_email: result.delivered, email_status: emailStatus, email_id: result.email_id || null,
       email_actual_recipient: result.actual_recipients?.[0] || null, email_error: result.delivered ? null : 'Email delivery failed'
     } });
   }
-  await owned(db, job, owner);
   await db.collection('bulk_records').updateOne({ _id: record._id, organization_id: job.organization_id }, { $set: {
     status: 'success', certificate_id: certId, pdf_path: filePath, pdf_hash: hash(pdf), email_status: emailStatus, error: null, processed_at: now()
   } });

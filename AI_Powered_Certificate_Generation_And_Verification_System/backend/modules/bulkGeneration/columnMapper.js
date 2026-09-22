@@ -8,14 +8,14 @@ const norm = (s) => (s || '')
 
 // Semantic buckets → weighted aliases
 const FIELD_ALIASES = {
-  recipient_name: ['name', 'fullname', 'participantname', 'studentname', 'recipient', 'recipientname', 'attendee', 'candidate', 'awardee', 'employee', 'person'],
-  email: ['email', 'emailaddress', 'emailid', 'mail', 'mailid', 'contactemail'],
-  event_title: ['event', 'eventname', 'course', 'coursename', 'program', 'programme', 'workshop', 'training', 'seminar', 'activity'],
+  recipient_name: ['name', 'fullname', 'participant', 'student', 'candidate', 'recipient', 'attendee', 'awardee', 'employee', 'person', 'first', 'last', 'firstname', 'lastname'],
+  email: ['email', 'mail', 'emailaddress', 'emailid', 'mailid', 'contactemail', 'contact'],
+  event_title: ['event', 'course', 'program', 'programme', 'workshop', 'training', 'seminar', 'activity', 'eventname', 'coursename', 'title'],
   issue_date: ['date', 'issuedate', 'completiondate', 'completedon', 'awardeddate', 'certdate', 'certificatedate'],
-  organization_name: ['organization', 'organisation', 'institution', 'university', 'college', 'company', 'department', 'dept'],
-  rank: ['rank', 'position', 'role', 'grade', 'category', 'placement', 'award', 'result'],
+  organization_name: ['organization', 'organisation', 'institution', 'university', 'college', 'company', 'department', 'dept', 'org'],
+  rank: ['rank', 'position', 'role', 'grade', 'category', 'placement', 'award', 'result', 'type', 'designation', 'title'],
   certificate_id: ['id', 'certid', 'certificateid', 'serial', 'serialno', 'certificateno', 'certificatenumber', 'studentid', 'employeeid', 'rollno', 'rollnumber'],
-  score: ['score', 'marks', 'percentage', 'result', 'grade', 'gpa'],
+  score: ['score', 'marks', 'percentage', 'result', 'grade', 'gpa', 'level', 'year'],
   certificate_link: ['link', 'url', 'verificationlink', 'verifyurl', 'certurl'],
 };
 

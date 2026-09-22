@@ -41,6 +41,7 @@ export default function App() {
   const { notification, showNotification } = useNotification();
   const [showAuth, setShowAuth] = useState(false);
   const [authMode, setAuthMode] = useState('login');
+  const [showVerifyPublic, setShowVerifyPublic] = useState(false);
 
   // Event form state
   const [newEvent, setNewEvent] = useState({
@@ -267,6 +268,20 @@ export default function App() {
     }
   };
 
+  const handleBulkRevoke = async (certIds) => {
+    if (!window.confirm(`Are you sure you want to revoke ${certIds.length} certificates?`)) return;
+    try {
+      setLoading(true);
+      await axios.post(`${API}/certificates/bulk-revoke`, { cert_ids: certIds });
+      showNotification(`${certIds.length} certificates revoked successfully`);
+      fetchAllData();
+    } catch (err) {
+      showNotification('Failed to revoke certificates', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -290,22 +305,39 @@ export default function App() {
         let firstNameIdx = -1, lastNameIdx = -1;
         let startIndex = 0;
 
-        const firstRowStr = rows[0].map(h => String(h || '').toLowerCase().trim());
-        const hasHeader = firstRowStr.some(h => h.includes('name') || h.includes('email') || h.includes('participant'));
+        const firstRowStr = rows[0].map(h => String(h || '').toLowerCase().trim().replace(/[^a-z0-9]/g, ''));
+        
+        const nameAliases = ['name', 'fullname', 'participant', 'student', 'candidate', 'recipient', 'employee', 'person', 'first', 'last'];
+        const emailAliases = ['email', 'mail', 'contact'];
+        const roleAliases = ['role', 'position', 'type', 'program', 'designation', 'rank', 'title', 'category'];
+        const gradeAliases = ['grade', 'score', 'result', 'year', 'level', 'marks', 'percentage'];
+        
+        const hasHeader = firstRowStr.some(h => 
+          [...nameAliases, ...emailAliases, ...roleAliases, ...gradeAliases].some(kw => h.includes(kw))
+        );
 
         if (hasHeader) {
           startIndex = 1;
-          const findCol = (keywords) => {
-             return firstRowStr.findIndex(h => keywords.some(kw => h.includes(kw)));
+          const findBestCol = (aliases) => {
+            let bestIdx = -1;
+            let bestScore = 0;
+            firstRowStr.forEach((h, idx) => {
+              aliases.forEach(alias => {
+                if (h === alias && bestScore < 100) { bestIdx = idx; bestScore = 100; }
+                else if (h.includes(alias) && bestScore < 60) { bestIdx = idx; bestScore = 60; }
+              });
+            });
+            return bestIdx;
           };
-          firstNameIdx = findCol(['first name', 'first_name']);
-          lastNameIdx = findCol(['last name', 'last_name']);
+          
+          firstNameIdx = findBestCol(['firstname', 'first']);
+          lastNameIdx = findBestCol(['lastname', 'last', 'surname']);
           if (firstNameIdx === -1 && lastNameIdx === -1) {
-             nameIdx = firstRowStr.findIndex(h => (h.includes('name') || h.includes('recipient')) && !h.includes('id'));
+             nameIdx = findBestCol(nameAliases);
           }
-          emailIdx = findCol(['email', 'mail']);
-          roleIdx = findCol(['role', 'position', 'type', 'program', 'designation']);
-          gradeIdx = findCol(['grade', 'score', 'result', 'year', 'level']);
+          emailIdx = findBestCol(emailAliases);
+          roleIdx = findBestCol(roleAliases);
+          gradeIdx = findBestCol(gradeAliases);
         } else {
           nameIdx = 0; emailIdx = 1; roleIdx = 2; gradeIdx = 3;
         }
@@ -363,10 +395,26 @@ export default function App() {
     if (showAuth) {
       return <AuthPages initialMode={authMode} onBack={() => setShowAuth(false)} />;
     }
+    if (showVerifyPublic) {
+      return (
+        <div className="min-h-screen bg-slate-50 py-12 flex flex-col items-center">
+          <div className="w-full max-w-3xl px-4 mb-6">
+            <button 
+              onClick={() => setShowVerifyPublic(false)} 
+              className="text-slate-500 hover:text-slate-800 flex items-center gap-2 font-medium transition"
+            >
+              &larr; Back to Home
+            </button>
+          </div>
+          <VerifyPage apiBase={API} />
+        </div>
+      );
+    }
     return (
       <LandingPage 
         onLogin={() => { setAuthMode('login'); setShowAuth(true); }} 
         onRegister={() => { setAuthMode('register'); setShowAuth(true); }} 
+        onVerify={() => setShowVerifyPublic(true)}
       />
     );
   }
@@ -449,6 +497,7 @@ export default function App() {
             events={events}
             onSendEmail={handleSendEmail}
             onRevoke={handleRevoke}
+            onBulkRevoke={handleBulkRevoke}
             setPreviewCert={setPreviewCert}
             apiBase={API}
           />
