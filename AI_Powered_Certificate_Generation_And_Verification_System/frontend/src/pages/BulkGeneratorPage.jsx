@@ -7,12 +7,17 @@ export default function BulkGeneratorPage({
 }) {
   const selectedTemplate = templates.find(t => t.id === bulkData.template_id);
   
-  const DATA_FIELD_TYPES = ['recipient_name', 'recipient_email', 'rank', 'score', 'organization_name', 'event_title', 'issue_date', 'custom_text', 'text_block'];
+  // Data fields that are genuinely per-participant (excludes issue_date, event_title which are global)
+  const DATA_FIELD_TYPES = ['recipient_name', 'recipient_email', 'rank', 'score', 'organization_name', 'custom_text', 'text_block'];
   
   const templateFields = selectedTemplate?.fields
     ?.filter(f => DATA_FIELD_TYPES.includes(f.type) && f.visible !== false)
-    ?.map(f => f.type === 'custom_text' || f.type === 'text_block' ? (f.label || f.type).toLowerCase().replace(/\\s+/g, '_') : f.type) 
-    || ['recipient_name', 'recipient_email', 'rank', 'score'];
+    ?.map(f => {
+      if (f.type === 'recipient_email') return 'email';
+      if (f.type === 'custom_text' || f.type === 'text_block') return (f.label || f.type).toLowerCase().replace(/\\s+/g, '_');
+      return f.type;
+    }) 
+    || ['recipient_name', 'email', 'rank', 'score'];
     
   // Ensure we at least have recipient_name
   const requiredFields = Array.from(new Set(['recipient_name', ...templateFields]));
@@ -20,12 +25,10 @@ export default function BulkGeneratorPage({
   
   const exampleData = requiredFields.map(f => {
     if (f === 'recipient_name') return 'Alice Johnson';
-    if (f === 'recipient_email') return 'alice@college.edu';
+    if (f === 'email') return 'alice@college.edu';
     if (f === 'rank') return 'Winner';
     if (f === 'score') return '95%';
     if (f === 'organization_name') return 'Acme University';
-    if (f === 'event_title') return 'Hackathon 2026';
-    if (f === 'issue_date') return '2026-09-22';
     return 'Value';
   }).join(', ');
   return (
@@ -99,7 +102,7 @@ export default function BulkGeneratorPage({
               rows="6"
               value={bulkData.participantsText}
               onChange={e => setBulkData({...bulkData, participantsText: e.target.value})}
-              placeholder={`${headerRowStr}\n${exampleData}\nBob Smith, bob@college.edu, Participant, 88%...`}
+              placeholder={`${headerRowStr}\n${exampleData}\nBob Smith, bob@college.edu, Participant, 88%`}
               className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-mono focus:outline-none focus:border-brand-600"
             ></textarea>
           </div>
