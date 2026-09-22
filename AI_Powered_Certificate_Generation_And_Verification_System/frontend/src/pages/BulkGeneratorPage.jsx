@@ -5,6 +5,29 @@ export default function BulkGeneratorPage({
   events, templates, bulkData, setBulkData,
   loading, onBulkGenerate, onFileUpload
 }) {
+  const selectedTemplate = templates.find(t => t.id === bulkData.template_id);
+  
+  const DATA_FIELD_TYPES = ['recipient_name', 'recipient_email', 'rank', 'score', 'organization_name', 'event_title', 'issue_date', 'custom_text', 'text_block'];
+  
+  const templateFields = selectedTemplate?.fields
+    ?.filter(f => DATA_FIELD_TYPES.includes(f.type) && f.visible !== false)
+    ?.map(f => f.type === 'custom_text' || f.type === 'text_block' ? (f.label || f.type).toLowerCase().replace(/\\s+/g, '_') : f.type) 
+    || ['recipient_name', 'recipient_email', 'rank', 'score'];
+    
+  // Ensure we at least have recipient_name
+  const requiredFields = Array.from(new Set(['recipient_name', ...templateFields]));
+  const headerRowStr = requiredFields.join(', ');
+  
+  const exampleData = requiredFields.map(f => {
+    if (f === 'recipient_name') return 'Alice Johnson';
+    if (f === 'recipient_email') return 'alice@college.edu';
+    if (f === 'rank') return 'Winner';
+    if (f === 'score') return '95%';
+    if (f === 'organization_name') return 'Acme University';
+    if (f === 'event_title') return 'Hackathon 2026';
+    if (f === 'issue_date') return '2026-09-22';
+    return 'Value';
+  }).join(', ');
   return (
     <div data-testid="bulk-generator-view" className="space-y-8 max-w-4xl mx-auto">
       <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
@@ -61,14 +84,14 @@ export default function BulkGeneratorPage({
           <div>
             <div className="flex justify-between items-center mb-2">
               <label className="block text-xs font-semibold text-slate-700 uppercase">
-                Participants List (Format: Name, Email, Role, Grade per line)
+                Participants List (Header row required: {headerRowStr})
               </label>
               <div className="flex items-center gap-3">
                 <label className="cursor-pointer text-xs font-semibold text-brand-600 hover:text-brand-700 flex items-center gap-1 bg-brand-50 px-2.5 py-1 rounded-md transition hover:bg-brand-100">
                   <Upload className="w-3.5 h-3.5" /> Upload CSV/Excel
                   <input data-testid="bulk-participant-file-input" type="file" accept=".csv, .xlsx, .xls" className="hidden" onChange={onFileUpload} />
                 </label>
-                <span className="text-xs text-slate-400">One participant per line</span>
+                <span className="text-xs text-slate-400">First line must be header row</span>
               </div>
             </div>
             <textarea 
@@ -76,7 +99,7 @@ export default function BulkGeneratorPage({
               rows="6"
               value={bulkData.participantsText}
               onChange={e => setBulkData({...bulkData, participantsText: e.target.value})}
-              placeholder="Alice Johnson, alice@college.edu, Winner, First Place"
+              placeholder={`${headerRowStr}\n${exampleData}\nBob Smith, bob@college.edu, Participant, 88%...`}
               className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-mono focus:outline-none focus:border-brand-600"
             ></textarea>
           </div>

@@ -11,12 +11,18 @@ const handle = fn => async (req, res) => { try { await fn(req, res); } catch (er
 const invalid = message => Object.assign(new Error(message), { statusCode: 400 });
 function participant(row) {
   if (!row || typeof row !== 'object' || Array.isArray(row)) throw invalid('Invalid participant');
-  for (const key of ['name', 'email', 'role', 'grade']) {
-    if (row[key] !== undefined && (typeof row[key] !== 'string' || row[key].length > 500)) throw invalid('Invalid participant field');
+  const clean = {};
+  for (const [key, val] of Object.entries(row)) {
+    if (val !== undefined && val !== null) {
+      if (typeof val !== 'string' || val.length > 500) throw invalid(`Invalid participant field: ${key}`);
+      clean[key] = val.trim();
+    }
   }
-  if (!row.name?.trim()) throw invalid('Participant name is required');
-  if (row.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)) throw invalid('Invalid participant email');
-  return { name: row.name.trim(), email: row.email || '', role: row.role || 'Participant', grade: row.grade || 'Completed Successfully' };
+  // recipient_name or name must be present as a basic sanity check
+  if (!clean.recipient_name && !clean.name) throw invalid('Participant name (recipient_name or name) is required');
+  const emailField = clean.recipient_email || clean.email;
+  if (emailField && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailField)) throw invalid('Invalid participant email');
+  return clean;
 }
 async function selectedCertificate(req) {
   const cert = await getCertificatesCol().findOne({ ...scope(req), cert_id: id(req.params.cert_id) }, { projection: { _id: 0 } });
@@ -36,8 +42,15 @@ const getAllCertificates = handle(async (req, res) => {
 const generateBulkCertificates = handle(async (req, res) => {
   if (!Array.isArray(req.body.participants) || req.body.participants.length > limits.rows) throw Object.assign(new Error('Participant limit exceeded'), { statusCode: 413 });
   const rows = req.body.participants.map(participant);
+  
+  // Use mapping from request if provided, otherwise assume keys map to themselves 1:1
+  const providedMapping = req.body.mapping || {};
+  const mapping = Object.keys(providedMapping).length > 0 
+    ? providedMapping 
+    : { name: 'recipient_name', email: 'email', role: 'rank', grade: 'score' }; // Fallback for old frontend versions
+    
   const job = await submitJob(req, { rows, event_id: req.body.event_id, template_id: req.body.template_id,
-    mapping: { name: 'recipient_name', email: 'email', role: 'rank', grade: 'score' }, defaults: { issue_date: req.body.issue_date || todayISO() }, settings: { email_enabled: false, zip_enabled: true }, action: 'simple-bulk' });
+    mapping, defaults: { issue_date: req.body.issue_date || todayISO() }, settings: { email_enabled: false, zip_enabled: true }, action: 'simple-bulk' });
   res.status(202).json({ message: 'Certificate job queued', job_id: job.id, count: job.total_records });
 });
 const createCertificate = handle(async (req, res) => {

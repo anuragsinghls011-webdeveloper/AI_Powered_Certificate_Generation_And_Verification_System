@@ -214,19 +214,27 @@ export default function App() {
       return;
     }
 
-    const lines = bulkData.participantsText.trim().split('\n');
-    const participants = lines.map(line => {
+    const lines = bulkData.participantsText.trim().split('\n').filter(line => line.trim());
+    if (lines.length < 2) {
+      showNotification('Please provide a header row and at least one participant', 'error');
+      return;
+    }
+    
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const mapping = {};
+    headers.forEach(h => mapping[h] = h); // 1:1 mapping
+
+    const participants = lines.slice(1).map(line => {
       const parts = line.split(',').map(p => p.trim());
-      return {
-        name: parts[0] || 'Unknown',
-        email: parts[1] || 'participant@example.com',
-        role: parts[2] || 'Participant',
-        grade: parts[3] || 'Successfully Completed'
-      };
-    }).filter(p => p.name);
+      const pObj = {};
+      headers.forEach((h, i) => {
+        pObj[h] = parts[i] || '';
+      });
+      return pObj;
+    }).filter(p => p.recipient_name || p.name);
 
     if (participants.length === 0) {
-      showNotification('Please add at least one participant', 'error');
+      showNotification('Please add at least one valid participant (recipient_name is required)', 'error');
       return;
     }
 
@@ -236,6 +244,7 @@ export default function App() {
         event_id: bulkData.event_id,
         template_id: bulkData.template_id,
         participants,
+        mapping,
         issue_date: bulkData.issue_date
       });
       showNotification(res.data.message);
@@ -365,12 +374,16 @@ export default function App() {
              formattedParticipants.push(`${nameStr}, ${emailStr}, ${roleStr}, ${gradeStr}`);
           }
         }
+        
+        if (formattedParticipants.length > 0) {
+          formattedParticipants.unshift('recipient_name, email, rank, score');
+        }
 
         setBulkData(prev => ({
           ...prev,
           participantsText: formattedParticipants.join('\n')
         }));
-        showNotification(`Successfully loaded ${formattedParticipants.length} participants from file.`);
+        showNotification(`Successfully loaded ${formattedParticipants.length - 1} participants from file.`);
       } catch (err) {
         showNotification('Error parsing file. Please check the format.', 'error');
       }
