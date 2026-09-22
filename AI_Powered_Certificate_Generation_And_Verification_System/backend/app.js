@@ -34,6 +34,8 @@ app.use(cookieParser());
 // app.use('/api', browser.csrfGuard);
 
 // --- API Routes ---
+app.get('/api/health', (req, res) => res.status(200).json({ status: 'ok', uptime: process.uptime() }));
+
 const authMw = require('./middleware/authMiddleware');
 
 app.use('/api/auth', authRoutes);
