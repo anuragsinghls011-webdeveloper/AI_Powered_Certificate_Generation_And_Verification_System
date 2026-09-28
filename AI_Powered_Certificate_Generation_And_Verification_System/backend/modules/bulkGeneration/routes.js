@@ -9,6 +9,8 @@ const limits = require('../../config/security');
 const { tenantDatabase, wrap, id, requirePermission } = require('../../utils/tenant');
 const { workLimit, streamLease } = require('../../services/workload');
 const { runIsolated } = require('../../services/isolatedWork');
+const { addCertificateJob, addEmailJob } = require('../../queues');
+const { redisHealthCheck } = require('../../config/redis');
 const { submitJob, publicJob } = require('../../services/jobSubmission');
 const { suggestMappings, REQUIRED } = require('./columnMapper');
 const { validateRows, invertMapping } = require('./validationEngine');
@@ -116,6 +118,20 @@ function build(rawDb) {
     const rows = validation.validated.filter(r => r.status.startsWith('valid') || (r.status === 'duplicate' && req.body.skip_duplicates === false && r.errors.every(e => e.code === 'DUPLICATE'))).map(r => r.row);
     const job = await submitJob(req, { rows, mapping, defaults, event_id: req.body.event_id, template_id: req.body.template_id,
       settings: { email_enabled: req.body.settings?.email_enabled !== false, zip_enabled: req.body.settings?.zip_enabled !== false }, source: { upload_id: doc.id, name: doc.original_name } });
+
+    // Push to BullMQ queue (if Redis is available, otherwise legacy scheduler picks it up)
+    try {
+      if (await redisHealthCheck()) {
+        await addCertificateJob({
+          jobId: job.id,
+          organizationId: req.organization.id,
+          createdBy: req.user.id
+        });
+      }
+    } catch (queueError) {
+      console.warn('[BulkRoutes] BullMQ enqueue failed, legacy scheduler will pick up:', queueError.message);
+    }
+
     res.status(202).json({ message: 'Bulk job queued', job_id: job.id, total_records: job.total_records });
   }, 'generation');
   route('get', '/jobs', 'bulk.read', async (req, res, db) => res.json((await db.collection('bulk_jobs').find({}).sort({ created_at: -1 }).limit(200).toArray()).map(publicJob)));
@@ -137,9 +153,23 @@ function build(rawDb) {
   });
   route('post', '/jobs/:id/retry', 'bulk.create', async (req, res, db) => {
     const job = await db.collection('bulk_jobs').findOne({ id: req.params.id }); if (!job) throw missing();
-    const result = await db.collection('bulk_jobs').updateOne({ id: job.id, status: { $in: ['failed', 'completed_with_errors'] }, attempts: { $lt: limits.jobAttempts }, submission_key: { $type: 'string' } }, { $set: { status: 'queued', next_attempt_at: new Date(), cancel_requested: false, completed_at: null } });
+    const result = await db.collection('bulk_jobs').updateOne({ id: job.id, status: { $in: ['failed', 'completed_with_errors'] }, attempts: { $lt: limits.jobAttempts }, submission_key: { $type: 'string' } }, { $set: { status: 'queued', next_attempt_at: new Date(), cancel_requested: false, completed_at: null, lease_owner: null, lease_until: new Date(0), error: null } });
     if (!result.modifiedCount) throw Object.assign(new Error('Job is not retryable or retry limit reached'), { statusCode: 409 });
     await db.collection('audit_logs').insertOne({ action: 'BULK_GENERATION_RETRIED', job_id: job.id, timestamp: new Date().toISOString() });
+
+    // Re-enqueue into BullMQ
+    try {
+      if (await redisHealthCheck()) {
+        await addCertificateJob({
+          jobId: job.id,
+          organizationId: job.organization_id,
+          createdBy: job.created_by
+        });
+      }
+    } catch (queueError) {
+      console.warn('[BulkRoutes] BullMQ retry enqueue failed:', queueError.message);
+    }
+
     res.status(202).json({ message: 'Retry queued' });
   }, 'generation');
   route('post', '/jobs/:id/cancel', 'bulk.cancel', async (req, res, db) => {
@@ -167,19 +197,47 @@ function build(rawDb) {
   route('post', '/jobs/:id/resend-emails', 'certificates.create', async (req, res, db) => {
     const job = await db.collection('bulk_jobs').findOne({ id: req.params.id }); if (!job) throw missing();
     const records = await db.collection('bulk_records').find({ job_id: job.id, status: 'success', email_status: { $in: ['failed', 'queued', 'skipped'] } }).limit(limits.rateLimit).toArray();
-    let sent = 0, failed = 0;
+    const useQueue = await redisHealthCheck();
+    let sent = 0, queued = 0, failed = 0;
+
     for (const record of records) {
       const cert = await db.collection('certificates').findOne({ cert_id: record.certificate_id });
-      if (!cert || !record.pdf_path || !fs.existsSync(record.pdf_path)) { failed++; continue; }
-      const template = await db.collection('templates').findOne({ id: cert.template_id });
-      const result = await deliverCertificate({ cert, template, pdfBuffer: fs.readFileSync(record.pdf_path) });
-      const patch = { email_status: result.delivered ? 'sent' : 'failed', email_id: result.email_id || null, email_error: result.delivered ? null : 'Email delivery failed' };
-      await db.collection('bulk_records').updateOne({ _id: record._id }, { $set: patch });
-      await db.collection('certificates').updateOne({ cert_id: cert.cert_id }, { $set: { ...patch, sent_email: result.delivered } });
-      result.delivered ? sent++ : failed++;
+      if (!cert) { failed++; continue; }
+
+      if (useQueue) {
+        // Queue each email individually via BullMQ for reliable delivery
+        try {
+          await addEmailJob({
+            certId: cert.cert_id,
+            organizationId: cert.organization_id,
+            recordId: record._id,
+            jobId: job.id,
+            pdfPath: record.pdf_path
+          });
+          await db.collection('bulk_records').updateOne({ _id: record._id }, { $set: { email_status: 'queued' } });
+          queued++;
+        } catch (queueErr) {
+          console.error('[BulkRoutes] Email queue failed:', queueErr.message);
+          failed++;
+        }
+      } else {
+        // Legacy: send inline
+        if (!record.pdf_path || !fs.existsSync(record.pdf_path)) { failed++; continue; }
+        const template = await db.collection('templates').findOne({ id: cert.template_id });
+        const result = await deliverCertificate({ cert, template, pdfBuffer: fs.readFileSync(record.pdf_path) });
+        const patch = { email_status: result.delivered ? 'sent' : 'failed', email_id: result.email_id || null, email_error: result.delivered ? null : 'Email delivery failed' };
+        await db.collection('bulk_records').updateOne({ _id: record._id }, { $set: patch });
+        await db.collection('certificates').updateOne({ cert_id: cert.cert_id }, { $set: { ...patch, sent_email: result.delivered } });
+        result.delivered ? sent++ : failed++;
+      }
     }
-    await db.collection('audit_logs').insertOne({ action: 'BULK_EMAILS_RESENT', job_id: job.id, count: sent, failed, timestamp: new Date().toISOString() });
-    res.json({ message: `Accepted ${sent} email(s); ${failed} failed.`, sent, failed, remaining: await db.collection('bulk_records').countDocuments({ job_id: job.id, status: 'success', email_status: { $in: ['failed', 'queued'] } }) });
+
+    await db.collection('audit_logs').insertOne({ action: 'BULK_EMAILS_RESENT', job_id: job.id, count: sent + queued, failed, timestamp: new Date().toISOString() });
+    const remaining = await db.collection('bulk_records').countDocuments({ job_id: job.id, status: 'success', email_status: { $in: ['failed', 'queued'] } });
+    const message = useQueue
+      ? `Queued ${queued} email(s) for delivery; ${failed} could not be queued.`
+      : `Accepted ${sent} email(s); ${failed} failed.`;
+    res.json({ message, sent, queued, failed, remaining });
   }, 'email');
   route('get', '/analytics', 'analytics.read', async (req, res, db) => {
     const jobs = await db.collection('bulk_jobs').find({}).toArray();

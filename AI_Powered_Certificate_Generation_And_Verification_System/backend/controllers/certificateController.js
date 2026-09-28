@@ -6,6 +6,8 @@ const { scope, templateScope, scoped, id, issuanceResources } = require('../util
 const { submitJob } = require('../services/jobSubmission');
 const { streamCertificatePdf } = require('../services/pdfService');
 const { deliverCertificate } = require('../services/certificateEmailService');
+const { addCertificateJob, addEmailJob } = require('../queues');
+const { redisHealthCheck } = require('../config/redis');
 const limits = require('../config/security');
 const handle = fn => async (req, res) => { try { await fn(req, res); } catch (error) { res.status(error.statusCode || 500).json({ error: error.statusCode ? error.message : 'Certificate operation failed' }); } };
 const invalid = message => Object.assign(new Error(message), { statusCode: 400 });
@@ -51,6 +53,20 @@ const generateBulkCertificates = handle(async (req, res) => {
     
   const job = await submitJob(req, { rows, event_id: req.body.event_id, template_id: req.body.template_id,
     mapping, defaults: { issue_date: req.body.issue_date || todayISO() }, settings: { email_enabled: false, zip_enabled: true }, action: 'simple-bulk' });
+
+  // Push to BullMQ queue
+  try {
+    if (await redisHealthCheck()) {
+      await addCertificateJob({
+        jobId: job.id,
+        organizationId: req.organization.id,
+        createdBy: req.user.id
+      });
+    }
+  } catch (queueError) {
+    console.warn('[CertCtrl] BullMQ enqueue failed:', queueError.message);
+  }
+
   res.status(202).json({ message: 'Certificate job queued', job_id: job.id, count: job.total_records });
 });
 const createCertificate = handle(async (req, res) => {
@@ -97,6 +113,23 @@ const revokeBulkCertificates = handle(async (req, res) => {
 });
 const sendEmail = handle(async (req, res) => {
   const cert = await selectedCertificate(req);
+
+  // Queue via BullMQ if available (non-blocking)
+  if (await redisHealthCheck()) {
+    await addEmailJob({
+      certId: cert.cert_id,
+      organizationId: cert.organization_id,
+      recordId: null,
+      jobId: null
+    });
+    await getCertificatesCol().updateOne(
+      { ...scope(req), cert_id: cert.cert_id },
+      { $set: { email_status: 'queued' } }
+    );
+    return res.json({ message: 'Certificate email queued for delivery', cert_id: cert.cert_id, queued: true });
+  }
+
+  // Legacy: send inline
   const template = await getTemplatesCol().findOne(scoped({ id: cert.template_id }, templateScope(req)));
   const result = await deliverCertificate({ cert, template });
   await getCertificatesCol().updateOne({ ...scope(req), cert_id: cert.cert_id }, { $set: {

@@ -1,6 +1,8 @@
 const { getEventsCol } = require('../config/db');
 const { uuidv4, nowISO } = require('../utils/helpers');
 const { scope } = require('../utils/tenant');
+const { addReportJob } = require('../queues');
+const { redisHealthCheck } = require('../config/redis');
 
 // GET /api/events
 async function getAllEvents(req, res) {
@@ -59,6 +61,19 @@ async function completeEvent(req, res) {
       if (!existing) return res.status(404).json({ error: 'Event not found or you do not have access to it.' });
       return res.json({ message: 'Event is already completed.', event: existing });
     }
+
+    // Enqueue report generation into BullMQ
+    try {
+      if (await redisHealthCheck()) {
+        await addReportJob({
+          eventId: event.id,
+          organizationId: req.organization.id
+        });
+      }
+    } catch (queueError) {
+      console.warn('[EventCtrl] BullMQ report enqueue failed, legacy scheduler will pick up:', queueError.message);
+    }
+
     res.status(202).json({ message: 'Event completed. Admin report delivery is queued.', event });
   } catch (err) {
     res.status(500).json({ error: 'Unable to complete the event. Please try again.' });
@@ -79,6 +94,19 @@ async function retryEventReport(req, res) {
       'report_delivery.error': null
     } }, { returnDocument: 'after', projection: { _id: 0, id: 1, status: 1, report_delivery: 1 } });
     if (!event) return res.status(409).json({ error: 'Only failed report deliveries can be retried.' });
+
+    // Re-enqueue into BullMQ
+    try {
+      if (await redisHealthCheck()) {
+        await addReportJob({
+          eventId: event.id,
+          organizationId: req.organization.id
+        });
+      }
+    } catch (queueError) {
+      console.warn('[EventCtrl] BullMQ report retry enqueue failed:', queueError.message);
+    }
+
     res.status(202).json({ message: 'Event report delivery is queued for retry.', event });
   } catch (err) {
     res.status(500).json({ error: 'Unable to retry report delivery. Please try again.' });

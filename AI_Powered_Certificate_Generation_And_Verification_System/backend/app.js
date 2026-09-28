@@ -11,6 +11,8 @@ const certificateRoutes = require('./routes/certificateRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const verifyRoutes = require('./routes/verifyRoutes');
 const bulkModule = require('./modules/bulkGeneration/routes');
+const { buildDashboardRouter } = require('./queues/dashboard');
+const { redisHealthCheck } = require('./config/redis');
 
 // Middleware imports
 const errorHandler = require('./middleware/errorHandler');
@@ -34,7 +36,15 @@ app.use(cookieParser());
 // app.use('/api', browser.csrfGuard);
 
 // --- API Routes ---
-app.get('/api/health', (req, res) => res.status(200).json({ status: 'ok', uptime: process.uptime() }));
+app.get('/api/health', async (req, res) => {
+  const redisOk = await redisHealthCheck();
+  res.status(200).json({
+    status: 'ok',
+    uptime: process.uptime(),
+    redis: redisOk ? 'connected' : 'disconnected',
+    queueSystem: redisOk ? 'bullmq' : 'legacy'
+  });
+});
 
 const authMw = require('./middleware/authMiddleware');
 
@@ -47,6 +57,7 @@ app.use('/api/templates', ...privateBoundary, templateRoutes);
 app.use('/api/certificates', ...privateBoundary, certificateRoutes);
 app.use('/api/analytics', ...privateBoundary, authMw.requirePermission('analytics.read'), analyticsRoutes);
 app.use('/api/reports', authMw.authenticateUser(), require('./routes/reportRoutes'));
+app.use('/api/admin/queues', ...privateBoundary, authMw.requirePermission('analytics.read'), buildDashboardRouter());
 
 // --- Error Handler (must be last) ---
 
