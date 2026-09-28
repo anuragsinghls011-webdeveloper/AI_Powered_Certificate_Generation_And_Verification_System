@@ -53,14 +53,31 @@ function getSharedConnection() {
 /**
  * Health check — resolves true if Redis responds to PING.
  */
+let _isRedisAvailable = null;
+
 async function redisHealthCheck() {
-  try {
-    const conn = getSharedConnection();
-    const pong = await conn.ping();
-    return pong === 'PONG';
-  } catch {
-    return false;
-  }
+  if (_sharedConnection && _sharedConnection.status === 'ready') return true;
+  if (_isRedisAvailable === false) return false; // Cache failure so we don't keep checking and hanging
+
+  return new Promise((resolve) => {
+    const checkConn = new IORedis(REDIS_URL, {
+      maxRetriesPerRequest: 1,
+      retryStrategy: () => null, // Do not retry
+      connectTimeout: 2000 // 2 seconds timeout
+    });
+
+    checkConn.on('error', () => {
+      checkConn.disconnect();
+      _isRedisAvailable = false;
+      resolve(false);
+    });
+
+    checkConn.on('ready', () => {
+      checkConn.disconnect();
+      _isRedisAvailable = true;
+      resolve(true);
+    });
+  });
 }
 
 /**
