@@ -269,7 +269,7 @@ async function processCertificateJob(bullmqJob) {
     }
 
     const chunk = allRecords.slice(i, i + CHUNK_SIZE);
-    await Promise.all(chunk.map(async (record) => {
+    for (const record of chunk) {
       try {
         await processRecord(db, jobDoc, record);
       } catch (error) {
@@ -284,7 +284,7 @@ async function processCertificateJob(bullmqJob) {
           }
         );
       }
-    }));
+    }
 
     // Update progress in both BullMQ and MongoDB
     const progress = Math.round(((i + chunk.length) / totalRecords) * 100);

@@ -115,14 +115,14 @@ async function processJob(db, job, owner) {
     if (current.cancel_requested) { cancelled = true; break; }
     
     const chunk = allRecords.slice(i, i + CHUNK_SIZE);
-    await Promise.all(chunk.map(async (record) => {
+    for (const record of chunk) {
       try {
         await processRecord(db, job, record, owner);
       } catch (error) {
         await owned(db, job, owner).catch(() => {});
         await db.collection('bulk_records').updateOne({ _id: record._id, organization_id: job.organization_id }, { $set: { status: 'failed', error: error.message || 'Certificate processing failed', processed_at: now() } });
       }
-    }));
+    }
     await db.collection('bulk_jobs').updateOne({ id: job.id, lease_owner: owner }, { $set: await counts(db, job) });
   }
   const summary = await counts(db, job);
