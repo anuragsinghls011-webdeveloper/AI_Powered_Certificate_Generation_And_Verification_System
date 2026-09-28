@@ -28,6 +28,18 @@ async function start() {
     // Seed default data on first run
     await seedInitialData();
 
+    // --- Crash Recovery: Clean up stale state from previous run ---
+    // Clear all work slots so PDF rendering isn't blocked by zombie leases
+    await db.collection('work_slots').updateMany({}, { $set: { until: new Date(0) } });
+    // Reset any stuck 'processing' jobs back to 'queued'
+    const stuckReset = await db.collection('bulk_jobs').updateMany(
+      { status: 'processing' },
+      { $set: { status: 'queued', lease_owner: null, lease_until: new Date(0), next_attempt_at: new Date() } }
+    );
+    if (stuckReset.modifiedCount > 0) {
+      console.log(`[Server] Reset ${stuckReset.modifiedCount} stuck processing job(s) to queued`);
+    }
+
     // --- Queue System Initialization ---
     const redisAvailable = await redisHealthCheck();
 

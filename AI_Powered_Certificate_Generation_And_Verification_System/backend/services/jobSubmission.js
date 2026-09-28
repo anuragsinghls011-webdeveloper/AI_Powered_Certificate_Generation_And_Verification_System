@@ -44,21 +44,31 @@ async function submitJob(req, { rows, mapping, defaults = {}, settings = {}, sou
   let existing = await db.collection('bulk_jobs').findOne({ submission_key: submissionKey });
   if (existing) {
     if (existing.request_hash !== requestHash) throw Object.assign(new Error('Idempotency key already used with different content'), { statusCode: 409 });
-    // If the existing job failed, reset it so it can be re-processed
-    if (['failed', 'completed_with_errors'].includes(existing.status) && existing.attempts < limits.jobAttempts) {
+    // If the existing job is in a terminal failure state, reset it so it can be re-processed
+    if (['failed', 'completed_with_errors'].includes(existing.status)) {
       await db.collection('bulk_jobs').updateOne(
         { submission_key: submissionKey },
         {
           $set: {
             status: 'queued',
+            attempts: 0,
+            processed_records: 0,
+            successful_records: 0,
+            failed_records: 0,
             next_attempt_at: new Date(),
             cancel_requested: false,
             completed_at: null,
+            started_at: null,
             lease_owner: null,
             lease_until: new Date(0),
             error: null
           }
         }
+      );
+      // Also reset any stuck bulk_records from the previous attempt to 'pending'
+      await db.collection('bulk_records').updateMany(
+        { job_id: existing.id, status: 'failed' },
+        { $set: { status: 'pending', error: null, processed_at: null } }
       );
       return await db.collection('bulk_jobs').findOne({ submission_key: submissionKey });
     }

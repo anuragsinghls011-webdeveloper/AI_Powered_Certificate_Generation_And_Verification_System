@@ -91,7 +91,7 @@ async function processRecord(db, jobDoc, record) {
   if (pdfCheck.exists) {
     pdf = await storageService.getPdfBuffer(filePath);
   } else {
-    pdf = await renderCertificatePdfBuffer(jobDoc.template_snapshot, values);
+    pdf = await renderCertificatePdfBuffer(jobDoc.template_snapshot, values, { direct: true });
     filePath = await storageService.uploadPdf(directory, fileName, pdf);
   }
 
@@ -251,7 +251,7 @@ async function processCertificateJob(bullmqJob) {
     .toArray();
 
   let cancelled = false;
-  const CHUNK_SIZE = 10;
+  const CHUNK_SIZE = 3;
   const totalRecords = allRecords.length;
 
   for (let i = 0; i < allRecords.length; i += CHUNK_SIZE) {

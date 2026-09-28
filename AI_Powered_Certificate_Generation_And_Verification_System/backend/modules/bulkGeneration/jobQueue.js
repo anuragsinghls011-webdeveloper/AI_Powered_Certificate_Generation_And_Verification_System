@@ -66,7 +66,7 @@ async function processRecord(db, job, record, owner) {
   if (pdfCheck.exists) {
     pdf = await storageService.getPdfBuffer(filePath);
   } else {
-    pdf = await renderCertificatePdfBuffer(job.template_snapshot, values);
+    pdf = await renderCertificatePdfBuffer(job.template_snapshot, values, { direct: true });
     filePath = await storageService.uploadPdf(directory, fileName, pdf);
   }
 
@@ -109,7 +109,7 @@ async function processJob(db, job, owner) {
   await db.collection('bulk_records').bulkWrite(operations, { ordered: false });
   const allRecords = await db.collection('bulk_records').find({ job_id: job.id, organization_id: job.organization_id, status: { $in: ['pending', 'failed'] } }).limit(config.rows).toArray();
   let cancelled = false;
-  const CHUNK_SIZE = 10;
+  const CHUNK_SIZE = 3;
   for (let i = 0; i < allRecords.length; i += CHUNK_SIZE) {
     const current = await owned(db, job, owner);
     if (current.cancel_requested) { cancelled = true; break; }
@@ -152,9 +152,10 @@ async function tick(db) {
     }, Math.floor(config.leaseMs / 3));
     await processJob(db, job, slot.token);
   } catch (error) {
+    console.error('[BulkScheduler] tick error:', error.message, error.stack);
     if (job && slot) await db.collection('bulk_jobs').updateOne({ id: job.id, lease_owner: slot.token }, { $set: {
       status: job.attempts < config.jobAttempts ? 'queued' : 'failed', lease_owner: null, lease_until: new Date(0),
-      next_attempt_at: new Date(Date.now() + config.pollMs * job.attempts), error: 'Job processing interrupted'
+      next_attempt_at: new Date(Date.now() + config.pollMs * job.attempts), error: `Job processing interrupted: ${error.message}`
     } }).catch(() => {});
   } finally {
     if (heartbeat) clearInterval(heartbeat);

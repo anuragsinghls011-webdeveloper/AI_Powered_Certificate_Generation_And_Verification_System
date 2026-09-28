@@ -153,8 +153,10 @@ function build(rawDb) {
   });
   route('post', '/jobs/:id/retry', 'bulk.create', async (req, res, db) => {
     const job = await db.collection('bulk_jobs').findOne({ id: req.params.id }); if (!job) throw missing();
-    const result = await db.collection('bulk_jobs').updateOne({ id: job.id, status: { $in: ['failed', 'completed_with_errors'] }, attempts: { $lt: limits.jobAttempts }, submission_key: { $type: 'string' } }, { $set: { status: 'queued', next_attempt_at: new Date(), cancel_requested: false, completed_at: null, lease_owner: null, lease_until: new Date(0), error: null } });
-    if (!result.modifiedCount) throw Object.assign(new Error('Job is not retryable or retry limit reached'), { statusCode: 409 });
+    const result = await db.collection('bulk_jobs').updateOne({ id: job.id, status: { $in: ['failed', 'completed_with_errors'] }, submission_key: { $type: 'string' } }, { $set: { status: 'queued', attempts: 0, next_attempt_at: new Date(), cancel_requested: false, completed_at: null, started_at: null, lease_owner: null, lease_until: new Date(0), error: null } });
+    if (!result.modifiedCount) throw Object.assign(new Error('Job is not retryable'), { statusCode: 409 });
+    // Reset failed records back to pending so they get re-processed
+    await db.collection('bulk_records').updateMany({ job_id: job.id, status: 'failed' }, { $set: { status: 'pending', error: null, processed_at: null } });
     await db.collection('audit_logs').insertOne({ action: 'BULK_GENERATION_RETRIED', job_id: job.id, timestamp: new Date().toISOString() });
 
     // Re-enqueue into BullMQ

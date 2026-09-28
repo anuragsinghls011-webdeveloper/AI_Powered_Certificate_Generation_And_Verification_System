@@ -511,8 +511,10 @@ function resolveFields(template) {
 // Entry point
 // ---------------------------------------------------------------------------
 
-async function renderCertificatePdfBuffer(template, values) {
-  if (require('worker_threads').isMainThread) {
+async function renderCertificatePdfBuffer(template, values, { direct = false } = {}) {
+  // When called from bulk workers, skip worker thread isolation to avoid
+  // work-slot contention and memory issues on constrained hosting (e.g. Render).
+  if (!direct && require('worker_threads').isMainThread) {
     return require('../../services/isolatedWork').runIsolated('pdf', { template, values });
   }
   // values is an object keyed by field type:
