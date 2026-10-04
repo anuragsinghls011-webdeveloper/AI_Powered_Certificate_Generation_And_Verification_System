@@ -7,6 +7,7 @@ const browser = require('./middleware/browserSecurity');
 const authRoutes = require('./routes/authRoutes');
 const eventRoutes = require('./routes/eventRoutes');
 const templateRoutes = require('./routes/templateRoutes');
+const aiRoutes = require('./routes/aiRoutes');
 const certificateRoutes = require('./routes/certificateRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const verifyRoutes = require('./routes/verifyRoutes');
@@ -29,7 +30,9 @@ app.use(browser.originGuard, browser.corsPolicy);
 // Design Studio templates embed background/signature/logo images as data URLs.
 const smallJson = express.json({ limit: config.jsonBytes });
 const templateJson = express.json({ limit: config.templateBytes });
-app.use((req, res, next) => (req.path.startsWith('/api/templates') ? templateJson : smallJson)(req, res, next));
+const aiJson = express.json({ limit: '32kb' });
+app.use((req, res, next) => (req.path.startsWith('/api/templates') ? templateJson
+  : req.path.startsWith('/api/ai') ? aiJson : smallJson)(req, res, next));
 app.use(cookieParser());
 // CSRF is no longer needed since we use localStorage (Bearer tokens) exclusively
 // app.get('/api/auth/csrf', browser.csrfToken);
@@ -54,6 +57,7 @@ app.use('/api/verify', verifyRoutes);
 const privateBoundary = [authMw.authenticateUser(), authMw.resolveOrganization()];
 app.use('/api/events', ...privateBoundary, eventRoutes);
 app.use('/api/templates', ...privateBoundary, templateRoutes);
+app.use('/api/ai', ...privateBoundary, aiRoutes);
 app.use('/api/certificates', ...privateBoundary, certificateRoutes);
 app.use('/api/analytics', ...privateBoundary, authMw.requirePermission('analytics.read'), analyticsRoutes);
 app.use('/api/reports', authMw.authenticateUser(), require('./routes/reportRoutes'));

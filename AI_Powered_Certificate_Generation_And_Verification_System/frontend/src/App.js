@@ -497,7 +497,7 @@ export default function App() {
         certificateCount={reportsOpen ? null : certificates.length}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-8">
+      <main className={`flex-1 w-full mx-auto p-4 md:p-8 ${activeTab === 'design' ? 'max-w-[1920px]' : 'max-w-7xl'}`}>
         {generationJob && <div data-testid="certificate-generation-progress" role="status" className="mb-4 border-l-4 border-teal-600 bg-teal-50 p-4 text-sm break-words flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <span data-testid="certificate-job-status" className="font-semibold">{generationJob.status}</span> · <span data-testid="certificate-job-counts">{generationJob.processed_records || 0} / {generationJob.total_records} processed · {generationJob.successful_records || 0} successful · {generationJob.failed_records || 0} failed</span>

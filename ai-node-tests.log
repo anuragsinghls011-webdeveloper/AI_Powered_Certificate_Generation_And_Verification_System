@@ -1,0 +1,68 @@
+TAP version 13
+# [AI design] {
+#   status: 'retry_invalid_output',
+#   validation_reason: 'Unsupported field operation or field type'
+# }
+# [AI design] {
+#   provider: 'gemini',
+#   status: 'invalid_output',
+#   error_type: 'Error',
+#   validation_reason: 'Unsupported field operation or field type',
+#   latency_ms: 1
+# }
+# [AI design] {
+#   provider: 'gemini',
+#   status: 'provider_error',
+#   error_type: 'Error',
+#   validation_reason: undefined,
+#   latency_ms: 0
+# }
+# Subtest: authenticated-context payload retains only design metadata, never ownership or embedded images
+ok 1 - authenticated-context payload retains only design metadata, never ownership or embedded images
+  ---
+  duration_ms: 1.079154
+  ...
+# Subtest: one-field edit keeps the rest of the template and clamps small boundary overflow
+ok 2 - one-field edit keeps the rest of the template and clamps small boundary overflow
+  ---
+  duration_ms: 0.633737
+  ...
+# Subtest: invalid geometry, unknown fields, unsafe image URLs and absurd typography reject the entire proposal
+ok 3 - invalid geometry, unknown fields, unsafe image URLs and absurd typography reject the entire proposal
+  ---
+  duration_ms: 0.483212
+  ...
+# Subtest: blank prompt, oversized prompt and overlong conversation are refused before provider calls
+ok 4 - blank prompt, oversized prompt and overlong conversation are refused before provider calls
+  ---
+  duration_ms: 0.280093
+  ...
+# Subtest: pale accent text is adjusted on white backgrounds without altering the border palette
+ok 5 - pale accent text is adjusted on white backgrounds without altering the border palette
+  ---
+  duration_ms: 25.086652
+  ...
+# Subtest: three alternatives are independently validated; any invalid variant rejects all
+ok 6 - three alternatives are independently validated; any invalid variant rejects all
+  ---
+  duration_ms: 0.736762
+  ...
+# Subtest: malformed provider responses are refused even after one guarded correction attempt
+ok 7 - malformed provider responses are refused even after one guarded correction attempt
+  ---
+  duration_ms: 2.257772
+  ...
+# Subtest: provider errors do not generate a partial design
+ok 8 - provider errors do not generate a partial design
+  ---
+  duration_ms: 0.405451
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 315.987208

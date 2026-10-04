@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
-import { Wand2, Keyboard } from 'lucide-react';
+import { Wand2, Keyboard, Sparkles } from 'lucide-react';
 import { API } from '../services/api';
 
 import {
@@ -17,6 +17,8 @@ import Inspector from './Inspector';
 import LayersPanel from './LayersPanel';
 import TemplateGallery from './TemplateGallery';
 import PdfPreviewModal from './PdfPreviewModal';
+import AIDesignAssistant from './ai/AIDesignAssistant';
+import { designFingerprint, previewDesign } from './ai/aiDesignUtils';
 
 const fitZoom = (width) => clamp(Math.round(((width - 26) / PAGE_W) * 100) / 100, 0.2, 1.5);
 
@@ -39,6 +41,9 @@ export default function DesignStudio({ notify, onTemplatesChanged }) {
   const [saving, setSaving] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [pdf, setPdf] = useState({ open: false, url: '', loading: false, error: '' });
+  const [aiOpen, setAiOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1536);
+  const liveTemplate = useRef(template);
+  liveTemplate.current = template;
 
   const clipboard = useRef([]);
   const nodes = useRef({});
@@ -219,6 +224,21 @@ export default function DesignStudio({ notify, onTemplatesChanged }) {
     history.commit((t) => ({ ...t, ...layout.patch, fields: buildStarterFields(layout) }));
     setSelectedIds([]);
     notify?.(`Applied “${layout.name}” layout`);
+  }, [history, notify]);
+
+  const applyAI = useCallback((design, fingerprint) => {
+    if (designFingerprint(liveTemplate.current) !== fingerprint) return false;
+    try {
+      // Compute the whole candidate before committing; failure leaves the canvas untouched.
+      const next = previewDesign(liveTemplate.current, design);
+      history.commit(current => designFingerprint(current) === fingerprint ? next : current);
+      setSelectedIds([]);
+      notify?.('AI changes applied — Undo restores the previous design');
+      return true;
+    } catch {
+      notify?.('This proposal could not be safely applied. The canvas was not changed.', 'error');
+      return false;
+    }
   }, [history, notify]);
 
   /* ------------------------------------------------------------------ zoom */
@@ -414,10 +434,17 @@ export default function DesignStudio({ notify, onTemplatesChanged }) {
             </p>
           </div>
         </div>
-        <p className="text-[11px] text-slate-400 flex items-center gap-1.5 max-w-md">
-          <Keyboard className="w-3.5 h-3.5 shrink-0" />
-          Ctrl+Z undo · Ctrl+D duplicate · Ctrl+S save · arrows nudge · Shift-click or drag to multi-select · G grid · P preview
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="text-[11px] text-slate-400 flex items-center gap-1.5 max-w-sm">
+            <Keyboard className="w-3.5 h-3.5 shrink-0" />
+            Ctrl+Z undo · Ctrl+D duplicate · Ctrl+S save · arrows nudge · G grid · P preview
+          </p>
+          <button data-testid="ai-sidebar-toggle" type="button" aria-expanded={aiOpen}
+            onClick={() => setAiOpen(open => !open)}
+            className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-amber-700 transition-colors">
+            <Sparkles className="h-4 w-4 text-amber-300" /> {aiOpen ? 'Hide AI assistant' : 'Open AI assistant'}
+          </button>
+        </div>
       </div>
 
       <Toolbar
@@ -454,8 +481,8 @@ export default function DesignStudio({ notify, onTemplatesChanged }) {
         isSaved={!!template.id}
       />
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
-        <div className="xl:col-span-3 space-y-3">
+      <div className="flex flex-col xl:flex-row gap-4 items-start min-w-0">
+        <div className="w-full xl:w-[260px] xl:shrink-0 space-y-3">
           <LeftPanel
             template={template}
             set={set}
@@ -465,7 +492,7 @@ export default function DesignStudio({ notify, onTemplatesChanged }) {
           />
         </div>
 
-        <div className="xl:col-span-6">
+        <div className="w-full xl:flex-1 min-w-0">
           <Canvas
             template={template}
             selectedIds={selectedIds}
@@ -490,7 +517,7 @@ export default function DesignStudio({ notify, onTemplatesChanged }) {
           />
         </div>
 
-        <div className="xl:col-span-3 space-y-3">
+        <div className="w-full xl:w-[280px] xl:shrink-0 space-y-3">
           <Inspector
             template={template}
             selectedFields={selectedFields}
@@ -512,6 +539,13 @@ export default function DesignStudio({ notify, onTemplatesChanged }) {
             updateField={updateField}
           />
         </div>
+        {aiOpen && <button data-testid="ai-mobile-backdrop" type="button" aria-label="Close assistant overlay"
+          onClick={() => setAiOpen(false)} className="fixed inset-0 z-[60] bg-slate-950/65 2xl:hidden" />}
+        <aside aria-label="AI Design Assistant" className={`fixed inset-0 z-[70] min-w-0 p-2 sm:left-auto sm:w-[420px] sm:p-4
+          2xl:sticky 2xl:top-4 2xl:h-[calc(100vh-300px)] 2xl:min-h-[420px] 2xl:shrink-0 2xl:p-0 transition-[opacity,transform] duration-300
+          ${aiOpen ? 'visible opacity-100 translate-y-0 2xl:w-[380px]' : 'invisible pointer-events-none opacity-0 translate-y-4 2xl:w-0'}`}>
+          <AIDesignAssistant template={template} onApply={applyAI} onClose={() => setAiOpen(false)} />
+        </aside>
       </div>
 
       <TemplateGallery

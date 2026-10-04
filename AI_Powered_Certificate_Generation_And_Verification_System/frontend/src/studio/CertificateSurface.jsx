@@ -27,6 +27,7 @@ export default function CertificateSurface({
   testId,
   children
 }) {
+  const surfaceId = React.useId().replace(/:/g, '');
   const fields = Array.isArray(template.fields) ? template.fields : [];
   const selected = new Set(selectedIds);
   const watermark = (template.watermark_text || '').trim();
@@ -96,6 +97,7 @@ export default function CertificateSurface({
           {fields.map((f) => (
             <FieldView
               key={f.id}
+              testId={`${testId || `ds-surface-${surfaceId}`}-field-${f.id}`}
               field={f}
               template={template}
               cert={cert}

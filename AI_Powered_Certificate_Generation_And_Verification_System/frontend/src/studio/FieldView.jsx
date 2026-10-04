@@ -16,6 +16,7 @@ import {
  *    transform-origin is moved back up by that same offset.
  */
 export default function FieldView({
+  testId,
   field,
   template,
   selected = false,
@@ -128,7 +129,7 @@ export default function FieldView({
   return (
     <div
       ref={registerNode ? (el) => registerNode(field.id, el) : undefined}
-      data-testid={`ds-canvas-field-${field.type}`}
+      data-testid={testId}
       data-field-id={field.id}
       onPointerDown={interactive ? (e) => onPointerDown?.(e, field) : undefined}
       onDoubleClick={interactive ? (e) => onDoubleClick?.(e, field) : undefined}
