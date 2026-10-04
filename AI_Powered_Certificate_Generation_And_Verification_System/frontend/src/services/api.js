@@ -1,8 +1,7 @@
 import axios from 'axios';
 
-// Automatically use local backend during development, or custom REACT_APP_BACKEND_URL, or fallback to Render in production.
-const IS_DEV = process.env.NODE_ENV === 'development';
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || (IS_DEV ? 'http://localhost:8001' : 'https://ai-powered-certificate-generation-and.onrender.com');
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+if (!BACKEND_URL) throw new Error('REACT_APP_BACKEND_URL must be configured');
 const API = `${BACKEND_URL}/api`;
 
 axios.defaults.headers.common['Content-Type'] = 'application/json';

@@ -1,6 +1,7 @@
 const { getTemplatesCol } = require('../../config/db');
 const { templateScope, scoped } = require('../../utils/tenant');
 const { buildPrompt } = require('./aiPromptBuilder');
+const { normalizeModelOutput } = require('./aiModelNormalizer');
 const { FIELD_TYPES, DesignValidationError, validateResponse } = require('./aiSchema');
 const { generateDesign } = require('./aiProvider');
 
@@ -79,16 +80,19 @@ async function design({ body, req, provider = generateDesign, signal }) {
   const started = Date.now();
   try {
     let proposal;
+    let lastReason = '';
     for (let attempt = 0; attempt < 2; attempt++) {
       const correction = attempt ? '\nIMPORTANT: Your previous response failed strict design validation. ' +
-        'Follow the allowed schema, use only supported field types and valid values, ' +
+        `Validation issue: ${lastReason}. ` +
+        'Follow the allowed schema, use only supported field types, positive field sizes and valid values, ' +
         'and ensure all operations reference existing fields (except add_field). Return ONLY corrected JSON.' : '';
       const output = await provider({ system: system + correction, user, signal });
       try {
-        proposal = validateResponse(output, input.template);
+        proposal = validateResponse(normalizeModelOutput(output, input.template), input.template);
         break;
       } catch (err) {
         if (!(err instanceof DesignValidationError) || attempt) throw err;
+        lastReason = err.message.replace(/[^a-zA-Z0-9 _-]/g, '').slice(0, 70);
         console.warn('[AI design]', { status: 'retry_invalid_output', validation_reason: err.message });
       }
     }

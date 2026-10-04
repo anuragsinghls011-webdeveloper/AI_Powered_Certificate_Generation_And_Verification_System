@@ -6,8 +6,8 @@ Compiled successfully.
 
 File sizes after gzip:
 
-  304.77 kB (+355 B)  build/static/js/main.20b893ac.js
-  9.71 kB (+12 B)     build/static/css/main.bff405df.css
+  304.79 kB  build/static/js/main.85279209.js
+  9.71 kB    build/static/css/main.bff405df.css
 
 The project was built assuming it is hosted at /.
 You can control this with the homepage field in your package.json.
@@ -22,4 +22,4 @@ Find out more about deployment here:
 
   https://cra.link/deployment
 
-Done in 51.32s.
+Done in 17.64s.

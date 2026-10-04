@@ -15,7 +15,7 @@ const TEMPLATE_RULES = {
   primary_color: ['color'], secondary_color: ['color'], background_color: ['color'],
   gradient_from: ['color'], gradient_to: ['color'], watermark_color: ['color'],
   border_style: ['enum', ['solid', 'double', 'dashed', 'ridge', 'none']],
-  border_width: ['number', 0.5, 14], corner_radius: ['number', 0, 40], accent_ring: ['boolean'],
+  border_width: ['number', 0, 14], corner_radius: ['number', 0, 40], accent_ring: ['boolean'],
   gradient_enabled: ['boolean'], gradient_angle: ['number', 0, 360],
   watermark_text: ['text', 80], watermark_opacity: ['number', 0, 0.5], watermark_size: ['number', 24, 180],
   issuer_name: ['text', 120], issuer_title: ['text', 120]

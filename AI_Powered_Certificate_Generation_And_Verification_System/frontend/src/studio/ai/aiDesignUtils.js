@@ -16,7 +16,7 @@ const COLOR = /^#[a-fA-F0-9]{6}$/;
 const RANGES = { x: [0, CANVAS_W], y: [0, CANVAS_H], width: [12, CANVAS_W],
   height: [12, CANVAS_H], fontSize: [6, 64], opacity: [0.1, 1], rotation: [0, 359],
   letterSpacing: [-2, 12], lineHeight: [1, 2.5], lineThickness: [0.25, 8] };
-const META_RANGES = { border_width: [0.5, 14], corner_radius: [0, 40],
+const META_RANGES = { border_width: [0, 14], corner_radius: [0, 40],
   gradient_angle: [0, 360], watermark_opacity: [0, 0.5], watermark_size: [24, 180] };
 const META_OPTIONS = { style: ['modern', 'classic', 'minimal'],
   category: ['General', 'Academic', 'Award', 'Workshop', 'Hackathon', 'Internship', 'Sports', 'Participation', 'Training'],

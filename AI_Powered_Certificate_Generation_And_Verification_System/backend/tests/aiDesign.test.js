@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 const { validateResponse } = require('../services/ai/aiSchema');
 const { parseRequest, compactTemplate } = require('../services/ai/aiDesignService');
 const { design } = require('../services/ai/aiDesignService');
+const { normalizeModelOutput } = require('../services/ai/aiModelNormalizer');
 
 const base = { id: null, name: 'Current design', fields: [
   { id: 'recipient-1', type: 'recipient_name', x: 96, y: 200, width: 600, height: 40, fontSize: 32, textAlign: 'center' }
@@ -88,4 +89,20 @@ test('malformed provider responses are refused even after one guarded correction
 test('provider errors do not generate a partial design', async () => {
   await assert.rejects(design({ body: { prompt: 'Create a certificate', template: base },
     provider: async () => { throw new Error('unavailable'); } }), /unavailable/);
+});
+
+test('safe model aliases normalize to the strict schema, while unsupported types still reject', () => {
+  const rough = { intent: 'refine', summary: 'Improved layout',
+    template_changes: { style: 'premium', border_width: 0, category: 'Competition' },
+    field_operations: [{ type: 'move', field_type: 'recipient',
+      properties: { x: 105, y: 210, font_size: 37 } },
+    { type: 'add', field_type: 'qr_code', properties: { x: 680, y: 440, width: 82, height: 82 } }] };
+  const result = validateResponse(normalizeModelOutput(rough, base), base);
+  assert.equal(result.intent, 'improve');
+  assert.equal(result.template_changes.border_width, 0);
+  assert.equal(result.template_changes.style, 'classic');
+  assert.equal(result.field_operations[1].field_type, 'certificate_qr');
+  assert.equal(result.field_operations[0].properties.fontSize, 37);
+  assert.throws(() => validateResponse(normalizeModelOutput({ ...rough,
+    field_operations: [{ type: 'add', field_type: 'hologram', properties: {} }] }, base), base), /Unsupported/);
 });
