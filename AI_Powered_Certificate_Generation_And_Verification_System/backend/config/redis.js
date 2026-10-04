@@ -12,10 +12,13 @@ const IORedis = require('ioredis');
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
 
+const isSecure = REDIS_URL.startsWith('rediss://');
+
 /** Default ioredis options shared by every connection. */
 const baseOptions = {
   maxRetriesPerRequest: null,   // Required by BullMQ — it handles retries itself
   enableReadyCheck: true,
+  ...(isSecure ? { tls: { rejectUnauthorized: false } } : {}),
   retryStrategy(times) {
     // Exponential backoff: 500ms, 1s, 2s, … capped at 15s
     return Math.min(times * 500, 15000);
@@ -56,28 +59,7 @@ function getSharedConnection() {
 let _isRedisAvailable = null;
 
 async function redisHealthCheck() {
-  if (_sharedConnection && _sharedConnection.status === 'ready') return true;
-  if (_isRedisAvailable === false) return false; // Cache failure so we don't keep checking and hanging
-
-  return new Promise((resolve) => {
-    const checkConn = new IORedis(REDIS_URL, {
-      maxRetriesPerRequest: 1,
-      retryStrategy: () => null, // Do not retry
-      connectTimeout: 2000 // 2 seconds timeout
-    });
-
-    checkConn.on('error', () => {
-      checkConn.disconnect();
-      _isRedisAvailable = false;
-      resolve(false);
-    });
-
-    checkConn.on('ready', () => {
-      checkConn.disconnect();
-      _isRedisAvailable = true;
-      resolve(true);
-    });
-  });
+  return false;
 }
 
 /**

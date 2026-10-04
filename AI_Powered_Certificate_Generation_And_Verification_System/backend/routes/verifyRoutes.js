@@ -53,7 +53,10 @@ router.get('/:cert_id/download-pdf', async (req, res) => {
       }
     }
     
-    const template = await getDB().collection('templates').findOne({ id: cert.template_id });
+    let template = cert.template_id ? await getDB().collection('templates').findOne({ id: cert.template_id }) : null;
+    if (!template) {
+      template = await getDB().collection('templates').findOne({});
+    }
     if (!template) return res.status(404).json({ error: 'Template not found.' });
 
     await streamCertificatePdf(cert, template, res);

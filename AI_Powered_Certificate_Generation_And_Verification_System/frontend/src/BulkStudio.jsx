@@ -124,10 +124,6 @@ export default function BulkStudio({ notify }) {
     }
   };
 
-  const downloadSample = (fmt) => {
-    window.location.href = `${API}/bulk/sample-template?format=${fmt}`;
-  };
-
   // ---------- STEP 2: PREVIEW (paginated) ----------
   const loadPreviewPage = useCallback(async (page = 1, size = 25) => {
     if (!uploadInfo) return;
@@ -239,19 +235,91 @@ export default function BulkStudio({ notify }) {
     if (!activeJobId) return;
     try {
       const res = await axios.post(`${API}/bulk/jobs/${activeJobId}/resend-emails`);
-      notify?.(res.data.message);
+      if ((res.data?.sent || 0) > 0 || (res.data?.queued || 0) > 0) {
+        notify?.(res.data.message || 'Emails dispatched successfully');
+      } else {
+        notify?.(res.data.message || 'No emails delivered. Please check recipient addresses.', 'error');
+      }
     } catch (err) {
       notify?.(err.response?.data?.error || 'Failed to resend emails', 'error');
     }
   };
 
-  const downloadZip = (jobId) => {
-    window.location.href = `${API}/bulk/jobs/${jobId || activeJobId}/download`;
+  const downloadZip = async (jobId) => {
+    const targetId = jobId || activeJobId;
+    if (!targetId) return;
+    try {
+      notify?.('Preparing certificates ZIP download…');
+      const res = await axios.get(`${API}/bulk/jobs/${targetId}/download`, {
+        responseType: 'blob',
+        timeout: 120000
+      });
+      if (!(res.data instanceof Blob) || !res.data.size) throw new Error('Empty ZIP received');
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `bulk_certificates_${targetId}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      notify?.('ZIP download completed');
+    } catch (err) {
+      let errMsg = 'Failed to download ZIP archive';
+      if (err.response?.data instanceof Blob) {
+        try {
+          const parsed = JSON.parse(await err.response.data.text());
+          if (parsed?.error) errMsg = parsed.error;
+        } catch (_) {}
+      } else if (err.response?.data?.error) {
+        errMsg = err.response.data.error;
+      }
+      notify?.(errMsg, 'error');
+    }
   };
 
-  const downloadErrors = () => {
+  const downloadErrors = async () => {
     if (!uploadInfo) return;
-    window.location.href = `${API}/bulk/uploads/${uploadInfo.upload_id}/errors.csv`;
+    try {
+      notify?.('Downloading error report…');
+      const res = await axios.get(`${API}/bulk/uploads/${uploadInfo.upload_id}/errors.csv`, {
+        responseType: 'blob',
+        timeout: 30000
+      });
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'text/csv' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `validation_errors_${uploadInfo.upload_id}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      notify?.('Error report downloaded');
+    } catch (err) {
+      notify?.('Failed to download error report', 'error');
+    }
+  };
+
+  const downloadSample = async (fmt) => {
+    try {
+      notify?.(`Downloading sample ${fmt.toUpperCase()}…`);
+      const res = await axios.get(`${API}/bulk/sample-template?format=${fmt}`, {
+        responseType: 'blob',
+        timeout: 30000
+      });
+      const mime = fmt === 'xlsx' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'text/csv';
+      const url = URL.createObjectURL(new Blob([res.data], { type: mime }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `bulk-participants-template.${fmt}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      notify?.(`Sample ${fmt.toUpperCase()} downloaded`);
+    } catch (err) {
+      notify?.(`Failed to download sample ${fmt.toUpperCase()}`, 'error');
+    }
   };
 
   const saveCurrentMapping = async () => {

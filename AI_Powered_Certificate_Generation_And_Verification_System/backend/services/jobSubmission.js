@@ -44,8 +44,9 @@ async function submitJob(req, { rows, mapping, defaults = {}, settings = {}, sou
   let existing = await db.collection('bulk_jobs').findOne({ submission_key: submissionKey });
   if (existing) {
     if (existing.request_hash !== requestHash) throw Object.assign(new Error('Idempotency key already used with different content'), { statusCode: 409 });
-    // If the existing job is in a terminal failure state, reset it so it can be re-processed
-    if (['failed', 'completed_with_errors'].includes(existing.status)) {
+    // If the existing job is in a terminal failure state, or stuck at max attempts, reset it so it can be re-processed
+    const isStuck = ['queued', 'processing'].includes(existing.status) && existing.attempts >= 3;
+    if (['failed', 'completed_with_errors'].includes(existing.status) || isStuck) {
       await db.collection('bulk_jobs').updateOne(
         { submission_key: submissionKey },
         {
@@ -100,6 +101,7 @@ async function initializeJobIndexes(db) {
   await db.collection('job_admissions').createIndex({ job_id: 1 }, { unique: true, partialFilterExpression: { job_id: { $type: 'string' } } });
   await db.collection('bulk_jobs').createIndex({ submission_key: 1 }, { unique: true, partialFilterExpression: { submission_key: { $type: 'string' } } });
   await db.collection('bulk_jobs').createIndex({ organization_id: 1, status: 1, next_attempt_at: 1, lease_until: 1 });
+  await db.collection('bulk_jobs').createIndex({ status: 1, next_attempt_at: 1, lease_until: 1 });
   await db.collection('bulk_records').createIndex({ organization_id: 1, job_id: 1, status: 1 });
   await db.collection('certificates').createIndex({ issuance_key: 1 }, { unique: true, partialFilterExpression: { issuance_key: { $type: 'string' } } });
 }

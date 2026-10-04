@@ -31,7 +31,18 @@ import AuthPages from './auth/AuthPages';
 
 export default function App() {
   const { user, membership, loading: authLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState(() => window.location.hash === '#reports' ? 'reports' : 'dashboard');
+  const [activeTab, setActiveTab] = useState(() => {
+    const path = window.location.pathname.toLowerCase();
+    if (path.startsWith('/verify')) return 'verify';
+    if (path.startsWith('/events')) return 'events';
+    if (path.startsWith('/bulk-studio')) return 'bulk-studio';
+    if (path.startsWith('/bulk')) return 'bulk';
+    if (path.startsWith('/repository')) return 'repository';
+    if (path.startsWith('/design')) return 'design';
+    if (path.startsWith('/team')) return 'team';
+    if (window.location.hash === '#reports' || path.startsWith('/reports')) return 'reports';
+    return 'dashboard';
+  });
   const [events, setEvents] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [certificates, setCertificates] = useState([]);
@@ -39,9 +50,24 @@ export default function App() {
   const [generationJob, setGenerationJob] = useState(null);
   const [loading, setLoading] = useState(false);
   const { notification, showNotification } = useNotification();
-  const [showAuth, setShowAuth] = useState(false);
-  const [authMode, setAuthMode] = useState('login');
-  const [showVerifyPublic, setShowVerifyPublic] = useState(false);
+  const [showAuth, setShowAuth] = useState(() => {
+    const path = window.location.pathname.toLowerCase();
+    const search = window.location.search.toLowerCase();
+    return path.startsWith('/auth') || search.includes('token=') || search.includes('mode=login') || search.includes('mode=register');
+  });
+  const [authMode, setAuthMode] = useState(() => {
+    const path = window.location.pathname.toLowerCase();
+    const search = window.location.search.toLowerCase();
+    if (path.includes('reset-password') || search.includes('token=')) return 'reset';
+    if (path.includes('register') || search.includes('mode=register')) return 'register';
+    if (path.includes('forgot') || search.includes('mode=forgot')) return 'forgot';
+    return 'login';
+  });
+  const [showVerifyPublic, setShowVerifyPublic] = useState(() => {
+    const path = window.location.pathname.toLowerCase();
+    const search = window.location.search.toLowerCase();
+    return path.startsWith('/verify') || search.includes('verify=') || search.includes('cert_id=');
+  });
 
   // Event form state
   const [newEvent, setNewEvent] = useState({
@@ -220,9 +246,22 @@ export default function App() {
       return;
     }
     
+    const normalizeHeader = (h) => {
+      const clean = h.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (['name', 'recipientname', 'fullname', 'studentname', 'participant'].includes(clean)) return 'recipient_name';
+      if (['email', 'emailid', 'mail', 'emailaddress', 'mailid', 'recipientemail'].includes(clean)) return 'email';
+      if (['rank', 'role', 'position', 'award', 'designation'].includes(clean)) return 'rank';
+      if (['score', 'grade', 'marks', 'percentage'].includes(clean)) return 'score';
+      if (['org', 'organization', 'organizationname', 'institution', 'college', 'company'].includes(clean)) return 'organization_name';
+      if (['date', 'issuedate'].includes(clean)) return 'issue_date';
+      return h.trim().toLowerCase();
+    };
+
     const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
     const mapping = {};
-    headers.forEach(h => mapping[h] = h); // 1:1 mapping
+    headers.forEach(h => {
+      mapping[h] = normalizeHeader(h);
+    });
 
     const participants = lines.slice(1).map(line => {
       const parts = line.split(',').map(p => p.trim());
@@ -259,10 +298,10 @@ export default function App() {
   const handleSendEmail = async (certId) => {
     try {
       const res = await axios.post(`${API}/certificates/${certId}/send-email`);
-      showNotification(res.data.message);
+      showNotification(res.data.message || 'Email sent successfully');
       fetchAllData();
     } catch (err) {
-      showNotification('Failed to send email', 'error');
+      showNotification(err.response?.data?.error || 'Failed to send email', 'error');
     }
   };
 
@@ -396,8 +435,13 @@ export default function App() {
     if (!generationJob?.id) return;
     try {
       showNotification('Starting to send emails...');
-      await axios.post(`${API}/bulk/jobs/${generationJob.id}/resend-emails`);
-      showNotification('Emails queued for sending successfully!');
+      const res = await axios.post(`${API}/bulk/jobs/${generationJob.id}/resend-emails`);
+      if ((res.data?.sent || 0) > 0 || (res.data?.queued || 0) > 0) {
+        showNotification(res.data.message || 'Emails dispatched successfully!');
+      } else {
+        showNotification(res.data?.message || 'No emails were delivered. Check recipient email addresses.', 'warning');
+      }
+      fetchAllData();
     } catch (err) {
       showNotification(err.response?.data?.error || 'Failed to send emails', 'error');
     }
@@ -411,12 +455,23 @@ export default function App() {
     if (showVerifyPublic) {
       return (
         <div className="min-h-screen bg-slate-50 py-12 flex flex-col items-center">
-          <div className="w-full max-w-3xl px-4 mb-6">
+          <div className="w-full max-w-3xl px-4 mb-6 flex justify-between items-center">
             <button 
-              onClick={() => setShowVerifyPublic(false)} 
+              onClick={() => {
+                setShowVerifyPublic(false);
+                if (window.location.pathname.startsWith('/verify')) {
+                  window.history.pushState(null, '', '/');
+                }
+              }} 
               className="text-slate-500 hover:text-slate-800 flex items-center gap-2 font-medium transition"
             >
               &larr; Back to Home
+            </button>
+            <button
+              onClick={() => { setShowVerifyPublic(false); setAuthMode('login'); setShowAuth(true); }}
+              className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold rounded-xl transition shadow-sm"
+            >
+              Sign In
             </button>
           </div>
           <VerifyPage apiBase={API} />

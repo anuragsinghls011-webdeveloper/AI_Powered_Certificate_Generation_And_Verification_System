@@ -17,9 +17,9 @@ export default function PreviewModal({ cert, template, onClose, apiBase }) {
         </button>
 
         {template ? (
-          <div className="flex justify-center items-center overflow-x-auto pb-4">
+          <div className="flex justify-center items-center overflow-x-auto pb-4 max-h-[75vh]">
             <div className="shadow-lg border border-slate-200 rounded-sm">
-              <CertificateSurface template={template} cert={cert} scale={1} interactive={false} />
+              <CertificateSurface template={template} cert={cert} scale={0.78} interactive={false} />
             </div>
           </div>
         ) : (

@@ -526,24 +526,25 @@ async function renderCertificatePdfBuffer(template, values, { direct = false } =
   const fontsDir = path.join(__dirname, '..', '..', 'storage', 'fonts');
   if (fs.existsSync(fontsDir)) {
     try {
-      doc.registerFont('Montserrat', path.join(fontsDir, 'Montserrat.ttf'));
-      doc.registerFont('Montserrat-Italic', path.join(fontsDir, 'Montserrat-Italic.ttf'));
-      doc.registerFont('PlayfairDisplay', path.join(fontsDir, 'PlayfairDisplay.ttf'));
-      doc.registerFont('PlayfairDisplay-Italic', path.join(fontsDir, 'PlayfairDisplay-Italic.ttf'));
-      doc.registerFont('GreatVibes', path.join(fontsDir, 'GreatVibes.ttf'));
-      doc.registerFont('Oswald', path.join(fontsDir, 'Oswald.ttf'));
-      doc.registerFont('Lato', path.join(fontsDir, 'Lato.ttf'));
-      doc.registerFont('Lato-Bold', path.join(fontsDir, 'Lato-Bold.ttf'));
-      doc.registerFont('Lato-Italic', path.join(fontsDir, 'Lato-Italic.ttf'));
-      doc.registerFont('Lato-BoldItalic', path.join(fontsDir, 'Lato-BoldItalic.ttf'));
-      doc.registerFont('Merriweather', path.join(fontsDir, 'Merriweather.ttf'));
-      doc.registerFont('Merriweather-Bold', path.join(fontsDir, 'Merriweather-Bold.ttf'));
-      doc.registerFont('Merriweather-Italic', path.join(fontsDir, 'Merriweather-Italic.ttf'));
-      doc.registerFont('Merriweather-BoldItalic', path.join(fontsDir, 'Merriweather-BoldItalic.ttf'));
-      doc.registerFont('Cinzel', path.join(fontsDir, 'Cinzel.ttf'));
-      doc.registerFont('Lora', path.join(fontsDir, 'Lora.ttf'));
-      doc.registerFont('Lora-Italic', path.join(fontsDir, 'Lora-Italic.ttf'));
-      doc.registerFont('AlexBrush', path.join(fontsDir, 'AlexBrush.ttf'));
+      const fontFiles = {
+        'Montserrat': 'Montserrat.ttf', 'Montserrat-Italic': 'Montserrat-Italic.ttf',
+        'PlayfairDisplay': 'PlayfairDisplay.ttf', 'PlayfairDisplay-Italic': 'PlayfairDisplay-Italic.ttf',
+        'GreatVibes': 'GreatVibes.ttf', 'Oswald': 'Oswald.ttf',
+        'Lato': 'Lato.ttf', 'Lato-Bold': 'Lato-Bold.ttf', 'Lato-Italic': 'Lato-Italic.ttf', 'Lato-BoldItalic': 'Lato-BoldItalic.ttf',
+        'Merriweather': 'Merriweather.ttf', 'Merriweather-Bold': 'Merriweather-Bold.ttf', 'Merriweather-Italic': 'Merriweather-Italic.ttf', 'Merriweather-BoldItalic': 'Merriweather-BoldItalic.ttf',
+        'Cinzel': 'Cinzel.ttf', 'Lora': 'Lora.ttf', 'Lora-Italic': 'Lora-Italic.ttf', 'AlexBrush': 'AlexBrush.ttf'
+      };
+      
+      const neededFonts = new Set();
+      for (const field of resolveFields(template)) {
+        neededFonts.add(resolvePdfFont(field.fontFamily, field.fontWeight, field.fontStyle));
+      }
+      
+      for (const fontName of neededFonts) {
+        if (fontFiles[fontName]) {
+          doc.registerFont(fontName, path.join(fontsDir, fontFiles[fontName]));
+        }
+      }
     } catch (e) {
       console.error('Warning: Failed to register custom fonts', e);
     }

@@ -17,7 +17,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "prebuild": "rm -rf node_modules/.cache",
+    "prebuild": "node -e \"try { require('fs').rmSync('node_modules/.cache', { recursive: true, force: true }); } catch (e) {}\"",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

@@ -1,8 +1,9 @@
 import axios from 'axios';
 
-// HARDCODED: Always call Render backend directly. Never go through Vercel proxy.
-const API = 'https://ai-powered-certificate-generation-and.onrender.com/api';
-const BACKEND_URL = 'https://ai-powered-certificate-generation-and.onrender.com';
+// Automatically use local backend during development, or custom REACT_APP_BACKEND_URL, or fallback to Render in production.
+const IS_DEV = process.env.NODE_ENV === 'development';
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || (IS_DEV ? 'http://localhost:8001' : 'https://ai-powered-certificate-generation-and.onrender.com');
+const API = `${BACKEND_URL}/api`;
 
 axios.defaults.headers.common['Content-Type'] = 'application/json';
 

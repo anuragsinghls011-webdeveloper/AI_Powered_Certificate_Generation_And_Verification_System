@@ -16,6 +16,7 @@ async function connectDB() {
     await db.collection('certificates').createIndex({ event_id: 1, cert_id: 1 });
     await db.collection('events').createIndex({ organization_id: 1, date: -1 });
     await db.collection('events').createIndex({ status: 1, 'report_delivery.status': 1 });
+    await db.collection('bulk_jobs').createIndex({ status: 1, next_attempt_at: 1, lease_until: 1 });
     console.log('Connected to MongoDB successfully');
     return db;
   } catch (err) {

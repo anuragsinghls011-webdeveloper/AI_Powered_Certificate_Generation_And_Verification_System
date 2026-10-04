@@ -34,36 +34,41 @@ async function start() {
     // Reset any stuck 'processing' jobs back to 'queued'
     const stuckReset = await db.collection('bulk_jobs').updateMany(
       { status: 'processing' },
-      { $set: { status: 'queued', lease_owner: null, lease_until: new Date(0), next_attempt_at: new Date() } }
+      { $set: { status: 'queued', attempts: 0, lease_owner: null, lease_until: new Date(0), next_attempt_at: new Date() } }
     );
     if (stuckReset.modifiedCount > 0) {
       console.log(`[Server] Reset ${stuckReset.modifiedCount} stuck processing job(s) to queued`);
     }
 
     // --- Queue System Initialization ---
-    const redisAvailable = await redisHealthCheck();
-
-    if (redisAvailable) {
-      console.log('[Server] Redis available — starting BullMQ workers');
-
-      // Start all BullMQ workers
-      startCertificateWorker();
-      startEmailWorker();
-      startReportWorker();
-
-      // Recover any jobs that were stuck from before (crash recovery)
-      const recovered = await recoverStaleReports();
-      if (recovered > 0) {
-        console.log(`[Server] Recovered ${recovered} stale event report(s)`);
-      }
-
-      // Recover stale bulk jobs too
-      await recoverStaleBulkJobs(db);
+    let redisAvailable = false;
+    if (process.env.DISABLE_WORKERS === 'true') {
+      console.log('[Server] Background workers disabled via DISABLE_WORKERS=true (Running as API-only)');
     } else {
-      console.warn('[Server] Redis NOT available — falling back to legacy setInterval schedulers');
-      console.warn('[Server] Set REDIS_URL in .env for durable queue processing');
-      await startEventReportScheduler(db);
-      startBulkScheduler(db);
+      redisAvailable = await redisHealthCheck();
+  
+      if (redisAvailable) {
+        console.log('[Server] Redis available — starting BullMQ workers');
+  
+        // Start all BullMQ workers
+        startCertificateWorker();
+        startEmailWorker();
+        startReportWorker();
+  
+        // Recover any jobs that were stuck from before (crash recovery)
+        const recovered = await recoverStaleReports();
+        if (recovered > 0) {
+          console.log(`[Server] Recovered ${recovered} stale event report(s)`);
+        }
+  
+        // Recover stale bulk jobs too
+        await recoverStaleBulkJobs(db);
+      } else {
+        console.warn('[Server] Redis NOT available — falling back to legacy setInterval schedulers');
+        console.warn('[Server] Set REDIS_URL in .env for durable queue processing');
+        await startEventReportScheduler(db);
+        startBulkScheduler(db);
+      }
     }
 
     app.listen(PORT, '0.0.0.0', () => {

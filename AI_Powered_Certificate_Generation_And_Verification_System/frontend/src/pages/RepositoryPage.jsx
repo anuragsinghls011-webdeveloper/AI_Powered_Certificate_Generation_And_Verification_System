@@ -155,7 +155,6 @@ export default function RepositoryPage({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 text-slate-600 text-xs font-semibold uppercase border-b border-slate-200">
-                {selectedCerts.size > 0 && (
                   <th className="p-4 w-12 transition-all animate-fade-in">
                     <input 
                       type="checkbox" 
@@ -164,7 +163,6 @@ export default function RepositoryPage({
                       className="w-4 h-4 text-brand-600 border-slate-300 rounded focus:ring-brand-500 cursor-pointer"
                     />
                   </th>
-                )}
                 <th className="p-4">Certificate ID</th>
                 <th className="p-4">Recipient</th>
                 <th className="p-4">Event & Role</th>
@@ -176,7 +174,7 @@ export default function RepositoryPage({
             <tbody className="divide-y divide-slate-100 text-sm">
               {currentCertificates.length === 0 ? (
                 <tr>
-                  <td colSpan={selectedCerts.size > 0 ? "7" : "6"} className="text-center py-12 text-slate-400">
+                  <td colSpan="7" className="text-center py-12 text-slate-400">
                     No certificates found matching criteria.
                   </td>
                 </tr>
@@ -189,7 +187,6 @@ export default function RepositoryPage({
                     onDoubleClick={() => setPreviewCert(cert)}
                     className={`hover:bg-slate-50/80 transition cursor-default select-none ${selectedCerts.has(cert.cert_id) ? 'bg-brand-50 border-l-4 border-brand-500' : 'border-l-4 border-transparent'}`}
                   >
-                    {selectedCerts.size > 0 && (
                       <td className="p-4 transition-all animate-fade-in">
                         <input 
                           type="checkbox"
@@ -198,7 +195,6 @@ export default function RepositoryPage({
                           className="w-4 h-4 text-brand-600 border-slate-300 rounded focus:ring-brand-500 cursor-pointer"
                         />
                       </td>
-                    )}
                     <td className="p-4 font-mono font-medium text-brand-600">{cert.cert_id}</td>
                     <td className="p-4">
                       <p className="font-semibold text-slate-900">{cert.recipient_name}</p>

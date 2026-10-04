@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import {
-  ShieldCheck, CheckCircle2, AlertTriangle, Download, Linkedin, Twitter
+  ShieldCheck, CheckCircle2, AlertTriangle, Download, Linkedin, Twitter, Loader2, QrCode
 } from 'lucide-react';
 
 export default function VerifyPage({ apiBase }) {
@@ -9,12 +9,48 @@ export default function VerifyPage({ apiBase }) {
   const [verifiedCert, setVerifiedCert] = useState(null);
   const [verifyError, setVerifyError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const performVerification = useCallback(async (certId) => {
+    const trimmed = String(certId || '').trim();
+    if (!trimmed) return;
+    setVerifyError('');
+    setVerifiedCert(null);
+    setLoading(true);
+    try {
+      const res = await axios.get(`${apiBase}/verify/${encodeURIComponent(trimmed)}`);
+      setVerifiedCert(res.data);
+    } catch (err) {
+      setVerifyError(err.response?.data?.error || 'Certificate not found or ID is invalid. Please check and try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [apiBase]);
+
+  // Auto-detect certificate ID from URL on mount
+  useEffect(() => {
+    const path = window.location.pathname;
+    const parts = path.split('/').filter(Boolean);
+    const verifyIdx = parts.indexOf('verify');
+    let targetId = '';
+    if (verifyIdx !== -1 && parts[verifyIdx + 1]) {
+      targetId = parts[verifyIdx + 1];
+    } else {
+      const params = new URLSearchParams(window.location.search);
+      targetId = params.get('id') || params.get('cert_id') || params.get('cert') || '';
+    }
+
+    if (targetId) {
+      setVerifySearchId(targetId);
+      performVerification(targetId);
+    }
+  }, [performVerification]);
 
   const handleLinkedInPost = async (e) => {
     e.preventDefault();
     if (!verifiedCert) return;
     
-    const text = `🎉 I'm excited to share that I have successfully completed ${verifiedCert.event_title} from ${verifiedCert.organization_name}.\n\nThis credential recognizes my achievement as a ${verifiedCert.role} with a grade of ${verifiedCert.grade}.\n\n🔗 Verify my credential: ${verifiedCert.verification_url}\n\n#${verifiedCert.event_category.replace(/[^a-zA-Z0-9]/g, '') || 'Achievement'} #Certification #Learning #${verifiedCert.organization_name.replace(/[^a-zA-Z0-9]/g, '') || 'Success'}`;
+    const text = `🎉 I'm excited to share that I have successfully completed ${verifiedCert.event_title} from ${verifiedCert.organization_name}.\n\nThis credential recognizes my achievement as a ${verifiedCert.role} with a grade of ${verifiedCert.grade}.\n\n🔗 Verify my credential: ${verifiedCert.verification_url}\n\n#${(verifiedCert.event_category || '').replace(/[^a-zA-Z0-9]/g, '') || 'Achievement'} #Certification #Learning #${(verifiedCert.organization_name || '').replace(/[^a-zA-Z0-9]/g, '') || 'Success'}`;
 
     try {
       await navigator.clipboard.writeText(text);
@@ -30,15 +66,7 @@ export default function VerifyPage({ apiBase }) {
 
   const handleVerifyCertificate = async (e) => {
     e.preventDefault();
-    if (!verifySearchId.trim()) return;
-    setVerifyError('');
-    setVerifiedCert(null);
-    try {
-      const res = await axios.get(`${apiBase}/verify/${verifySearchId.trim()}`);
-      setVerifiedCert(res.data);
-    } catch (err) {
-      setVerifyError('Certificate not found or ID is invalid. Please check and try again.');
-    }
+    performVerification(verifySearchId);
   };
 
   const getLinkedInUrl = () => {
@@ -84,9 +112,11 @@ export default function VerifyPage({ apiBase }) {
           <button 
             data-testid="verify-submit-btn"
             type="submit" 
-            className="px-6 py-3 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition shadow"
+            disabled={loading}
+            className="px-6 py-3 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition shadow disabled:opacity-60 flex items-center justify-center gap-2"
           >
-            Verify Now
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
+            <span>{loading ? 'Verifying…' : 'Verify Now'}</span>
           </button>
         </form>
 

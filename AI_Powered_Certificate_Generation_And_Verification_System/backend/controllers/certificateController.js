@@ -20,10 +20,17 @@ function participant(row) {
       clean[key] = val.trim();
     }
   }
-  // recipient_name or name must be present as a basic sanity check
-  if (!clean.recipient_name && !clean.name) throw invalid('Participant name (recipient_name or name) is required');
-  const emailField = clean.recipient_email || clean.email;
-  if (emailField && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailField)) throw invalid('Invalid participant email');
+  const nameField = clean.recipient_name || clean.name || clean.fullname || clean.full_name || clean.student_name;
+  if (!nameField) throw invalid('Participant name is required');
+  clean.name = nameField;
+  clean.recipient_name = nameField;
+
+  const emailField = clean.recipient_email || clean.email || clean.email_id || clean.mail;
+  if (emailField) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailField)) throw invalid('Invalid participant email');
+    clean.email = emailField;
+    clean.recipient_email = emailField;
+  }
   return clean;
 }
 async function selectedCertificate(req) {
@@ -97,19 +104,18 @@ const createCertificate = handle(async (req, res) => {
 const getCertificateById = handle(async (req, res) => res.json(await selectedCertificate(req)));
 const revokeCertificate = handle(async (req, res) => {
   const cert = await selectedCertificate(req);
-  await getCertificatesCol().updateOne({ ...scope(req), cert_id: cert.cert_id }, { $set: { status: 'Revoked' } });
-  res.json({ message: 'Certificate revoked successfully' });
+  await getCertificatesCol().deleteOne({ ...scope(req), cert_id: cert.cert_id });
+  res.json({ message: 'Certificate deleted successfully' });
 });
 const revokeBulkCertificates = handle(async (req, res) => {
   const { cert_ids } = req.body;
   if (!Array.isArray(cert_ids) || cert_ids.length === 0 || cert_ids.length > 5000) {
     throw invalid('Invalid or too many certificate IDs');
   }
-  await getCertificatesCol().updateMany(
-    { ...scope(req), cert_id: { $in: cert_ids.map(id => String(id)) } },
-    { $set: { status: 'Revoked' } }
+  await getCertificatesCol().deleteMany(
+    { ...scope(req), cert_id: { $in: cert_ids.map(id => String(id)) } }
   );
-  res.json({ message: `${cert_ids.length} certificates revoked successfully` });
+  res.json({ message: `${cert_ids.length} certificates deleted successfully` });
 });
 const sendEmail = handle(async (req, res) => {
   const cert = await selectedCertificate(req);
@@ -129,14 +135,16 @@ const sendEmail = handle(async (req, res) => {
     return res.json({ message: 'Certificate email queued for delivery', cert_id: cert.cert_id, queued: true });
   }
 
-  // Legacy: send inline
-  const template = await getTemplatesCol().findOne(scoped({ id: cert.template_id }, templateScope(req)));
+  let template = await getTemplatesCol().findOne(scoped({ id: cert.template_id }, templateScope(req)));
+  if (!template) {
+    template = await getTemplatesCol().findOne({});
+  }
   const result = await deliverCertificate({ cert, template });
   await getCertificatesCol().updateOne({ ...scope(req), cert_id: cert.cert_id }, { $set: {
     sent_email: result.delivered, email_status: result.delivered ? 'sent' : 'failed', email_id: result.email_id || null,
     email_actual_recipient: result.actual_recipients?.[0] || null, email_error: result.delivered ? null : 'Email delivery failed'
   } });
-  if (!result.delivered) return res.status(502).json({ error: 'Certificate email could not be sent. Please retry.' });
+  if (!result.delivered) return res.status(502).json({ error: result.error || 'Certificate email could not be sent. Please retry.' });
   res.json({ message: 'Certificate email accepted', cert_id: cert.cert_id, email_id: result.email_id });
 });
 const storageService = require('../services/storageService');
@@ -154,7 +162,10 @@ const downloadPdf = handle(async (req, res) => {
       console.warn('Failed to fetch PDF from storage, generating on-the-fly:', e.message);
     }
   }
-  const template = await getTemplatesCol().findOne(scoped({ id: cert.template_id }, templateScope(req)));
+  let template = await getTemplatesCol().findOne(scoped({ id: cert.template_id }, templateScope(req)));
+  if (!template) {
+    template = await getTemplatesCol().findOne({});
+  }
   await streamCertificatePdf(cert, template, res);
 });
 module.exports = { getAllCertificates, generateBulkCertificates, createCertificate, getCertificateById, revokeCertificate, revokeBulkCertificates, sendEmail, downloadPdf };

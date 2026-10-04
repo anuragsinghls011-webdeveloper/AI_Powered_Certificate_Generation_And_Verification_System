@@ -44,20 +44,46 @@ async function nextCertificateId(db) {
 
 function valuesFor(job, record, certId) {
   const inv = invertMapping(job.mapping);
-  const pick = field => String(record.row[inv[field]] ?? job.defaults[field] ?? '').trim();
+  const row = record.row || {};
+
+  const pick = (fieldType, aliases = []) => {
+    if (inv[fieldType] && row[inv[fieldType]] != null && String(row[inv[fieldType]]).trim() !== '') {
+      return String(row[inv[fieldType]]).trim();
+    }
+    for (const a of aliases) {
+      if (inv[a] && row[inv[a]] != null && String(row[inv[a]]).trim() !== '') {
+        return String(row[inv[a]]).trim();
+      }
+    }
+    for (const key of [fieldType, ...aliases]) {
+      if (row[key] != null && String(row[key]).trim() !== '') {
+        return String(row[key]).trim();
+      }
+    }
+    const rowKeys = Object.keys(row);
+    for (const target of [fieldType, ...aliases]) {
+      const normTarget = target.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const matchedKey = rowKeys.find(k => k.toLowerCase().replace(/[^a-z0-9]/g, '') === normTarget);
+      if (matchedKey && row[matchedKey] != null && String(row[matchedKey]).trim() !== '') {
+        return String(row[matchedKey]).trim();
+      }
+    }
+    return String(job.defaults?.[fieldType] ?? '').trim();
+  };
+
   return {
-    recipient_name: pick('recipient_name'),
-    email: pick('email'),
-    event_title: job.event_snapshot.title,
-    event_category: job.event_snapshot.category,
-    issue_date: pick('issue_date') || job.created_at.slice(0, 10),
-    organization_name: pick('organization_name'),
-    rank: pick('rank') || 'Participant',
-    score: pick('score'),
+    recipient_name: pick('recipient_name', ['name', 'fullname', 'full_name', 'participant', 'student', 'student_name']),
+    email: pick('email', ['email_id', 'emailid', 'mail', 'emailaddress', 'mailid', 'contact_email', 'recipient_email']),
+    event_title: job.event_snapshot?.title || pick('event_title', ['event', 'course', 'event_name', 'event_title']),
+    event_category: job.event_snapshot?.category || '',
+    issue_date: pick('issue_date', ['date', 'issuedate', 'completion_date']) || job.created_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+    organization_name: pick('organization_name', ['organization', 'institution', 'college', 'org', 'company']),
+    rank: pick('rank', ['position', 'role', 'grade', 'award']) || 'Participant',
+    score: pick('score', ['marks', 'percentage', 'result']),
     certificate_id: certId,
     verification_url: `${process.env.APP_URL}/verify/${certId}`,
-    issuer_name: job.template_snapshot.issuer_name,
-    issuer_title: job.template_snapshot.issuer_title
+    issuer_name: job.template_snapshot?.issuer_name || '',
+    issuer_title: job.template_snapshot?.issuer_title || ''
   };
 }
 
@@ -251,7 +277,7 @@ async function processCertificateJob(bullmqJob) {
     .toArray();
 
   let cancelled = false;
-  const CHUNK_SIZE = 3;
+  const CHUNK_SIZE = Math.max(1, parseInt(process.env.BULK_CHUNK_SIZE || '25', 10));
   const totalRecords = allRecords.length;
 
   for (let i = 0; i < allRecords.length; i += CHUNK_SIZE) {

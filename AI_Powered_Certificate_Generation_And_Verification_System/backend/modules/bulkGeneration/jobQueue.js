@@ -23,14 +23,46 @@ async function nextCertificateId(db) {
 }
 function valuesFor(job, record, certId) {
   const inv = invertMapping(job.mapping);
-  const pick = field => String(record.row[inv[field]] ?? job.defaults[field] ?? '').trim();
+  const row = record.row || {};
+
+  const pick = (fieldType, aliases = []) => {
+    if (inv[fieldType] && row[inv[fieldType]] != null && String(row[inv[fieldType]]).trim() !== '') {
+      return String(row[inv[fieldType]]).trim();
+    }
+    for (const a of aliases) {
+      if (inv[a] && row[inv[a]] != null && String(row[inv[a]]).trim() !== '') {
+        return String(row[inv[a]]).trim();
+      }
+    }
+    for (const key of [fieldType, ...aliases]) {
+      if (row[key] != null && String(row[key]).trim() !== '') {
+        return String(row[key]).trim();
+      }
+    }
+    const rowKeys = Object.keys(row);
+    for (const target of [fieldType, ...aliases]) {
+      const normTarget = target.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const matchedKey = rowKeys.find(k => k.toLowerCase().replace(/[^a-z0-9]/g, '') === normTarget);
+      if (matchedKey && row[matchedKey] != null && String(row[matchedKey]).trim() !== '') {
+        return String(row[matchedKey]).trim();
+      }
+    }
+    return String(job.defaults?.[fieldType] ?? '').trim();
+  };
+
   return {
-    recipient_name: pick('recipient_name'), email: pick('email'),
-    event_title: job.event_snapshot.title, event_category: job.event_snapshot.category,
-    issue_date: pick('issue_date') || job.created_at.slice(0, 10),
-    organization_name: pick('organization_name'), rank: pick('rank') || 'Participant', score: pick('score'),
-    certificate_id: certId, verification_url: `${process.env.APP_URL}/verify/${certId}`,
-    issuer_name: job.template_snapshot.issuer_name, issuer_title: job.template_snapshot.issuer_title
+    recipient_name: pick('recipient_name', ['name', 'fullname', 'full_name', 'participant', 'student', 'student_name']),
+    email: pick('email', ['email_id', 'emailid', 'mail', 'emailaddress', 'mailid', 'contact_email', 'recipient_email']),
+    event_title: job.event_snapshot?.title || pick('event_title', ['event', 'course', 'event_name', 'event_title']),
+    event_category: job.event_snapshot?.category || '',
+    issue_date: pick('issue_date', ['date', 'issuedate', 'completion_date']) || job.created_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+    organization_name: pick('organization_name', ['organization', 'institution', 'college', 'org', 'company']),
+    rank: pick('rank', ['position', 'role', 'grade', 'award']) || 'Participant',
+    score: pick('score', ['marks', 'percentage', 'result']),
+    certificate_id: certId,
+    verification_url: `${process.env.APP_URL}/verify/${certId}`,
+    issuer_name: job.template_snapshot?.issuer_name || '',
+    issuer_title: job.template_snapshot?.issuer_title || ''
   };
 }
 async function owned(db, job, owner) {
@@ -109,7 +141,7 @@ async function processJob(db, job, owner) {
   await db.collection('bulk_records').bulkWrite(operations, { ordered: false });
   const allRecords = await db.collection('bulk_records').find({ job_id: job.id, organization_id: job.organization_id, status: { $in: ['pending', 'failed'] } }).limit(config.rows).toArray();
   let cancelled = false;
-  const CHUNK_SIZE = 3;
+  const CHUNK_SIZE = Math.max(1, parseInt(process.env.BULK_CHUNK_SIZE || '25', 10));
   for (let i = 0; i < allRecords.length; i += CHUNK_SIZE) {
     const current = await owned(db, job, owner);
     if (current.cancel_requested) { cancelled = true; break; }
@@ -139,9 +171,9 @@ async function tick(db) {
   let slot, job, heartbeat;
   try {
     slot = await acquireSlot('bulk-worker', config.jobWorkers, config.leaseMs);
-    await db.collection('bulk_jobs').updateMany({ organization_id: { $type: 'string' }, submission_key: { $type: 'string' }, status: 'processing', lease_until: { $lte: new Date() }, attempts: { $gte: config.jobAttempts } }, { $set: { status: 'failed', completed_at: now() } });
+    await db.collection('bulk_jobs').updateMany({ status: 'processing', lease_until: { $lte: new Date() }, attempts: { $gte: config.jobAttempts } }, { $set: { status: 'failed', completed_at: now() } });
     job = await db.collection('bulk_jobs').findOneAndUpdate({
-      organization_id: { $type: 'string' }, submission_key: { $type: 'string' }, attempts: { $lt: config.jobAttempts },
+      attempts: { $lt: config.jobAttempts },
       $or: [{ status: 'queued', next_attempt_at: { $lte: new Date() } }, { status: 'processing', lease_until: { $lte: new Date() } }]
     }, { $set: { status: 'processing', lease_owner: slot.token, lease_until: new Date(Date.now() + config.leaseMs), started_at: now() }, $inc: { attempts: 1 } }, { returnDocument: 'after', sort: { created_at: 1 } });
     if (!job) return;
@@ -152,7 +184,9 @@ async function tick(db) {
     }, Math.floor(config.leaseMs / 3));
     await processJob(db, job, slot.token);
   } catch (error) {
-    console.error('[BulkScheduler] tick error:', error.message, error.stack);
+    if (error.statusCode !== 429) {
+      console.error('[BulkScheduler] tick error:', error.message);
+    }
     if (job && slot) await db.collection('bulk_jobs').updateOne({ id: job.id, lease_owner: slot.token }, { $set: {
       status: job.attempts < config.jobAttempts ? 'queued' : 'failed', lease_owner: null, lease_until: new Date(0),
       next_attempt_at: new Date(Date.now() + config.pollMs * job.attempts), error: `Job processing interrupted: ${error.message}`
