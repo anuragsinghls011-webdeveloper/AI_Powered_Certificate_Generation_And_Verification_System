@@ -35,7 +35,11 @@ export default function useEventReports(organizationId) {
     return () => controller.abort();
   }, [selectedId, organizationId]);
 
-  useEffect(() => () => downloadRef.current?.abort(), []);
+  useEffect(() => {
+    return () => {
+      downloadRef.current?.abort();
+    };
+  }, []);
 
   const generate = async format => {
     if (downloadRef.current || !summary?.total || summary.event.id !== selectedId) return;

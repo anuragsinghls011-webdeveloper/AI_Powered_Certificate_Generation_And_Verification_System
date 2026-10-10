@@ -376,7 +376,11 @@ export default function DesignStudio({ notify, onTemplatesChanged }) {
   /* ------------------------------------------------------------ PDF preview */
 
   const pdfUrlRef = useRef('');
-  useEffect(() => () => { if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current); }, []);
+  useEffect(() => {
+    return () => {
+      if (pdfUrlRef.current) URL.revokeObjectURL(pdfUrlRef.current);
+    };
+  }, []);
 
   const renderPdfPreview = useCallback(async () => {
     setPdf((p) => ({ ...p, open: true, loading: true, error: '' }));

@@ -31,8 +31,12 @@ app.use(browser.originGuard, browser.corsPolicy);
 const smallJson = express.json({ limit: config.jsonBytes });
 const templateJson = express.json({ limit: config.templateBytes });
 const aiJson = express.json({ limit: '32kb' });
-app.use((req, res, next) => (req.path.startsWith('/api/templates') ? templateJson
-  : req.path.startsWith('/api/ai') ? aiJson : smallJson)(req, res, next));
+app.use((req, res, next) => {
+  // If multipart form data (e.g. file upload), multer parses it
+  if (req.is('multipart/form-data')) return next();
+  return (req.path.startsWith('/api/templates') || req.path === '/api/ai/design-from-sketch' ? templateJson
+    : req.path.startsWith('/api/ai') ? aiJson : smallJson)(req, res, next);
+});
 app.use(cookieParser());
 // CSRF is no longer needed since we use localStorage (Bearer tokens) exclusively
 // app.get('/api/auth/csrf', browser.csrfToken);
