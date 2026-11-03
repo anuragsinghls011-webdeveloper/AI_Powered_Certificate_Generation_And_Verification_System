@@ -67,8 +67,32 @@ router.post('/design-from-sketch', requirePermission('templates.create'), sketch
       return res.status(422).json({ error: err.message || 'Could not create a valid design from this sketch. Try a different sketch or more specific prompt.' });
     }
     if (err.statusCode === 404) return res.status(404).json({ error: 'Template not found in this organization' });
-    console.error('[Sketch route error]', err.message);
     return res.status(503).json({ error: 'The AI sketch designer is unavailable right now. Please try again later.' });
+  }
+});
+
+const { generateBackground } = require('../services/ai/aiImageService');
+
+const bgLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 15,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  keyGenerator: req => `bg:${req.organization.id}:${req.user.id}`,
+  message: { error: 'Too many background generation requests. Please try again shortly.' }
+});
+
+router.post('/generate-background', requirePermission('templates.create'), bgLimiter, async (req, res) => {
+  try {
+    const prompt = (req.body?.prompt || '').trim();
+    if (!prompt) return res.status(422).json({ error: 'Please describe the background or frame you want to generate' });
+    if (prompt.length > 500) return res.status(422).json({ error: 'Prompt must be under 500 characters' });
+
+    const result = await generateBackground({ prompt, style: req.body?.style });
+    res.json(result);
+  } catch (err) {
+    console.error('[AI generate background error]:', err.message);
+    res.status(503).json({ error: 'Failed to generate background image. Please try again shortly.' });
   }
 });
 

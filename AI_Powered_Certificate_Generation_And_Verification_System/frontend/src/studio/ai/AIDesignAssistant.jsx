@@ -1,13 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowUp, CircleHelp, Pencil, RotateCcw, Sparkles, X } from 'lucide-react';
+import { ArrowUp, CircleHelp, Pencil, RotateCcw, Sparkles, Wand2, X } from 'lucide-react';
 import { API } from '../../services/api';
 import CertificateSurface from '../CertificateSurface';
 import { compactDesign, designDiff, designFingerprint, previewDesign } from './aiDesignUtils';
 import AIDesignDiff from './AIDesignDiff';
 import AIVariants from './AIVariants';
 import SketchUploader from './SketchUploader';
+import AIBackgroundGenerator from './AIBackgroundGenerator';
 
 const ACTIONS = [
   ['Create from prompt', 'Create a complete modern certificate with a clear title, recipient, event, signatory and QR.'],
@@ -35,11 +36,24 @@ function errorMessage(err) {
 
 const MODES = [
   { id: 'chat', label: 'AI Chat', icon: Sparkles, description: 'Describe in words' },
-  { id: 'sketch', label: 'Sketch to Template', icon: Pencil, description: 'Upload a drawing' }
+  { id: 'sketch', label: 'Sketch to Template', icon: Pencil, description: 'Upload a drawing' },
+  { id: 'background', label: 'AI Frames', icon: Wand2, description: 'Nano Banana frames' }
 ];
 
-export default function AIDesignAssistant({ template, onApply, onClose }) {
-  const [mode, setMode] = useState('chat'); // 'chat' | 'sketch'
+export default function AIDesignAssistant({
+  template,
+  onApply,
+  onClose,
+  onApplyBackground,
+  onRemoveBackground,
+  initialMode = 'chat'
+}) {
+  const [mode, setMode] = useState(initialMode); // 'chat' | 'sketch' | 'background'
+
+  useEffect(() => {
+    if (initialMode) setMode(initialMode);
+  }, [initialMode]);
+
   const [prompt, setPrompt] = useState('');
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -132,16 +146,28 @@ export default function AIDesignAssistant({ template, onApply, onClose }) {
         <div className="absolute -bottom-10 -left-6 h-32 w-32 rounded-full bg-violet-500/20 blur-3xl pointer-events-none" />
         <div className="relative flex items-start justify-between gap-3">
           <div className="flex gap-3 items-start">
-            <div className={`rounded-xl border p-2.5 transition-colors ${mode === 'sketch' ? 'border-violet-300/20 bg-violet-400/10 text-violet-300' : 'border-amber-300/20 bg-amber-300/10 text-amber-300'}`}>
-              {mode === 'sketch' ? <Pencil size={18} /> : <Sparkles size={18} />}
+            <div className={`rounded-xl border p-2.5 transition-colors ${
+              mode === 'sketch'
+                ? 'border-violet-300/20 bg-violet-400/10 text-violet-300'
+                : mode === 'background'
+                ? 'border-amber-300/20 bg-amber-400/10 text-amber-300'
+                : 'border-amber-300/20 bg-amber-300/10 text-amber-300'
+            }`}>
+              {mode === 'sketch' ? <Pencil size={18} /> : mode === 'background' ? <Wand2 size={18} /> : <Sparkles size={18} />}
             </div>
             <div>
               <p data-testid="ai-assistant-title" className="font-serif text-base font-bold leading-tight">
-                {mode === 'sketch' ? 'AI Sketch-to-Template' : 'AI Design Assistant'}
+                {mode === 'sketch'
+                  ? 'Sketch-to-Template'
+                  : mode === 'background'
+                  ? 'AI Frame & Background (Nano Banana)'
+                  : 'AI Design Assistant'}
               </p>
               <p className="mt-0.5 text-[11px] leading-relaxed text-slate-300">
                 {mode === 'sketch'
                   ? 'Convert hand-drawn pen sketches into editable certificates'
+                  : mode === 'background'
+                  ? 'Generate ornate borders, guilloche filigree & gold foil frames'
                   : 'Describe changes in natural language or create from scratch'}
               </p>
             </div>
@@ -160,7 +186,7 @@ export default function AIDesignAssistant({ template, onApply, onClose }) {
               data-testid={`ai-mode-${m.id}`}
               type="button"
               onClick={() => setMode(m.id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition-all duration-200
+              className={`flex-1 flex items-center justify-center gap-1 rounded-lg py-1.5 text-[11px] font-semibold transition-all duration-200
                 ${mode === m.id
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-300 hover:text-white hover:bg-white/5'
@@ -182,15 +208,24 @@ export default function AIDesignAssistant({ template, onApply, onClose }) {
               <p className="mt-1 text-xs leading-relaxed text-slate-600">
                 Ask for a full certificate or refine one detail. The assistant works with your current canvas—not a separate design.
               </p>
-              <button
-                data-testid="ai-switch-to-sketch"
-                type="button"
-                onClick={() => setMode('sketch')}
-                className="mt-3 flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3.5 py-2 text-xs font-semibold text-violet-700 hover:bg-violet-100 transition-colors"
-              >
-                <Pencil size={13} />
-                Have a hand-drawn sketch? Upload photo to generate template
-              </button>
+              <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                <button
+                  data-testid="ai-switch-to-sketch"
+                  type="button"
+                  onClick={() => setMode('sketch')}
+                  className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-violet-200 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-700 hover:bg-violet-100 transition-colors"
+                >
+                  <Pencil size={13} /> Upload Sketch Photo
+                </button>
+                <button
+                  data-testid="ai-switch-to-background"
+                  type="button"
+                  onClick={() => setMode('background')}
+                  className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-100 transition-colors"
+                >
+                  <Wand2 size={13} /> Generate AI Frame
+                </button>
+              </div>
             </div>
           )}
           {messages.map((message, i) => (
@@ -276,6 +311,15 @@ export default function AIDesignAssistant({ template, onApply, onClose }) {
           onApply={onApply}
           onClose={onClose}
           onSwitchToChat={() => setMode('chat')}
+        />
+      </div>
+
+      {/* Mode 3: AI Backgrounds & Frames Panel (Nano Banana) */}
+      <div className={`flex flex-col flex-1 min-h-0 ${mode === 'background' ? 'flex' : 'hidden'}`}>
+        <AIBackgroundGenerator
+          currentBackground={template?.background_image}
+          onApplyBackground={onApplyBackground}
+          onRemoveBackground={onRemoveBackground}
         />
       </div>
 

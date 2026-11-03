@@ -42,6 +42,7 @@ export default function DesignStudio({ notify, onTemplatesChanged }) {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [pdf, setPdf] = useState({ open: false, url: '', loading: false, error: '' });
   const [aiOpen, setAiOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth >= 1536);
+  const [aiMode, setAiMode] = useState('chat');
   const liveTemplate = useRef(template);
   liveTemplate.current = template;
 
@@ -493,6 +494,10 @@ export default function DesignStudio({ notify, onTemplatesChanged }) {
             onAddField={addField}
             onApplyStarter={applyStarter}
             notify={notify}
+            onOpenAiBackground={() => {
+              setAiMode('background');
+              setAiOpen(true);
+            }}
           />
         </div>
 
@@ -548,7 +553,20 @@ export default function DesignStudio({ notify, onTemplatesChanged }) {
         <aside aria-label="AI Design Assistant" className={`fixed inset-0 z-[70] min-w-0 p-2 sm:left-auto sm:w-[420px] sm:p-4
           2xl:sticky 2xl:top-4 2xl:h-[calc(100vh-300px)] 2xl:min-h-[420px] 2xl:shrink-0 2xl:p-0 transition-[opacity,transform] duration-300
           ${aiOpen ? 'visible opacity-100 translate-y-0 2xl:w-[380px]' : 'invisible pointer-events-none opacity-0 translate-y-4 2xl:w-0'}`}>
-          <AIDesignAssistant template={template} onApply={applyAI} onClose={() => setAiOpen(false)} />
+          <AIDesignAssistant
+            template={template}
+            initialMode={aiMode}
+            onApply={applyAI}
+            onApplyBackground={(bg) => {
+              set('background_image', bg);
+              notify?.('AI decorative frame applied to canvas!');
+            }}
+            onRemoveBackground={() => {
+              set('background_image', '');
+              notify?.('Background frame removed');
+            }}
+            onClose={() => setAiOpen(false)}
+          />
         </aside>
       </div>
 

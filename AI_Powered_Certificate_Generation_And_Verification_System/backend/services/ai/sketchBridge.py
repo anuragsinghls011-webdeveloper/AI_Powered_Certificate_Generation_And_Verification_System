@@ -508,7 +508,12 @@ def main():
     prompt_info = parse_prompt_keywords(user_prompt)
 
     # 1. Check for API keys
-    gemini_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or os.environ.get("EMERGENT_LLM_KEY")
+    gemini_key = (
+        os.environ.get("GEMINI_API_KEY")
+        or os.environ.get("GOOGLE_API_KEY")
+        or os.environ.get("NANO_BANANA_API_KEY")
+        or os.environ.get("EMERGENT_LLM_KEY")
+    )
     openai_key = os.environ.get("OPENAI_API_KEY")
 
     result = None
