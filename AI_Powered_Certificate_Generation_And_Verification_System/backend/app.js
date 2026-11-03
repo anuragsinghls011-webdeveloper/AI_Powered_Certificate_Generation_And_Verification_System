@@ -1,4 +1,5 @@
 const express = require('express');
+const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const config = require('./config/security');
 const browser = require('./middleware/browserSecurity');
@@ -26,6 +27,7 @@ if (!Number.isInteger(trustProxyHops) || trustProxyHops < 1) {
 app.set('trust proxy', trustProxyHops);
 
 // --- Global Middleware ---
+app.use(compression());
 app.use(browser.originGuard, browser.corsPolicy);
 // Design Studio templates embed background/signature/logo images as data URLs.
 const smallJson = express.json({ limit: config.jsonBytes });

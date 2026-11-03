@@ -5,18 +5,22 @@ const { scope, templateScope } = require('../utils/tenant');
 async function getAnalytics(req, res) {
   try {
     const certificatesCol = getCertificatesCol();
-
-    const totalCerts = await certificatesCol.countDocuments(scope(req));
-    const totalEvents = await getEventsCol().countDocuments(scope(req));
-    const totalTemplates = await getTemplatesCol().countDocuments(templateScope(req));
-    const revokedCerts = await certificatesCol.countDocuments({ ...scope(req), status: 'Revoked' });
-    const activeCerts = totalCerts - revokedCerts;
-
+    const reqScope = scope(req);
     const pipeline = [
-      { $match: scope(req) },
+      { $match: reqScope },
       { $group: { _id: '$event_category', count: { $sum: 1 } } }
     ];
-    const categoryStats = await certificatesCol.aggregate(pipeline).toArray();
+
+    // Execute queries in parallel for maximum speed
+    const [totalCerts, totalEvents, totalTemplates, revokedCerts, categoryStats] = await Promise.all([
+      certificatesCol.countDocuments(reqScope),
+      getEventsCol().countDocuments(reqScope),
+      getTemplatesCol().countDocuments(templateScope(req)),
+      certificatesCol.countDocuments({ ...reqScope, status: 'Revoked' }),
+      certificatesCol.aggregate(pipeline).toArray()
+    ]);
+
+    const activeCerts = totalCerts - revokedCerts;
 
     res.json({
       total_certificates: totalCerts,

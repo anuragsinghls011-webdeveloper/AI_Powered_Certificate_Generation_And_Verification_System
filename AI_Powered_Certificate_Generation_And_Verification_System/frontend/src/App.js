@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import * as XLSX from 'xlsx';
 import { API } from './services/api';
 import useNotification from './hooks/useNotification';
 
@@ -16,14 +15,14 @@ import EventsPage from './pages/EventsPage';
 import BulkGeneratorPage from './pages/BulkGeneratorPage';
 import RepositoryPage from './pages/RepositoryPage';
 import VerifyPage from './pages/VerifyPage';
-import EventReportsPage from './pages/EventReportsPage';
 import LandingPage from './pages/LandingPage';
 import TeamPage from './pages/TeamPage';
 import { downloadEventReport, reportError } from './services/eventReports';
 
-// Feature Components (already standalone)
-import DesignStudio from './studio/DesignStudio';
-import BulkStudio from './BulkStudio';
+// Feature Components (Lazy loaded for fast initial bundle)
+const EventReportsPage = React.lazy(() => import('./pages/EventReportsPage'));
+const DesignStudio = React.lazy(() => import('./studio/DesignStudio'));
+const BulkStudio = React.lazy(() => import('./BulkStudio'));
 
 // Auth Components
 import { useAuth } from './auth/AuthContext';
@@ -125,7 +124,12 @@ export default function App() {
   useEffect(() => {
     const pendingDelivery = activeTab === 'events' && events.some(event => ['queued', 'processing'].includes(event.report_delivery?.status));
     if (!pendingDelivery) return undefined;
-    const timer = window.setInterval(fetchAllData, 3000);
+    const timer = window.setInterval(async () => {
+      try {
+        const { data } = await axios.get(`${API}/events`);
+        setEvents(data);
+      } catch (err) {}
+    }, 4000);
     return () => window.clearInterval(timer);
   }, [activeTab, events]);
 
@@ -336,8 +340,9 @@ export default function App() {
     if (file.size > 5 * 1024 * 1024) { showNotification('File exceeds the 5 MB upload limit.', 'error'); e.target.value = null; return; }
 
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
+        const XLSX = await import('xlsx');
         const data = evt.target.result;
         const workbook = XLSX.read(data, { type: 'binary' });
         const firstSheetName = workbook.SheetNames[0];
@@ -511,7 +516,8 @@ export default function App() {
             </button>
           )}
         </div>}
-        {activeTab === 'reports' && <EventReportsPage />}
+        <React.Suspense fallback={<div className="flex justify-center items-center py-24 text-slate-400 font-medium animate-pulse">Loading component...</div>}>
+          {activeTab === 'reports' && <EventReportsPage />}
         {activeTab === 'dashboard' && (
           <DashboardPage
             analytics={analytics}
@@ -582,6 +588,7 @@ export default function App() {
         {activeTab === 'team' && (
           <TeamPage apiBase={API} />
         )}
+        </React.Suspense>
       </main>
 
       <PreviewModal

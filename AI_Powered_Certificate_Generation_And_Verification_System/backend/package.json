@@ -12,6 +12,7 @@
     "archiver": "7",
     "bcryptjs": "^3.0.3",
     "bullmq": "^6.3.8",
+    "compression": "^1.8.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "csrf-csrf": "^4.0.3",

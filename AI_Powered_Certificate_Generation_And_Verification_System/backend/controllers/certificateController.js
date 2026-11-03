@@ -46,7 +46,12 @@ const getAllCertificates = handle(async (req, res) => {
     const search = req.query.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     query.$or = ['recipient_name', 'recipient_email', 'cert_id'].map(key => ({ [key]: { $regex: search, $options: 'i' } }));
   }
-  res.json(await getCertificatesCol().find(query, { projection: { _id: 0 } }).toArray());
+  let cursor = getCertificatesCol().find(query, { projection: { _id: 0 } }).sort({ created_at: -1 });
+  if (req.query.limit) {
+    const limitNum = Math.min(Math.max(1, parseInt(req.query.limit, 10) || 50), 1000);
+    cursor = cursor.limit(limitNum);
+  }
+  res.json(await cursor.toArray());
 });
 const generateBulkCertificates = handle(async (req, res) => {
   if (!Array.isArray(req.body.participants) || req.body.participants.length > limits.rows) throw Object.assign(new Error('Participant limit exceeded'), { statusCode: 413 });

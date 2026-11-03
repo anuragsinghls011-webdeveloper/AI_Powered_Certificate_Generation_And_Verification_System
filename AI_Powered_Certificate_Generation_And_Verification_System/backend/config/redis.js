@@ -56,10 +56,15 @@ function getSharedConnection() {
 /**
  * Health check — resolves true if Redis responds to PING.
  */
-let _isRedisAvailable = null;
-
 async function redisHealthCheck() {
-  return false;
+  if (!REDIS_URL) return false;
+  try {
+    const conn = getSharedConnection();
+    const result = await conn.ping();
+    return result === 'PONG';
+  } catch (err) {
+    return false;
+  }
 }
 
 /**
