@@ -13,13 +13,26 @@ const {
   sha256, randomTokenUrl64, ACCESS_TTL, REFRESH_TTL
 } = require('../utils/tokens');
 const { hashPassword, verifyPassword, validatePasswordStrength } = require('../utils/passwords');
-const { sendVerificationEmail, sendPasswordResetEmail, sendInviteEmail } = require('../utils/emailService');
+const { sendVerificationEmail, sendPasswordResetEmail, sendInviteEmail, HAS_KEY } = require('../utils/emailService');
 const { logAudit } = require('../utils/audit');
 const { workLimit } = require('../services/workload');
 const { ROLE_PERMISSIONS, permissionsForMembership } = require('../utils/rbac');
 
 function nowIso() { return new Date().toISOString(); }
 function inSecondsFromNow(seconds) { return new Date(Date.now() + seconds * 1000); }
+
+function hashOtp(email, code) {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new Error('JWT_SECRET is not configured');
+  return crypto.createHmac('sha256', secret).update(`${email}:${code}`).digest('hex');
+}
+
+function verifyOtpHash(expectedHex, providedHex) {
+  if (typeof expectedHex !== 'string' || typeof providedHex !== 'string') return false;
+  const expectedBuf = Buffer.from(expectedHex, 'hex');
+  const providedBuf = Buffer.from(providedHex, 'hex');
+  return expectedBuf.length > 0 && expectedBuf.length === providedBuf.length && crypto.timingSafeEqual(expectedBuf, providedBuf);
+}
 
 // Brute-force lockout policy
 const MAX_ATTEMPTS = 5;
@@ -129,31 +142,41 @@ const mw = require('../middleware/authMiddleware');
       const existingUser = await getDB().collection('users').findOne({ email });
       if (existingUser) return res.status(400).json({ error: 'Email already registered' });
 
+      // Enforce per-email resend cooldown (60 seconds)
+      const existingOtp = await getDB().collection('registration_otps').findOne({ email });
+      if (existingOtp?.last_sent_at && (Date.now() - new Date(existingOtp.last_sent_at).getTime()) < 60000) {
+        return res.status(429).json({ error: 'Please wait 60 seconds before requesting a new verification code.' });
+      }
+
       const rawCode = crypto.randomInt(100000, 1000000).toString();
       const expiresAt = inSecondsFromNow(600); // 10 minutes expiry
 
-      // Upsert into registration_otps
-      await getDB().collection('registration_otps').updateOne(
-        { email },
-        { $set: { code_hash: sha256(rawCode), expires_at: expiresAt } },
-        { upsert: true }
-      );
-
-      let verificationCode = null;
+      let emailResult = null;
       try {
-        const emailResult = await sendVerificationEmail({ email, name, id: 'registration' }, rawCode);
-        if (emailResult && emailResult.code) verificationCode = emailResult.code;
+        emailResult = await sendVerificationEmail({ email, name, id: `reg-${Date.now()}` }, rawCode);
       } catch (e) {
         console.error('Failed to send OTP email', e);
       }
 
-      const responsePayload = { message: 'OTP sent successfully' };
-      if (verificationCode || !require('../utils/emailService').HAS_KEY()) {
-        responsePayload.dev_code = rawCode;
+      if (!emailResult?.delivered) {
+        // Only log OTP to server console in local development when no email provider is configured
+        if (process.env.NODE_ENV === 'development' && !HAS_KEY()) {
+          console.log(`[DEV ONLY] Registration OTP for ${email}: ${rawCode}`);
+        } else {
+          return res.status(502).json({ error: 'Failed to send verification email. Please try again.' });
+        }
       }
-      res.json(responsePayload);
+
+      // Store HMAC-SHA256 hash and reset attempt counter
+      await getDB().collection('registration_otps').updateOne(
+        { email },
+        { $set: { code_hash: hashOtp(email, rawCode), expires_at: expiresAt, attempts: 0, last_sent_at: new Date() } },
+        { upsert: true }
+      );
+
+      res.json({ message: 'OTP sent successfully' });
     } catch (err) {
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ error: 'Unable to send verification code. Please try again.' });
     }
   });
 
@@ -190,15 +213,31 @@ const mw = require('../middleware/authMiddleware');
       if (!otpRecord) {
         return res.status(400).json({ error: 'Verification code expired or not found. Please request a new one.' });
       }
-      if (otpRecord.code_hash !== sha256(code)) {
-        return res.status(400).json({ error: 'Invalid verification code' });
-      }
       if (new Date(otpRecord.expires_at) < new Date()) {
+        await getDB().collection('registration_otps').deleteOne({ email });
         return res.status(400).json({ error: 'Verification code expired' });
       }
 
-      // Code is valid, remove it
-      await getDB().collection('registration_otps').deleteOne({ email });
+      const isValidOtp = verifyOtpHash(otpRecord.code_hash, hashOtp(email, code));
+      if (!isValidOtp) {
+        const updated = await getDB().collection('registration_otps').findOneAndUpdate(
+          { email },
+          { $inc: { attempts: 1 } },
+          { returnDocument: 'after' }
+        );
+        const attempts = updated?.attempts ?? updated?.value?.attempts ?? 0;
+        if (attempts >= 5) {
+          await getDB().collection('registration_otps').deleteOne({ email });
+          return res.status(429).json({ error: 'Too many invalid attempts. Please request a new verification code.' });
+        }
+        return res.status(400).json({ error: 'Invalid verification code' });
+      }
+
+      // Atomically consume the OTP so it cannot be replayed in concurrent requests
+      const consumed = await getDB().collection('registration_otps').deleteOne({ email, code_hash: otpRecord.code_hash });
+      if (consumed.deletedCount !== 1) {
+        return res.status(400).json({ error: 'Verification code already used or expired.' });
+      }
 
       const userCount = await getDB().collection('users').countDocuments({});
       const isFirstUser = userCount === 0;

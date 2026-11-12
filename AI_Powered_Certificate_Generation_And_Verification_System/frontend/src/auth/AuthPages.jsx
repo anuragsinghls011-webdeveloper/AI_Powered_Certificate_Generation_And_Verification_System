@@ -67,7 +67,7 @@ export default function AuthPages({ initialMode = 'login', onBack }) {
             <h1 className="text-xl font-bold font-serif text-slate-900">CampusCert Pro</h1>
           </div>
           {mode === 'login' && <LoginForm setMode={setMode} setDevLinks={setDevLinks} />}
-          {mode === 'register' && <RegisterForm setMode={setMode} setDevLinks={setDevLinks} />}
+          {mode === 'register' && <RegisterForm setMode={setMode} />}
           {mode === 'forgot' && <ForgotForm setMode={setMode} setDevLinks={setDevLinks} />}
           {mode === 'reset' && <ResetForm setMode={setMode} />}
           {devLinks && (
@@ -155,7 +155,7 @@ function LoginForm({ setMode, setDevLinks }) {
   );
 }
 
-function RegisterForm({ setMode, setDevLinks }) {
+function RegisterForm({ setMode }) {
   const { register, sendRegistrationCode } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -191,9 +191,6 @@ function RegisterForm({ setMode, setDevLinks }) {
     } else {
       setCodeSent(true);
       setMsg('Verification code sent to your email.');
-      if (res.data?.dev_code) {
-        setDevLinks(res.data.dev_code);
-      }
     }
   };
 

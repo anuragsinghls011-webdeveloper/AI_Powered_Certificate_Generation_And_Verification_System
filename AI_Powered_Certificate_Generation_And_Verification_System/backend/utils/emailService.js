@@ -176,15 +176,13 @@ async function sendEmail({ to, subject, html, text, attachments = [], idempotenc
 // HIGH-LEVEL EMAIL FUNCTIONS (unchanged — they all call sendEmail internally)
 // ============================================================================
 async function sendVerificationEmail(user, code) {
-  const result = await sendEmail({
+  return sendEmail({
     to: user.email,
     subject: 'Verify your CampusCert email',
     html: `<div style="font-family:Arial,sans-serif"><h2>Welcome, ${escapeHtml(user.name)}</h2><p>Your verification code is:</p><h1 style="letter-spacing: 4px; color: #4f46e5;">${code}</h1><p>Enter this code to activate your account.</p></div>`,
     text: `Your verification code is: ${code}`,
     idempotencyKey: `email-verification/${user.id}/${code}`
   });
-  if (result.delivered) result.code = code;
-  return result;
 }
 
 async function sendPasswordResetEmail(user, token) {
