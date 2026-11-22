@@ -28,9 +28,9 @@ export default function RepositoryPage({
 
   const filteredCertificates = certificates.filter(cert => {
     const matchesSearch = searchTerm === '' || 
-      cert.recipient_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cert.recipient_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      cert.cert_id.toLowerCase().includes(searchTerm.toLowerCase());
+      (cert.recipient_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (cert.recipient_email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (cert.cert_id || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesEvent = filterEvent === '' || cert.event_id === filterEvent;
     return matchesSearch && matchesEvent;
   });
@@ -98,10 +98,10 @@ export default function RepositoryPage({
     setLastSelectedIndex(index);
   };
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = async () => {
     if (selectedCerts.size === 0) return;
-    onBulkRevoke(Array.from(selectedCerts));
-    setSelectedCerts(new Set());
+    const succeeded = await onBulkRevoke(Array.from(selectedCerts));
+    if (succeeded) setSelectedCerts(new Set());
   };
 
   const allCurrentSelected = currentCertificates.length > 0 && currentCertificates.every(c => selectedCerts.has(c.cert_id));
@@ -121,7 +121,7 @@ export default function RepositoryPage({
               className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold rounded-xl shadow transition-colors flex items-center gap-2 animate-fade-in"
             >
               <Trash2 className="w-4 h-4" />
-              Delete Selected ({selectedCerts.size})
+              Revoke Selected ({selectedCerts.size})
             </button>
           )}
           <div className="relative flex-1 md:w-64">
@@ -224,28 +224,31 @@ export default function RepositoryPage({
                       </button>
                       <button 
                         data-testid={`download-pdf-${cert.cert_id}`}
+                        disabled={cert.status === 'Revoked'}
                         onClick={() => {
                           import('../services/api').then(module => {
                             module.downloadCertificatePdf(cert.cert_id);
                           });
                         }}
-                        className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition inline-flex"
+                        className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition inline-flex disabled:opacity-40 disabled:cursor-not-allowed"
                         title="Download PDF"
                       >
                         <Download className="w-4 h-4" />
                       </button>
                       <button 
                         data-testid={`send-email-${cert.cert_id}`}
+                        disabled={cert.status === 'Revoked'}
                         onClick={() => onSendEmail(cert.cert_id)}
-                        className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition inline-flex"
-                        title="Simulate Email Dispatch"
+                        className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition inline-flex disabled:opacity-40 disabled:cursor-not-allowed"
+                        title="Send Certificate Email"
                       >
                         <Send className="w-4 h-4" />
                       </button>
                       <button 
                         data-testid={`revoke-${cert.cert_id}`}
+                        disabled={cert.status === 'Revoked'}
                         onClick={() => onRevoke(cert.cert_id)}
-                        className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition inline-flex"
+                        className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition inline-flex disabled:opacity-40 disabled:cursor-not-allowed"
                         title="Revoke Certificate"
                       >
                         <Trash2 className="w-4 h-4" />

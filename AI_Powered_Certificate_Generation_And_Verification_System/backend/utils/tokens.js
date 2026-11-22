@@ -9,13 +9,15 @@ const AUDIENCE = process.env.JWT_AUDIENCE || 'campuscert-pro-web';
 const ACCESS_TTL = parseInt(process.env.ACCESS_TOKEN_TTL || '900', 10); // 15 min
 const REFRESH_TTL = parseInt(process.env.REFRESH_TOKEN_TTL || '604800', 10); // 7 days
 
-function signAccessToken(user, membership) {
+function signAccessToken(user, membership, sessionId) {
   if (!SECRET()) throw new Error('JWT_SECRET is not configured');
+  if (!sessionId) throw new Error('Session ID is required for access tokens');
   return jwt.sign(
     {
       sub: user.id,
       email: user.email,
       type: 'access',
+      sid: sessionId,
       org: membership?.organization_id || null,
       role: membership?.role || null,
     },
@@ -41,6 +43,7 @@ function verifyAccessToken(token) {
     algorithms: ['HS256'], issuer: ISSUER, audience: AUDIENCE
   });
   if (decoded.type !== 'access') throw new Error('Wrong token type');
+  if (!decoded.sid) throw new Error('Access token has no session');
   return decoded;
 }
 

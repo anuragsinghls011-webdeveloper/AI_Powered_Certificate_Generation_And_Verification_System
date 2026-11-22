@@ -24,6 +24,11 @@ const upload = multer({
 });
 const missing = () => Object.assign(new Error('Resource not found'), { statusCode: 404 });
 const object = value => value && typeof value === 'object' && !Array.isArray(value);
+const csvCell = value => {
+  const text = String(value ?? '');
+  const safe = /^[\s\u0000-\u001f]*[=+@-]/.test(text) ? `'${text}` : text;
+  return `"${safe.replace(/"/g, '""')}"`;
+};
 function mappingInput(req) {
   const { mapping = {}, defaults = {} } = req.body || {};
   if (!object(mapping) || !object(defaults) || Object.keys(mapping).length > limits.columns || Object.values(defaults).some(v => typeof v !== 'string' || v.length > 500)) throw Object.assign(new Error('Invalid mapping or defaults'), { statusCode: 400 });
@@ -87,7 +92,10 @@ function build(rawDb) {
     const { validated } = validateRows(doc.rows, doc.last_mapping || {}, Array.from(REQUIRED), doc.last_defaults || {});
     const inv = invertMapping(doc.last_mapping || {});
     const lines = ['Row,Name,Email,Error Code,Error Message'];
-    for (const row of validated) for (const err of row.errors) lines.push(`${row.rowNumber},"${String(row.row[inv.recipient_name] || '').replace(/"/g, '""')}","${String(row.row[inv.email] || '').replace(/"/g, '""')}",${err.code},"${err.message.replace(/"/g, '""')}"`);
+    for (const row of validated) for (const err of row.errors) lines.push([
+      row.rowNumber, csvCell(row.row[inv.recipient_name]), csvCell(row.row[inv.email]),
+      csvCell(err.code), csvCell(err.message)
+    ].join(','));
     res.type('text/csv').attachment(`errors-${req.params.id}.csv`).send(lines.join('\n'));
   }, 'export');
   route('post', '/preview-sample', 'bulk.create', async (req, res, db) => {
@@ -184,15 +192,22 @@ function build(rawDb) {
   route('get', '/jobs/:id/download', 'bulk.download', async (req, res, db) => {
     const job = await db.collection('bulk_jobs').findOne({ id: req.params.id });
     if (!job) throw missing();
-    const rows = await db.collection('bulk_records').find({ job_id: req.params.id, status: 'success' }).limit(limits.rows).toArray();
+    let rows = await db.collection('bulk_records').find({ job_id: req.params.id, status: 'success' }).limit(limits.rows).toArray();
+    if (rows.length) {
+      const activeCertificates = await db.collection('certificates').find({
+        cert_id: { $in: rows.map(record => record.certificate_id) }, status: { $ne: 'Revoked' }
+      }, { projection: { cert_id: 1 } }).toArray();
+      const activeIds = new Set(activeCertificates.map(cert => cert.cert_id));
+      rows = rows.filter(record => activeIds.has(record.certificate_id));
+    }
     if (!rows.length) throw Object.assign(new Error('No successful certificates to download yet'), { statusCode: 400 });
 
     let template = job.template_snapshot;
     if (!template && job.template_id) {
       template = await db.collection('templates').findOne({ id: job.template_id });
     }
-    if (!template) {
-      template = await db.collection('templates').findOne({});
+    if (!template && rows.some(record => !record.pdf_path)) {
+      throw Object.assign(new Error('Certificate template not found'), { statusCode: 404 });
     }
 
     await streamLease(res);
@@ -237,7 +252,10 @@ function build(rawDb) {
     }
 
     const lines = ['certificate_id,recipient_name,email,status,email_status,pdf_hash'];
-    for (const r of rows) lines.push([r.certificate_id, String(Object.values(r.row || {})[0] || '').replace(/,/g, ' '), '', r.status, r.email_status || '', r.pdf_hash || ''].join(','));
+    for (const r of rows) lines.push([
+      r.certificate_id, Object.values(r.row || {})[0] || '', '', r.status,
+      r.email_status || '', r.pdf_hash || ''
+    ].map(csvCell).join(','));
     archive.append(lines.join('\n'), { name: 'summary.csv' });
     await archive.finalize();
     await db.collection('audit_logs').insertOne({ action: 'BULK_CERTIFICATES_DOWNLOADED', job_id: req.params.id, count: rows.length, timestamp: new Date().toISOString() });
@@ -250,7 +268,7 @@ function build(rawDb) {
 
     for (const record of records) {
       const cert = await db.collection('certificates').findOne({ cert_id: record.certificate_id });
-      if (!cert) { failed++; continue; }
+      if (!cert || cert.status === 'Revoked') { failed++; continue; }
 
       if (useQueue) {
         // Queue each email individually via BullMQ for reliable delivery
@@ -270,9 +288,13 @@ function build(rawDb) {
         }
       } else {
         // Legacy: send inline
-        if (!record.pdf_path || !fs.existsSync(record.pdf_path)) { failed++; continue; }
+        let pdfBuffer;
+        try {
+          if (record.pdf_path) pdfBuffer = await storageService.getPdfBuffer(record.pdf_path);
+        } catch (_) { /* Delivery can render from the stored template. */ }
         const template = await db.collection('templates').findOne({ id: cert.template_id });
-        const result = await deliverCertificate({ cert, template, pdfBuffer: fs.readFileSync(record.pdf_path) });
+        if (!template && !pdfBuffer) { failed++; continue; }
+        const result = await deliverCertificate({ cert, template, pdfBuffer });
         const patch = { email_status: result.delivered ? 'sent' : 'failed', email_id: result.email_id || null, email_error: result.delivered ? null : 'Email delivery failed' };
         await db.collection('bulk_records').updateOne({ _id: record._id }, { $set: patch });
         await db.collection('certificates').updateOne({ cert_id: cert.cert_id }, { $set: { ...patch, sent_email: result.delivered } });
@@ -294,4 +316,4 @@ function build(rawDb) {
   });
   return router;
 }
-module.exports = { build };
+module.exports = { build, csvCell };

@@ -16,8 +16,13 @@ const envOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
   .split(',')
   .map(value => value.trim())
   .filter(Boolean);
+// The production web app is served from this fixed Vercel origin.
+const deployedFrontendOrigins = ['https://ai-powered-certificate-generation-a.vercel.app'];
 const devOrigins = isProd ? [] : ['http://localhost:3000', 'http://127.0.0.1:3000'];
-const origins = Array.from(new Set([...envOrigins, appOrigin, ...(frontendOrigin ? [frontendOrigin] : []), ...devOrigins]));
+const origins = Array.from(new Set([
+  ...envOrigins, ...deployedFrontendOrigins, appOrigin,
+  ...(frontendOrigin ? [frontendOrigin] : []), ...devOrigins
+]));
 for (const origin of origins) {
   const parsed = new URL(origin);
   if (!['https:', 'http:'].includes(parsed.protocol) || parsed.origin !== origin) {

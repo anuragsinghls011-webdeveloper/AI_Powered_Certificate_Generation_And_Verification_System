@@ -64,7 +64,7 @@ export default function PreviewModal({ cert, template, onClose, apiBase }) {
         )}
 
         <div className="mt-6 flex justify-end gap-3">
-          <button 
+          {cert.status !== 'Revoked' && <button
             onClick={() => {
               import('../../services/api').then(module => {
                 module.downloadCertificatePdf(cert.cert_id);
@@ -73,7 +73,7 @@ export default function PreviewModal({ cert, template, onClose, apiBase }) {
             className="px-6 py-2.5 bg-emerald-600 text-white font-semibold rounded-xl text-sm hover:bg-emerald-700 transition flex items-center gap-2"
           >
             <Download className="w-4 h-4" /> Download PDF
-          </button>
+          </button>}
           <button 
             onClick={onClose}
             className="px-6 py-2.5 bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm hover:bg-slate-300 transition"

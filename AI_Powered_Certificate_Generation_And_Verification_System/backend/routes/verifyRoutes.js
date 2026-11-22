@@ -5,6 +5,7 @@ const { getCertificatesCol, getEventsCol, getDB } = require('../config/db');
 const { streamCertificatePdf } = require('../services/pdfService');
 const { workLimit } = require('../services/workload');
 const storageService = require('../services/storageService');
+const { sharedTemplates } = require('../utils/tenant');
 
 const CERT_ID_REGEX = /^CERT-\d{4}-[A-Za-z0-9_-]{4,32}$/;
 
@@ -102,6 +103,7 @@ router.get('/:cert_id/download-pdf', verifyPdfLimiter, workLimit('pdf'), async (
 
     const cert = await getCertificatesCol().findOne({ cert_id }, { projection: { _id: 0 } });
     if (!cert) return res.status(404).json({ error: 'Certificate not found.' });
+    if (cert.status === 'Revoked') return res.status(409).json({ error: 'This certificate has been revoked.' });
 
     if (cert.pdf_path) {
       try {
@@ -115,10 +117,10 @@ router.get('/:cert_id/download-pdf', verifyPdfLimiter, workLimit('pdf'), async (
       }
     }
 
-    let template = cert.template_id ? await getDB().collection('templates').findOne({ id: cert.template_id }) : null;
-    if (!template) {
-      template = await getDB().collection('templates').findOne({});
-    }
+    const template = cert.template_id ? await getDB().collection('templates').findOne({
+      id: cert.template_id,
+      $or: cert.organization_id ? [{ organization_id: cert.organization_id }, sharedTemplates] : [sharedTemplates]
+    }) : null;
     if (!template) return res.status(404).json({ error: 'Template not found.' });
 
     await streamCertificatePdf(cert, template, res);

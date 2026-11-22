@@ -321,14 +321,16 @@ export default function App() {
   };
 
   const handleBulkRevoke = async (certIds) => {
-    if (!window.confirm(`Are you sure you want to revoke ${certIds.length} certificates?`)) return;
+    if (!window.confirm(`Are you sure you want to revoke ${certIds.length} certificates?`)) return false;
     try {
       setLoading(true);
-      await axios.post(`${API}/certificates/bulk-revoke`, { cert_ids: certIds });
-      showNotification(`${certIds.length} certificates revoked successfully`);
+      const res = await axios.post(`${API}/certificates/bulk-revoke`, { cert_ids: certIds });
+      showNotification(`${res.data.revoked_count} certificates revoked successfully`);
       fetchAllData();
+      return true;
     } catch (err) {
       showNotification('Failed to revoke certificates', 'error');
+      return false;
     } finally {
       setLoading(false);
     }

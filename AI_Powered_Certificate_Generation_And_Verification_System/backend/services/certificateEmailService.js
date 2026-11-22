@@ -20,6 +20,7 @@ function certificateValues(cert) {
 }
 
 async function deliverCertificate({ cert, template, pdfBuffer }) {
+  if (cert.status === 'Revoked') return { delivered: false, skipped: true, error: 'Certificate revoked' };
   if (!cert.recipient_email) return { delivered: false, skipped: true, error: 'Recipient email is missing' };
   const pdf = pdfBuffer || await renderCertificatePdfBuffer(template, certificateValues(cert));
   const content = certificateTemplate({

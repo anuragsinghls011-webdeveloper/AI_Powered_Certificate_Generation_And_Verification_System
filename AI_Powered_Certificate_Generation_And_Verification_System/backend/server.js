@@ -3,6 +3,7 @@ const { app, mountBulkRoutes } = require('./app');
 const { connectDB } = require('./config/db');
 const { seedInitialData } = require('./services/seedService');
 const { initializeJobIndexes } = require('./services/jobSubmission');
+const { initializeAuthIndexes } = require('./services/authIndexes');
 
 // BullMQ imports
 const { redisHealthCheck, closeRedis } = require('./config/redis');
@@ -20,6 +21,7 @@ const PORT = process.env.PORT || 8001;
 async function start() {
   try {
     const db = await connectDB();
+    await initializeAuthIndexes(db);
     await initializeJobIndexes(db);
 
     // Mount bulk generation routes (requires db instance)
@@ -27,18 +29,6 @@ async function start() {
 
     // Seed default data on first run
     await seedInitialData();
-
-    // --- Crash Recovery: Clean up stale state from previous run ---
-    // Clear all work slots so PDF rendering isn't blocked by zombie leases
-    await db.collection('work_slots').updateMany({}, { $set: { until: new Date(0) } });
-    // Reset any stuck 'processing' jobs back to 'queued'
-    const stuckReset = await db.collection('bulk_jobs').updateMany(
-      { status: 'processing' },
-      { $set: { status: 'queued', attempts: 0, lease_owner: null, lease_until: new Date(0), next_attempt_at: new Date() } }
-    );
-    if (stuckReset.modifiedCount > 0) {
-      console.log(`[Server] Reset ${stuckReset.modifiedCount} stuck processing job(s) to queued`);
-    }
 
     // --- Queue System Initialization ---
     let redisAvailable = false;
@@ -85,40 +75,21 @@ async function start() {
   }
 }
 
-/**
- * Recover bulk generation jobs that were left in 'processing' or 'queued'
- * state from a previous crash. Re-queues them into BullMQ.
- */
+/** Re-enqueue MongoDB jobs not yet handed to BullMQ. BullMQ owns active jobs. */
 async function recoverStaleBulkJobs(db) {
   const { addCertificateJob } = require('./queues');
   const config = require('./config/security');
 
-  // Find jobs that were processing or queued but have expired leases
+  // A processing job may belong to a healthy worker in another API instance.
   const staleJobs = await db.collection('bulk_jobs').find({
-    status: { $in: ['processing', 'queued'] },
+    status: 'queued',
     attempts: { $lt: config.jobAttempts },
-    $or: [
-      { lease_until: { $lte: new Date() } },
-      { lease_until: { $exists: false } }
-    ]
+    $or: [{ next_attempt_at: { $lte: new Date() } }, { next_attempt_at: { $exists: false } }]
   }).toArray();
 
   let recovered = 0;
   for (const job of staleJobs) {
     try {
-      // Reset the MongoDB job to 'queued' so the worker can pick it up cleanly
-      await db.collection('bulk_jobs').updateOne(
-        { id: job.id },
-        {
-          $set: {
-            status: 'queued',
-            lease_owner: null,
-            lease_until: new Date(0),
-            next_attempt_at: new Date()
-          }
-        }
-      );
-
       await addCertificateJob({
         jobId: job.id,
         organizationId: job.organization_id,

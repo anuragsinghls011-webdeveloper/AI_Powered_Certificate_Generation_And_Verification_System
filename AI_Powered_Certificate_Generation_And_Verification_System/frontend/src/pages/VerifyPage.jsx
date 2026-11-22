@@ -10,6 +10,7 @@ export default function VerifyPage({ apiBase }) {
   const [verifyError, setVerifyError] = useState('');
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
+  const revoked = verifiedCert?.status === 'Revoked';
 
   const performVerification = useCallback(async (certId) => {
     const trimmed = String(certId || '').trim();
@@ -129,9 +130,9 @@ export default function VerifyPage({ apiBase }) {
       </div>
 
       {verifiedCert && (
-        <div data-testid="verify-success-card" className="bg-white p-8 rounded-3xl shadow-lg border-2 border-emerald-500 relative overflow-hidden">
-          <div className="absolute top-0 right-0 bg-emerald-500 text-white text-xs font-bold uppercase tracking-wider px-6 py-2 rounded-bl-2xl flex items-center gap-1.5">
-            <CheckCircle2 className="w-4 h-4" /> Authentic & Verified
+        <div data-testid="verify-success-card" className={`bg-white p-8 rounded-3xl shadow-lg border-2 relative overflow-hidden ${revoked ? 'border-rose-500' : 'border-emerald-500'}`}>
+          <div className={`absolute top-0 right-0 text-white text-xs font-bold uppercase tracking-wider px-6 py-2 rounded-bl-2xl flex items-center gap-1.5 ${revoked ? 'bg-rose-600' : 'bg-emerald-500'}`}>
+            {revoked ? <AlertTriangle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />} {revoked ? 'Revoked' : 'Authentic & Verified'}
           </div>
           
           <div className="flex flex-col md:flex-row gap-6 items-center border-b border-slate-100 pb-6">
@@ -171,14 +172,14 @@ export default function VerifyPage({ apiBase }) {
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase">Status</p>
-              <p className="font-bold text-emerald-600 mt-1 flex items-center gap-1">
-                <CheckCircle2 className="w-4 h-4" /> {verifiedCert.status} (Valid Digital Record)
+              <p className={`font-bold mt-1 flex items-center gap-1 ${revoked ? 'text-rose-600' : 'text-emerald-600'}`}>
+                {revoked ? <AlertTriangle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />} {verifiedCert.status} {revoked ? '(No longer valid)' : '(Valid Digital Record)'}
               </p>
             </div>
           </div>
 
-          <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <button 
+          {!revoked && <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button
               onClick={() => {
                 import('../services/api').then(module => {
                   module.downloadCertificatePdf(verifiedCert.cert_id);
@@ -188,13 +189,13 @@ export default function VerifyPage({ apiBase }) {
             >
               <Download className="w-5 h-5" /> Download PDF
             </button>
-            <button 
+            <button
               onClick={handleLinkedInPost}
               className="py-3 bg-[#0077b5] text-white font-semibold rounded-xl text-center hover:bg-[#006396] transition flex items-center justify-center gap-2 relative overflow-hidden"
             >
               <Linkedin className="w-5 h-5" /> {copied ? 'Post Text Copied!' : 'Share Post (LinkedIn)'}
             </button>
-            <a 
+            <a
               href={getLinkedInUrl()}
               target="_blank"
               rel="noopener noreferrer"
@@ -202,7 +203,7 @@ export default function VerifyPage({ apiBase }) {
             >
               <Linkedin className="w-5 h-5 text-[#0077b5]" /> Add to Profile
             </a>
-            <a 
+            <a
               href={getTwitterUrl()}
               target="_blank"
               rel="noopener noreferrer"
@@ -210,7 +211,7 @@ export default function VerifyPage({ apiBase }) {
             >
               <Twitter className="w-5 h-5" /> Share Tweet
             </a>
-          </div>
+          </div>}
         </div>
       )}
     </div>

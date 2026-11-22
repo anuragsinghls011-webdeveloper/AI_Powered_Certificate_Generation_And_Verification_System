@@ -1,6 +1,6 @@
 const QRCode = require('qrcode');
 const crypto = require('crypto');
-const { getCertificatesCol, getTemplatesCol } = require('../config/db');
+const { getCertificatesCol, getTemplatesCol, getDB } = require('../config/db');
 const { generateCertId, todayISO, nowISO } = require('../utils/helpers');
 const { scope, templateScope, scoped, id, issuanceResources } = require('../utils/tenant');
 const { submitJob } = require('../services/jobSubmission');
@@ -8,6 +8,8 @@ const { streamCertificatePdf } = require('../services/pdfService');
 const { deliverCertificate } = require('../services/certificateEmailService');
 const { addCertificateJob, addEmailJob } = require('../queues');
 const { redisHealthCheck } = require('../config/redis');
+const { logAudit } = require('../utils/audit');
+const storageService = require('../services/storageService');
 const limits = require('../config/security');
 const handle = fn => async (req, res) => { try { await fn(req, res); } catch (error) { res.status(error.statusCode || 500).json({ error: error.statusCode ? error.message : 'Certificate operation failed' }); } };
 const invalid = message => Object.assign(new Error(message), { statusCode: 400 });
@@ -109,21 +111,37 @@ const createCertificate = handle(async (req, res) => {
 const getCertificateById = handle(async (req, res) => res.json(await selectedCertificate(req)));
 const revokeCertificate = handle(async (req, res) => {
   const cert = await selectedCertificate(req);
-  await getCertificatesCol().deleteOne({ ...scope(req), cert_id: cert.cert_id });
-  res.json({ message: 'Certificate deleted successfully' });
+  if (cert.status !== 'Revoked') {
+    const result = await getCertificatesCol().updateOne(
+      { ...scope(req), cert_id: cert.cert_id, status: { $ne: 'Revoked' } },
+      { $set: { status: 'Revoked', revoked_at: nowISO(), revoked_by: req.user.id } }
+    );
+    if (result.modifiedCount) await logAudit(getDB(), {
+      action: 'CERTIFICATE_REVOKED', organization_id: req.organization.id,
+      user_id: req.user.id, cert_id: cert.cert_id
+    });
+  }
+  res.json({ message: 'Certificate revoked successfully' });
 });
 const revokeBulkCertificates = handle(async (req, res) => {
-  const { cert_ids } = req.body;
-  if (!Array.isArray(cert_ids) || cert_ids.length === 0 || cert_ids.length > 5000) {
+  const { cert_ids } = req.body || {};
+  if (!Array.isArray(cert_ids) || cert_ids.length === 0 || cert_ids.length > 5000 ||
+      cert_ids.some(certId => typeof certId !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(certId))) {
     throw invalid('Invalid or too many certificate IDs');
   }
-  await getCertificatesCol().deleteMany(
-    { ...scope(req), cert_id: { $in: cert_ids.map(id => String(id)) } }
+  const result = await getCertificatesCol().updateMany(
+    { ...scope(req), cert_id: { $in: cert_ids }, status: { $ne: 'Revoked' } },
+    { $set: { status: 'Revoked', revoked_at: nowISO(), revoked_by: req.user.id } }
   );
-  res.json({ message: `${cert_ids.length} certificates deleted successfully` });
+  if (result.modifiedCount) await logAudit(getDB(), {
+    action: 'CERTIFICATES_BULK_REVOKED', organization_id: req.organization.id,
+    user_id: req.user.id, cert_ids, count: result.modifiedCount
+  });
+  res.json({ message: `${result.modifiedCount} certificates revoked successfully`, revoked_count: result.modifiedCount });
 });
 const sendEmail = handle(async (req, res) => {
   const cert = await selectedCertificate(req);
+  if (cert.status === 'Revoked') return res.status(409).json({ error: 'Revoked certificates cannot be emailed' });
 
   // Queue via BullMQ if available (non-blocking)
   if (await redisHealthCheck()) {
@@ -140,11 +158,13 @@ const sendEmail = handle(async (req, res) => {
     return res.json({ message: 'Certificate email queued for delivery', cert_id: cert.cert_id, queued: true });
   }
 
-  let template = await getTemplatesCol().findOne(scoped({ id: cert.template_id }, templateScope(req)));
-  if (!template) {
-    template = await getTemplatesCol().findOne({});
+  const template = await getTemplatesCol().findOne(scoped({ id: cert.template_id }, templateScope(req)));
+  let pdfBuffer;
+  if (!template && cert.pdf_path) {
+    try { pdfBuffer = await storageService.getPdfBuffer(cert.pdf_path); } catch (_) {}
   }
-  const result = await deliverCertificate({ cert, template });
+  if (!template && !pdfBuffer) return res.status(404).json({ error: 'Certificate template not found' });
+  const result = await deliverCertificate({ cert, template, pdfBuffer });
   await getCertificatesCol().updateOne({ ...scope(req), cert_id: cert.cert_id }, { $set: {
     sent_email: result.delivered, email_status: result.delivered ? 'sent' : 'failed', email_id: result.email_id || null,
     email_actual_recipient: result.actual_recipients?.[0] || null, email_error: result.delivered ? null : 'Email delivery failed'
@@ -152,10 +172,9 @@ const sendEmail = handle(async (req, res) => {
   if (!result.delivered) return res.status(502).json({ error: result.error || 'Certificate email could not be sent. Please retry.' });
   res.json({ message: 'Certificate email accepted', cert_id: cert.cert_id, email_id: result.email_id });
 });
-const storageService = require('../services/storageService');
-
 const downloadPdf = handle(async (req, res) => {
   const cert = await selectedCertificate(req);
+  if (cert.status === 'Revoked') return res.status(409).json({ error: 'Revoked certificates cannot be downloaded' });
   if (cert.pdf_path) {
     try {
       const { stream, length } = await storageService.downloadPdfStream(cert.pdf_path);
@@ -167,10 +186,8 @@ const downloadPdf = handle(async (req, res) => {
       console.warn('Failed to fetch PDF from storage, generating on-the-fly:', e.message);
     }
   }
-  let template = await getTemplatesCol().findOne(scoped({ id: cert.template_id }, templateScope(req)));
-  if (!template) {
-    template = await getTemplatesCol().findOne({});
-  }
+  const template = await getTemplatesCol().findOne(scoped({ id: cert.template_id }, templateScope(req)));
+  if (!template) return res.status(404).json({ error: 'Certificate template not found' });
   await streamCertificatePdf(cert, template, res);
 });
 module.exports = { getAllCertificates, generateBulkCertificates, createCertificate, getCertificateById, revokeCertificate, revokeBulkCertificates, sendEmail, downloadPdf };

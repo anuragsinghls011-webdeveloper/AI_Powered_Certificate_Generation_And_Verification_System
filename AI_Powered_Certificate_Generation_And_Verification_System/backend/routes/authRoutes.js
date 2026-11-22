@@ -66,26 +66,6 @@ const { getDB } = require('../config/db');
 const mw = require('../middleware/authMiddleware');
   const router = express.Router();
 
-  // Ensure indexes (best-effort)
-  (async () => {
-    try {
-      await getDB().collection('users').createIndex({ email: 1 }, { unique: true });
-      await getDB().collection('sessions').createIndex({ user_id: 1 });
-      await getDB().collection('sessions').createIndex({ token_hash: 1 });
-      await getDB().collection('sessions').createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 });
-      await getDB().collection('email_verification_tokens').createIndex({ token_hash: 1 });
-      await getDB().collection('email_verification_tokens').createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 });
-      await getDB().collection('registration_otps').createIndex({ email: 1 }, { unique: true });
-      await getDB().collection('registration_otps').createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 });
-      await getDB().collection('password_reset_tokens').createIndex({ token_hash: 1 });
-      await getDB().collection('password_reset_tokens').createIndex({ expires_at: 1 }, { expireAfterSeconds: 0 });
-      await getDB().collection('login_attempts').createIndex({ identifier: 1 });
-      await getDB().collection('login_attempts').createIndex({ last_attempt: 1 }, { expireAfterSeconds: LOCK_MINUTES * 60 * 4 });
-      await getDB().collection('organizations').createIndex({ slug: 1 }, { unique: true, sparse: true });
-      await getDB().collection('organization_memberships').createIndex({ user_id: 1, organization_id: 1 }, { unique: true });
-    } catch (e) { /* indexes may already exist */ }
-  })();
-
 
   // Brute force helpers
   async function checkLockout(identifier) {
@@ -287,7 +267,7 @@ const mw = require('../middleware/authMiddleware');
         expires_at: inSecondsFromNow(REFRESH_TOKEN_TTL_ENV()),
         revoked_at: null, rotated_from: null
       });
-      const access = signAccessToken(newUser, newMembership);
+      const access = signAccessToken(newUser, newMembership, sessionId);
       setAuthCookies(res, access, refresh);
 
       await logAudit(getDB(), { action: 'AUTH_REGISTER', user_id: userId, organization_id: orgId, ip: req.ip });
@@ -319,6 +299,7 @@ const mw = require('../middleware/authMiddleware');
       const password = String(req.body?.password || '');
       const orgNameInput = String(req.body?.organizationName || '').trim();
       if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+      if (orgNameInput.length > 120) return res.status(400).json({ error: 'Organization name is too long' });
 
       const identifier = `${req.ip}:${email}`;
       const lock = await checkLockout(identifier);
@@ -344,7 +325,7 @@ const mw = require('../middleware/authMiddleware');
       let targetOrgId = user.current_org_id;
       if (orgNameInput) {
         const targetOrg = await getDB().collection('organizations').findOne({ 
-          name: { $regex: new RegExp(`^${orgNameInput}$`, 'i') } 
+          name: { $regex: new RegExp(`^${orgNameInput.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
         });
         if (!targetOrg) {
           return res.status(401).json({ error: 'Organization not found' });
@@ -379,7 +360,7 @@ const mw = require('../middleware/authMiddleware');
         expires_at: inSecondsFromNow(REFRESH_TOKEN_TTL_ENV()),
         revoked_at: null, rotated_from: null
       });
-      const access = signAccessToken(user, membership);
+      const access = signAccessToken(user, membership, sessionId);
       setAuthCookies(res, access, refresh);
 
       await logAudit(getDB(), { action: 'AUTH_LOGIN', user_id: user.id, organization_id: user.current_org_id, ip: req.ip });
@@ -407,20 +388,14 @@ const mw = require('../middleware/authMiddleware');
       try { decoded = verifyRefreshToken(raw); }
       catch { return res.status(401).json({ error: 'Invalid refresh token' }); }
 
-      const session = await getDB().collection('sessions').findOne({
-        id: decoded.sid, user_id: decoded.sub, token_hash: sha256(raw), revoked_at: null
-      });
+      // Claim the old refresh session exactly once before issuing its successor.
+      const session = await getDB().collection('sessions').findOneAndUpdate({
+        id: decoded.sid, user_id: decoded.sub, token_hash: sha256(raw),
+        revoked_at: null, expires_at: { $gt: new Date() }
+      }, { $set: { revoked_at: nowIso(), revoke_reason: 'rotated', last_used_at: nowIso() } },
+      { returnDocument: 'before' });
       if (!session) {
-        // Token reuse detection: if the refresh was rotated, revoke ALL sessions for the user.
-        await getDB().collection('sessions').updateMany(
-          { user_id: decoded.sub, revoked_at: null },
-          { $set: { revoked_at: nowIso(), revoke_reason: 'reuse_detected' } }
-        );
-        await logAudit(getDB(), { action: 'AUTH_REFRESH_REUSE_DETECTED', user_id: decoded.sub, ip: req.ip });
-        return res.status(401).json({ error: 'Refresh token invalid or reused' });
-      }
-      if (new Date(session.expires_at) < new Date()) {
-        return res.status(401).json({ error: 'Refresh token expired' });
+        return res.status(401).json({ error: 'Refresh token invalid, expired, or already used' });
       }
 
       const user = await getDB().collection('users').findOne({ id: decoded.sub });
@@ -428,23 +403,19 @@ const mw = require('../middleware/authMiddleware');
 
       // Rotate: create a new session and revoke the old one
       const newSessionId = uuidv4();
-      const { token: newRefresh } = generateRefreshToken(user, newSessionId);
+      const { token: newRefresh, jti } = generateRefreshToken(user, newSessionId);
       await getDB().collection('sessions').insertOne({
-        id: newSessionId, user_id: user.id, jti: crypto.randomBytes(16).toString('hex'),
+        id: newSessionId, user_id: user.id, jti,
         token_hash: sha256(newRefresh),
         ip: req.ip, user_agent: req.headers['user-agent'] || '',
         created_at: nowIso(), last_used_at: nowIso(),
         expires_at: inSecondsFromNow(REFRESH_TOKEN_TTL_ENV()),
         revoked_at: null, rotated_from: session.id
       });
-      await getDB().collection('sessions').updateOne({ id: session.id }, {
-        $set: { revoked_at: nowIso(), revoke_reason: 'rotated', last_used_at: nowIso() }
-      });
-
       const membership = await getDB().collection('organization_memberships').findOne({
         user_id: user.id, organization_id: user.current_org_id, status: 'active'
       });
-      const access = signAccessToken(user, membership);
+      const access = signAccessToken(user, membership, newSessionId);
       setAuthCookies(res, access, newRefresh);
       res.json({ access_token: access, refresh_token: newRefresh, expires_in: ACCESS_TTL });
     } catch (err) {
@@ -524,7 +495,7 @@ const mw = require('../middleware/authMiddleware');
     );
     // Reissue access token bound to new org
     const user = { ...req.user, current_org_id: orgId };
-    const access = signAccessToken(user, membership);
+    const access = signAccessToken(user, membership, req.tokenPayload.sid);
     setAuthCookies(res, access, req.cookies?.refresh_token || '');
     await logAudit(getDB(), { action: 'AUTH_ORG_SWITCH', user_id: req.user.id, organization_id: orgId, ip: req.ip });
     res.json({ access_token: access, organization_id: orgId, membership });
