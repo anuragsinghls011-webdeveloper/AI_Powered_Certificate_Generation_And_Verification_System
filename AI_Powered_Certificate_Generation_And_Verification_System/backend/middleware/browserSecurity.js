@@ -13,10 +13,21 @@ const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
   errorConfig: { statusCode: 403, message: 'Security token is missing or expired.', code: 'CSRF_INVALID' }
 });
 const allowed = origin => {
-  if (typeof origin !== 'string') return false;
-  if (config.origins.includes(origin)) return true;
-  if (origin.endsWith('.vercel.app')) return true;
-  return false;
+  if (typeof origin !== 'string' || !origin) return false;
+  try {
+    const parsed = new URL(origin);
+    if (parsed.origin !== origin) return false;
+    if (isProd && parsed.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(parsed.hostname)) {
+      return false;
+    }
+    if (config.originSet.has(parsed.origin)) return true;
+    if (config.previewOriginRegex && parsed.protocol === 'https:' && config.previewOriginRegex.test(parsed.origin)) {
+      return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
 };
 
 function originGuard(req, res, next) {

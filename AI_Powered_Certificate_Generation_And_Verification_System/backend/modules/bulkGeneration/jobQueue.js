@@ -8,6 +8,7 @@ const storageService = require('../../services/storageService');
 const { invertMapping } = require('./validationEngine');
 const { deliverCertificate } = require('../../services/certificateEmailService');
 const { acquireSlot } = require('../../services/workload');
+const { generateCertId } = require('../../utils/helpers');
 const config = require('../../config/security');
 const now = () => new Date().toISOString();
 const hash = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -15,11 +16,6 @@ const terminal = ['completed', 'completed_with_errors', 'failed', 'cancelled'];
 
 function sanitizeFileName(name) {
   return String(name || 'certificate').replace(/[^A-Za-z0-9._-]+/g, '_').slice(0, 120) || 'certificate';
-}
-async function nextCertificateId(db) {
-  const year = new Date().getFullYear();
-  const counter = await db.collection('counters').findOneAndUpdate({ _id: `cert_${year}` }, { $inc: { seq: 1 } }, { upsert: true, returnDocument: 'after' });
-  return `CERT-${year}-${String(counter.seq).padStart(6, '0')}`;
 }
 function valuesFor(job, record, certId) {
   const inv = invertMapping(job.mapping);
@@ -81,7 +77,7 @@ async function counts(db, job) {
 async function processRecord(db, job, record, owner) {
   let certId = record.certificate_id;
   if (!certId) {
-    const candidate = await nextCertificateId(db);
+    const candidate = generateCertId();
     const stored = await db.collection('bulk_records').findOneAndUpdate({ _id: record._id, organization_id: job.organization_id, certificate_id: null }, { $set: { certificate_id: candidate } }, { returnDocument: 'after' });
     certId = stored?.certificate_id || (await db.collection('bulk_records').findOne({ _id: record._id })).certificate_id;
   }

@@ -141,7 +141,6 @@ export default function VerifyPage({ apiBase }) {
             <div>
               <span className="text-xs font-mono bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-md">{verifiedCert.cert_id}</span>
               <h4 className="text-2xl font-bold font-serif text-slate-900 mt-2">{verifiedCert.recipient_name}</h4>
-              <p className="text-sm text-slate-500">{verifiedCert.recipient_email}</p>
               <p className="text-xs text-slate-400 mt-1">Issued Date: {verifiedCert.issue_date}</p>
             </div>
           </div>

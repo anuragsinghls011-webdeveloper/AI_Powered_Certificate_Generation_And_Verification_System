@@ -1,10 +1,11 @@
+const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 
 /**
- * Generate a unique certificate ID in the format CERT-YYYY-XXXXXXXX
+ * Generate a unique, unguessable certificate ID in the format CERT-YYYY-XXXXXXXXXXXXXXXX (64-bit random hex)
  */
 function generateCertId() {
-  return `CERT-${new Date().getFullYear()}-${uuidv4().slice(0, 8).toUpperCase()}`;
+  return `CERT-${new Date().getFullYear()}-${crypto.randomBytes(8).toString('hex').toUpperCase()}`;
 }
 
 /**

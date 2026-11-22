@@ -23,6 +23,7 @@ const { renderCertificatePdfBuffer } = require('../modules/bulkGeneration/certif
 const { invertMapping } = require('../modules/bulkGeneration/validationEngine');
 const { deliverCertificate } = require('../services/certificateEmailService');
 const storageService = require('../services/storageService');
+const { generateCertId } = require('../utils/helpers');
 const { addEmailJob } = require('./index');
 
 const now = () => new Date().toISOString();
@@ -30,16 +31,6 @@ const hash = value => crypto.createHash('sha256').update(value).digest('hex');
 
 function sanitizeFileName(name) {
   return String(name || 'certificate').replace(/[^A-Za-z0-9._-]+/g, '_').slice(0, 120) || 'certificate';
-}
-
-async function nextCertificateId(db) {
-  const year = new Date().getFullYear();
-  const counter = await db.collection('counters').findOneAndUpdate(
-    { _id: `cert_${year}` },
-    { $inc: { seq: 1 } },
-    { upsert: true, returnDocument: 'after' }
-  );
-  return `CERT-${year}-${String(counter.seq).padStart(6, '0')}`;
 }
 
 function valuesFor(job, record, certId) {
@@ -94,7 +85,7 @@ function valuesFor(job, record, certId) {
 async function processRecord(db, jobDoc, record) {
   let certId = record.certificate_id;
   if (!certId) {
-    const candidate = await nextCertificateId(db);
+    const candidate = generateCertId();
     const stored = await db.collection('bulk_records').findOneAndUpdate(
       { _id: record._id, organization_id: jobDoc.organization_id, certificate_id: null },
       { $set: { certificate_id: candidate } },
