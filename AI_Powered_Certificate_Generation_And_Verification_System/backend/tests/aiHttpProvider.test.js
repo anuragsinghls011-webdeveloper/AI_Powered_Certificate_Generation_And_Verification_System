@@ -55,8 +55,8 @@ test('Gemini default model falls back on 404 and retries a temporary outage', as
       return { ok: true, json: async () => ({ candidates: [{ content: { parts: [{ text: '{"summary":"Recovered"}' }] } }] }) };
     };
     assert.equal((await requestDesign({ system: 'rules', user: 'certificate' })).summary, 'Recovered');
-    assert.match(urls[0], /gemini-flash-latest/);
-    assert.match(urls[1], /gemini-3\.6-flash/);
+    assert.match(urls[0], /gemini-3\.1-flash-lite/);
+    assert.match(urls[1], /gemini-flash-latest/);
     assert.equal(urls[1], urls[2]);
   } finally {
     global.fetch = original.fetch;

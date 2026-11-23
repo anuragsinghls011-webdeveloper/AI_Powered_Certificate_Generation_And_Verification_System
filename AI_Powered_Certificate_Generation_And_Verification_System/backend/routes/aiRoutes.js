@@ -91,14 +91,24 @@ const bgLimiter = rateLimit({
 
 router.post('/generate-background', requirePermission('templates.create'), bgLimiter, async (req, res) => {
   try {
-    const prompt = (req.body?.prompt || '').trim();
+    const prompt = typeof req.body?.prompt === 'string' ? req.body.prompt.trim() : '';
     if (!prompt) return res.status(422).json({ error: 'Please describe the background or frame you want to generate' });
     if (prompt.length > 500) return res.status(422).json({ error: 'Prompt must be under 500 characters' });
 
-    const result = await generateBackground({ prompt, style: req.body?.style });
+    const style = req.body?.style;
+    if (style != null && (typeof style !== 'string' || style.length > 500)) {
+      return res.status(422).json({ error: 'Frame style must be text under 500 characters' });
+    }
+    const controller = new AbortController();
+    res.once('close', () => controller.abort());
+    const result = await generateBackground({ prompt, style, signal: controller.signal });
     res.json(result);
   } catch (err) {
-    console.error('[AI generate background error]:', err.message);
+    if (err instanceof AiProviderError) {
+      console.warn('[AI frame]', { code: err.code });
+      return res.status(err.httpStatus).json({ error: err.publicMessage, code: err.code });
+    }
+    console.error('[AI frame]', { error_type: err.name });
     res.status(503).json({ error: 'Failed to generate background image. Please try again shortly.' });
   }
 });

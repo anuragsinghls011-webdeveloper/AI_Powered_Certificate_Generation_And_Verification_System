@@ -33,7 +33,7 @@ const BG_PRESETS = [
   }
 ];
 
-export default function AIBackgroundGenerator({ currentBackground, onApplyBackground, onRemoveBackground }) {
+export default function AIBackgroundGenerator({ currentBackground, onApplyBackground, onRemoveBackground, templateLoading, onCreateTemplate }) {
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [generatedImage, setGeneratedImage] = useState(null);
@@ -54,7 +54,7 @@ export default function AIBackgroundGenerator({ currentBackground, onApplyBackgr
     try {
       const response = await axios.post(`${API}/ai/generate-background`, {
         prompt: text
-      }, { timeout: 65000 });
+      }, { timeout: 125000 });
 
       if (response.data?.success && response.data?.image) {
         setGeneratedImage(response.data.image);
@@ -63,7 +63,9 @@ export default function AIBackgroundGenerator({ currentBackground, onApplyBackgr
         throw new Error('Failed to generate background image');
       }
     } catch (err) {
-      if (err.response?.status === 429) {
+      if (err.response?.data?.code) {
+        setError(err.response.data.error);
+      } else if (err.response?.status === 429) {
         setError('Too many requests. Please wait a moment before generating again.');
       } else if (err.response?.status === 401 || err.response?.status === 403) {
         setError('Your session cannot use the AI designer. Please sign in with design access.');
@@ -88,10 +90,10 @@ export default function AIBackgroundGenerator({ currentBackground, onApplyBackgr
         <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50/80 to-orange-50/40 p-3 text-xs text-slate-700">
           <div className="flex items-center gap-2 font-semibold text-amber-900">
             <Sparkles size={14} className="text-amber-600" />
-            AI Certificate Frame & Texture Generator (Nano Banana)
+            Gemini certificate frames
           </div>
           <p className="mt-1 text-[11px] text-slate-600 leading-relaxed">
-            Generate high-resolution ornate borders, guilloche filigree, and textures. The generated frame sits behind your editable text fields and QR code.
+            Choose a style or describe a border. You can also use your description to generate a full certificate with editable fields.
           </p>
         </div>
 
@@ -124,9 +126,10 @@ export default function AIBackgroundGenerator({ currentBackground, onApplyBackgr
 
         {/* Custom Prompt Box */}
         <div className="space-y-1.5">
-          <label className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">Or Describe Custom Frame</label>
+          <label htmlFor="frame-description" className="text-[11px] font-bold text-slate-600 uppercase tracking-wide">Describe your design</label>
           <div className="relative rounded-xl border border-slate-300 bg-white focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-100 transition-colors">
             <textarea
+              id="frame-description"
               data-testid="bg-prompt-input"
               value={prompt}
               onChange={e => setPrompt(e.target.value)}
@@ -147,6 +150,11 @@ export default function AIBackgroundGenerator({ currentBackground, onApplyBackgr
               <Wand2 size={14} className={loading ? 'animate-spin' : ''} />
             </button>
           </div>
+          {onCreateTemplate && <button type="button" disabled={loading || templateLoading || !prompt.trim()}
+            onClick={() => onCreateTemplate(prompt.trim())}
+            className="w-full rounded-xl border border-amber-300 bg-white px-3 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-50 disabled:opacity-50">
+            Generate full editable certificate
+          </button>}
         </div>
 
         {/* Loading State */}
@@ -191,7 +199,7 @@ export default function AIBackgroundGenerator({ currentBackground, onApplyBackgr
             <div className="border-b border-emerald-100 bg-gradient-to-r from-emerald-50 to-white px-3.5 py-2 flex items-center justify-between">
               <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800">
                 <Check size={14} className="text-emerald-600" />
-                Frame Ready ({providerUsed.includes('gemini') ? 'Gemini Imagen' : 'Procedural Vector'})
+                Frame Ready ({providerUsed === 'gemini-drawn' ? 'Gemini border design' : 'Gemini image'})
               </div>
               <button
                 type="button"

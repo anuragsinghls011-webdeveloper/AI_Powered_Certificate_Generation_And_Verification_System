@@ -35,8 +35,7 @@ function providerError(status) {
 
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-async function requestDesign({ system, user, sketchBase64, sketchMime, signal }) {
-  const provider = configuredProvider();
+async function requestDesign({ system, user, sketchBase64, sketchMime, signal, provider = configuredProvider() }) {
   if (!provider) return null;
 
   const controller = new AbortController();
@@ -49,7 +48,7 @@ async function requestDesign({ system, user, sketchBase64, sketchMime, signal })
   const explicitModel = sketchBase64 ? process.env.AI_VISION_MODEL : process.env.AI_MODEL;
   // Try the configured model first, then current Flash options if it is unavailable.
   const models = isGemini
-    ? Array.from(new Set([explicitModel?.trim(), 'gemini-flash-latest', 'gemini-3.6-flash'].filter(Boolean)))
+    ? Array.from(new Set([explicitModel?.trim(), 'gemini-3.1-flash-lite', 'gemini-flash-latest'].filter(Boolean)))
     : [(sketchBase64 ? process.env.OPENAI_VISION_MODEL : process.env.OPENAI_MODEL) || 'gpt-4o-mini'];
 
   try {
@@ -102,7 +101,8 @@ async function requestDesign({ system, user, sketchBase64, sketchMime, signal })
           const providerReason = /^[A-Z_]{1,50}$/.test(rawReason || '') ? rawReason : undefined;
           console.warn('[AI HTTP provider]', { provider, model, status: response.status,
             providerStatus: body.error?.status || undefined, providerReason });
-          if (isGemini && response.status === 404 && models.length > 1) break;
+          const hasNextModel = isGemini && model !== models[models.length - 1];
+          if (hasNextModel && [404, 503].includes(response.status)) break;
           if (response.status >= 500 && attempt === 0 && !controller.signal.aborted) {
             await pause(900);
             continue;
@@ -132,4 +132,4 @@ async function requestDesign({ system, user, sketchBase64, sketchMime, signal })
   }
 }
 
-module.exports = { AiProviderError, configuredProvider, requestDesign };
+module.exports = { AiProviderError, configuredProvider, requestDesign, providerError };

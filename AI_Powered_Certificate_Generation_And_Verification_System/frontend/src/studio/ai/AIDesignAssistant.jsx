@@ -342,6 +342,11 @@ export default function AIDesignAssistant({
       {/* Mode 3: AI Backgrounds & Frames Panel (Nano Banana) */}
       <div className={`flex flex-col flex-1 min-h-0 ${mode === 'background' ? 'flex' : 'hidden'}`}>
         <AIBackgroundGenerator
+          templateLoading={loading}
+          onCreateTemplate={description => {
+            setMode('chat');
+            submit(`Create a complete editable certificate from scratch with this design: ${description}`);
+          }}
           currentBackground={template?.background_image}
           onApplyBackground={onApplyBackground}
           onRemoveBackground={onRemoveBackground}

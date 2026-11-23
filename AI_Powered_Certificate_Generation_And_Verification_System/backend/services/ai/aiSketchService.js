@@ -23,7 +23,9 @@ Canvas is 792x560 design units; landscape Letter PDF maps y to 612. Content marg
 
 SUPPORTED FIELD TYPES: ${[...FIELD_TYPES].join(', ')}.
 SUPPORTED FONT FAMILIES: ${[...FONT_FAMILIES].join(', ')}.
-TEMPLATE CHANGE KEYS: ${Object.keys(TEMPLATE_RULES).join(', ')}. Field property keys: ${Object.keys(FIELD_RULES).join(', ')}. Colors MUST be #RRGGBB. Styles are modern/classic/minimal; borders are solid/double/dashed/ridge/none. Never set background_image, field image, remote URL, or any key not listed.
+Template properties and constraints: ${JSON.stringify(TEMPLATE_RULES)}.
+Field properties and constraints: ${JSON.stringify(FIELD_RULES)}.
+Enum values are case-sensitive. Use #RRGGBB for colors. A divider uses height of at least 12 and lineThickness for the visible stroke. Never set background_image, field image, remote URL, or any key not listed.
 
 Return {"intent":"create","summary":"brief explanation of how the sketch was interpreted","template_changes":{},"field_operations":[{"type":"add_field","field_type":"supported type","properties":{}}],"design_notes":["what was interpreted from the sketch"],"warnings":[],"replace_existing_fields":true}.
 
