@@ -48,7 +48,21 @@ const getAllCertificates = handle(async (req, res) => {
     const search = req.query.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     query.$or = ['recipient_name', 'recipient_email', 'cert_id'].map(key => ({ [key]: { $regex: search, $options: 'i' } }));
   }
-  let cursor = getCertificatesCol().find(query, { projection: { _id: 0 } }).sort({ created_at: -1 });
+  const listFields = { _id: 0, cert_id: 1, recipient_name: 1, recipient_email: 1, event_id: 1,
+    event_title: 1, role: 1, issue_date: 1, status: 1, template_id: 1 };
+  const collection = getCertificatesCol();
+  if (req.query.page !== undefined) {
+    const page = Number(req.query.page);
+    if (!Number.isSafeInteger(page) || page < 1 || page > 10000000) throw invalid('Invalid page');
+    const size = 10;
+    const [items, total] = await Promise.all([
+      collection.find(query, { projection: listFields }).sort({ created_at: -1, cert_id: 1 })
+        .skip((page - 1) * size).limit(size).toArray(),
+      collection.countDocuments(query)
+    ]);
+    return res.json({ items, total });
+  }
+  let cursor = collection.find(query, { projection: req.query.view === 'list' ? listFields : { _id: 0 } }).sort({ created_at: -1 });
   if (req.query.limit) {
     const limitNum = Math.min(Math.max(1, parseInt(req.query.limit, 10) || 50), 1000);
     cursor = cursor.limit(limitNum);

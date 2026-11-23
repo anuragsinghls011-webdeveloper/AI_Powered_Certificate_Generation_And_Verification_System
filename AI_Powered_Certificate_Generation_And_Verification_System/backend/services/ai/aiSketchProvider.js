@@ -1,11 +1,19 @@
 const { spawn } = require('child_process');
 const path = require('path');
+const { AiProviderError, configuredProvider, requestDesign } = require('./aiHttpProvider');
 
 /**
  * Sends a sketch image + text prompt to the AI vision model / CV layout engine.
  * The sketch is base64-encoded and processed by sketchBridge.py.
  */
-function generateDesignFromSketch({ system, user, sketchBase64, sketchMime, signal }) {
+async function generateDesignFromSketch({ system, user, sketchBase64, sketchMime, signal }) {
+  if (configuredProvider()) return requestDesign({ system, user, sketchBase64, sketchMime, signal });
+  if (process.env.AI_PROVIDER !== 'local') throw new AiProviderError('AI_NOT_CONFIGURED',
+    'The backend AI key is not configured. Ask the site administrator to set GEMINI_API_KEY or OPENAI_API_KEY.');
+  return generateLocalSketch({ system, user, sketchBase64, sketchMime, signal });
+}
+
+function generateLocalSketch({ system, user, sketchBase64, sketchMime, signal }) {
   const provider = process.env.AI_PROVIDER || 'gemini';
   const model = process.env.AI_VISION_MODEL || process.env.AI_MODEL || 'gemini-2.5-flash';
   const pythonBin = process.env.AI_PYTHON_BIN || (process.platform === 'win32' ? 'python' : 'python3');

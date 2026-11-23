@@ -1,9 +1,22 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import { Download } from 'lucide-react';
 import CertificateSurface from '../../studio/CertificateSurface';
 
-export default function PreviewModal({ cert, template, onClose, apiBase }) {
-  if (!cert) return null;
+export default function PreviewModal({ cert: row, onClose, apiBase }) {
+  const [details, setDetails] = useState(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    const controller = new AbortController();
+    const options = { signal: controller.signal };
+    const templateRequest = row.template_id ? axios.get(apiBase + '/templates/' + encodeURIComponent(row.template_id), options)
+      .catch(err => { if (err.response?.status === 404) return null; throw err; }) : null;
+    Promise.all([axios.get(apiBase + '/certificates/' + encodeURIComponent(row.cert_id), options), templateRequest])
+      .then(([certificate, template]) => { if (!controller.signal.aborted) setDetails({ cert: certificate.data, template: template?.data }); })
+      .catch(() => { if (!controller.signal.aborted) setFailed(true); });
+    return () => controller.abort();
+  }, [row.cert_id, row.template_id, apiBase]);
+  const { cert, template } = details || {};
 
   return (
     <div data-testid="certificate-preview-modal" className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
@@ -16,7 +29,7 @@ export default function PreviewModal({ cert, template, onClose, apiBase }) {
           ✕
         </button>
 
-        {template ? (
+        {!cert ? <p role="status">{failed ? 'Unable to load certificate preview.' : 'Loading certificate...'}</p> : template ? (
           <div className="flex justify-center items-center overflow-x-auto pb-4 max-h-[75vh]">
             <div className="shadow-lg border border-slate-200 rounded-sm">
               <CertificateSurface template={template} cert={cert} scale={0.78} interactive={false} />
@@ -64,7 +77,7 @@ export default function PreviewModal({ cert, template, onClose, apiBase }) {
         )}
 
         <div className="mt-6 flex justify-end gap-3">
-          {cert.status !== 'Revoked' && <button
+          {cert && cert.status !== 'Revoked' && <button
             onClick={() => {
               import('../../services/api').then(module => {
                 module.downloadCertificatePdf(cert.cert_id);

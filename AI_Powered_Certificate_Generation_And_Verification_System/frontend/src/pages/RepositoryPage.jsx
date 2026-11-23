@@ -1,10 +1,11 @@
+import axios from 'axios';
 import React, { useState, useEffect } from 'react';
 import {
   Search, FileText, Download, Send, Trash2
 } from 'lucide-react';
 
 export default function RepositoryPage({
-  certificates, events, onSendEmail, onRevoke, onBulkRevoke, setPreviewCert, apiBase
+  revision, events, onSendEmail, onRevoke, onBulkRevoke, setPreviewCert, apiBase
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterEvent, setFilterEvent] = useState('');
@@ -22,21 +23,39 @@ export default function RepositoryPage({
     return () => window.removeEventListener('mouseup', handleMouseUp);
   }, []);
 
+  const [result, setResult] = useState({ items: [], total: 0 });
+  const [pending, setPending] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [search, setSearch] = useState('');
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, filterEvent]);
+    if (searchTerm.trim() === search) return;
+    const timer = setTimeout(() => { setSearch(searchTerm.trim()); setCurrentPage(1); }, 250);
+    return () => clearTimeout(timer);
+  }, [searchTerm, search]);
 
-  const filteredCertificates = certificates.filter(cert => {
-    const matchesSearch = searchTerm === '' || 
-      (cert.recipient_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (cert.recipient_email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (cert.cert_id || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesEvent = filterEvent === '' || cert.event_id === filterEvent;
-    return matchesSearch && matchesEvent;
-  });
+  useEffect(() => {
+    const controller = new AbortController();
+    setPending(true);
+    setLoadError('');
+    setLastSelectedIndex(null);
+    setIsDragging(false);
+    axios.get(apiBase + '/certificates', {
+      params: { page: currentPage, search, event_id: filterEvent }, signal: controller.signal
+    }).then(({ data }) => {
+      if (controller.signal.aborted) return;
+      setResult(data);
+      setCurrentPage(page => Math.min(page, Math.max(1, Math.ceil(data.total / itemsPerPage))));
+    }).catch(() => {
+      if (!controller.signal.aborted) {
+        setResult({ items: [], total: 0 });
+        setLoadError('Unable to load certificates.');
+      }
+    }).finally(() => { if (!controller.signal.aborted) setPending(false); });
+    return () => controller.abort();
+  }, [apiBase, currentPage, filterEvent, search, revision]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredCertificates.length / itemsPerPage));
-  const currentCertificates = filteredCertificates.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(result.total / itemsPerPage));
+  const currentCertificates = pending ? [] : result.items;
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
@@ -129,7 +148,7 @@ export default function RepositoryPage({
             <input 
               data-testid="repo-search-input"
               type="text" 
-              placeholder="Search name, email, ID..." 
+              maxLength={100} placeholder="Search name, email, ID..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-brand-600"
@@ -138,7 +157,7 @@ export default function RepositoryPage({
           <select 
             data-testid="repo-event-filter"
             value={filterEvent}
-            onChange={e => setFilterEvent(e.target.value)}
+            onChange={e => { setFilterEvent(e.target.value); setCurrentPage(1); }}
             className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-brand-600"
           >
             <option value="">All Events</option>
@@ -175,7 +194,7 @@ export default function RepositoryPage({
               {currentCertificates.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="text-center py-12 text-slate-400">
-                    No certificates found matching criteria.
+                    {pending ? 'Loading certificates...' : loadError || 'No certificates found matching criteria.'}
                   </td>
                 </tr>
               ) : (
@@ -264,7 +283,7 @@ export default function RepositoryPage({
         {totalPages > 1 && (
           <div className="bg-slate-50 border-t border-slate-200 p-4 flex items-center justify-between">
             <span className="text-xs text-slate-500 font-medium">
-              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredCertificates.length)} of {filteredCertificates.length} certificates
+              Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, result.total)} of {result.total} certificates
             </span>
             <div className="flex gap-2">
               <button 

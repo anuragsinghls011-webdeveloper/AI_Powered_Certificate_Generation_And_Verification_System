@@ -193,7 +193,6 @@ export default function SketchUploader({ template, onApply, onClose, onSwitchToC
   const submit = async () => {
     if (loading) return;
     if (!sketch?.file) { setError('Upload a sketch image first'); return; }
-    if (!prompt.trim()) { setError('Describe the style or theme you want'); return; }
     if (prompt.length > 1200) { setError('Keep your prompt under 1,200 characters'); return; }
 
     setError('');
@@ -202,6 +201,7 @@ export default function SketchUploader({ template, onApply, onClose, onSwitchToC
     setProposal(null);
     const abort = new AbortController();
     controller.current = abort;
+    const fingerprint = designFingerprint(template);
 
     try {
       const formData = new FormData();
@@ -216,15 +216,19 @@ export default function SketchUploader({ template, onApply, onClose, onSwitchToC
 
       const design = response.data?.design;
       if (!design || typeof design.summary !== 'string') throw new Error('Invalid response');
+      if (fingerprint !== designFingerprint(templateRef.current)) {
+        setError('The canvas changed while the sketch was being analyzed. Generate again.');
+        return;
+      }
 
       // Build a preview using empty template since sketch generates from scratch
-      const emptyTpl = { ...template, fields: [] };
+      const emptyTpl = { ...templateRef.current, fields: [] };
       const choices = [{ name: 'Sketch-Derived Design', design }].map(choice => {
         const draft = previewDesign(emptyTpl, choice.design);
-        return { ...choice, template: draft, diff: designDiff(emptyTpl, draft) };
+        return { ...choice, template: draft, diff: designDiff(templateRef.current, draft) };
       });
 
-      setProposal({ choices, summary: design.summary });
+      setProposal({ choices, summary: design.summary, fingerprint });
     } catch (err) {
       if (!axios.isCancel(err)) {
         if (err.response?.status === 401 || err.response?.status === 403) {
@@ -247,11 +251,17 @@ export default function SketchUploader({ template, onApply, onClose, onSwitchToC
     }
   };
 
+  const templateRef = useRef(template);
+  templateRef.current = template;
+
   const applyChoice = (index) => {
     const choice = proposal?.choices[index];
     if (!choice) { setError('No design proposal to apply'); return; }
-    // Pass current template fingerprint
-    if (onApply(choice.design, designFingerprint(template))) {
+    if (proposal.fingerprint !== designFingerprint(template)) {
+      setError('The canvas changed. Generate again to use its latest state.');
+      return;
+    }
+    if (onApply(choice.design, proposal.fingerprint)) {
       setProposal(null);
       setPreviewIndex(null);
       setError('');
@@ -480,7 +490,7 @@ export default function SketchUploader({ template, onApply, onClose, onSwitchToC
               onChange={e => setPrompt(e.target.value)}
               maxLength={1200}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }}
-              placeholder="Describe your design style, colors, fonts, or certificate title (e.g., 'Modern academic certificate with navy and gold accents')…"
+              placeholder="Optional: add a style, colors, fonts, or title. Your sketch is enough to generate a template."
               rows={2}
               disabled={loading}
               className="w-full resize-none bg-transparent p-3 pr-12 text-xs text-slate-900 placeholder:text-slate-400 outline-none disabled:opacity-50"
@@ -488,7 +498,7 @@ export default function SketchUploader({ template, onApply, onClose, onSwitchToC
             <button
               data-testid="sketch-generate-btn"
               type="submit"
-              disabled={loading || !prompt.trim() || !sketch}
+              disabled={loading || !sketch}
               aria-label="Generate from sketch"
               title="Generate template from sketch"
               className="absolute bottom-2 right-2 rounded-lg bg-violet-600 p-2 text-white hover:bg-violet-500 disabled:bg-slate-300 transition-colors shadow-sm"

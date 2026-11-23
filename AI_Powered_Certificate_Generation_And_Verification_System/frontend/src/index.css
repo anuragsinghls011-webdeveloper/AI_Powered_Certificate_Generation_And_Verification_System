@@ -10,3 +10,11 @@
     font-family: 'Playfair Display', serif;
   }
 }
+
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+  .certificate-mockup { animation: certificate-float 8s ease-in-out infinite alternate; }
+  @keyframes certificate-float {
+    from { transform: perspective(1200px) translateY(-6px) rotateY(-4deg); }
+    to { transform: perspective(1200px) translateY(6px) rotateY(4deg); }
+  }
+}

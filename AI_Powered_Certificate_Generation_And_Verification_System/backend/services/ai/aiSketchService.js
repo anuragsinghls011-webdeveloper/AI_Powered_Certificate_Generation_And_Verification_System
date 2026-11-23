@@ -1,6 +1,7 @@
 const { DesignValidationError, validateResponse, FIELD_TYPES, FONT_FAMILIES, TEMPLATE_RULES, FIELD_RULES } = require('./aiSchema');
 const { normalizeModelOutput } = require('./aiModelNormalizer');
 const { generateDesignFromSketch } = require('./aiSketchProvider');
+const { configuredProvider } = require('./aiHttpProvider');
 
 // Maximum sketch image size: 4MB raw base64
 const MAX_SKETCH_SIZE = 4 * 1024 * 1024;
@@ -40,9 +41,9 @@ Respond in concise English. Strict JSON only.`;
 function parseSketchRequest(body, file) {
   if (!body || typeof body !== 'object') throw new DesignValidationError('Invalid request');
 
-  // Validate prompt
-  const prompt = (body.prompt || '').trim();
-  if (!prompt) throw new DesignValidationError('Describe your desired design style or theme');
+  // A drawing is enough context; style instructions are optional.
+  if (body.prompt !== undefined && typeof body.prompt !== 'string') throw new DesignValidationError('Invalid design instruction');
+  const prompt = (body.prompt || '').trim() || 'Create a premium certificate following the uploaded sketch';
   if (prompt.length > 1200) throw new DesignValidationError('Keep your instruction under 1,200 characters');
 
   // Validate sketch image
@@ -115,13 +116,14 @@ async function designFromSketch({ body, file, req, provider = generateDesignFrom
 
     const count = proposal.variants ? proposal.variants.reduce((n, v) => n + v.design.field_operations.length, 0)
       : proposal.field_operations.length;
-    console.info('[AI sketch design]', { provider: process.env.AI_PROVIDER || 'gemini', status: 'valid',
+    console.info('[AI sketch design]', { provider: configuredProvider() || 'local', status: 'valid',
       latency_ms: Date.now() - started, operation_count: count });
     return proposal;
   } catch (err) {
-    console.warn('[AI sketch design]', { provider: process.env.AI_PROVIDER || 'gemini',
+    console.warn('[AI sketch design]', { provider: configuredProvider() || 'local',
       status: err instanceof DesignValidationError ? 'invalid_output' : 'provider_error',
-      error_type: err.name, validation_reason: err instanceof DesignValidationError ? err.message : undefined,
+      error_type: err.name, error_code: err.code,
+      validation_reason: err instanceof DesignValidationError ? err.message : undefined,
       latency_ms: Date.now() - started });
     throw err;
   }

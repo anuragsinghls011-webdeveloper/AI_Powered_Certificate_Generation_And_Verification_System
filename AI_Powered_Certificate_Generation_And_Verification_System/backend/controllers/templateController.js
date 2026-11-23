@@ -79,7 +79,11 @@ function templatePatch(body = {}) {
 // GET /api/templates
 async function getAllTemplates(req, res) {
   try {
-    const templates = await getTemplatesCol().find(templateScope(req), { projection: { _id: 0 } }).toArray();
+    const projection = req.query.view === 'picker'
+      ? { _id: 0, id: 1, name: 1, organization_id: 1, issuer_name: 1, primary_color: 1,
+        secondary_color: 1, border_style: 1, field_count: { $size: { $ifNull: ['$fields', []] } } }
+      : { _id: 0 };
+    const templates = await getTemplatesCol().find(templateScope(req), { projection }).toArray();
     res.json(templates.map(t => ({ ...t, read_only: !t.organization_id })));
   } catch (err) {
     res.status(err.statusCode || 500).json({ error: err.message });

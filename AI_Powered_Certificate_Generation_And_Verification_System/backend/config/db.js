@@ -15,7 +15,7 @@ async function connectDB() {
     // Indexes for fast querying, multi-tenant scoping, and instant verification
     await Promise.all([
       db.collection('certificates').createIndex({ cert_id: 1 }, { unique: true }),
-      db.collection('certificates').createIndex({ organization_id: 1, created_at: -1 }),
+      db.collection('certificates').createIndex({ organization_id: 1, created_at: -1, cert_id: 1 }),
       db.collection('certificates').createIndex({ organization_id: 1, status: 1 }),
       db.collection('certificates').createIndex({ event_id: 1, cert_id: 1 }),
       db.collection('events').createIndex({ id: 1, organization_id: 1 }),

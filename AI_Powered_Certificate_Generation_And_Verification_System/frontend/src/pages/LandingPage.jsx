@@ -1,33 +1,9 @@
-import React, { useRef } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import React from 'react';
 import { Award, ShieldCheck, KeyRound, ArrowRight, Zap, CheckCircle2 } from 'lucide-react';
 
 export default function LandingPage({ onLogin, onRegister, onVerify }) {
-  const containerRef = useRef(null);
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start start", "end end"]
-  });
-
-  // Background parallax
-  const bgY = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
-  
-  // Hero section transforms
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
-  const heroScale = useTransform(scrollYProgress, [0, 0.2], [1, 0.8]);
-  const heroY = useTransform(scrollYProgress, [0, 0.2], ["0%", "20%"]);
-
-  // Feature cards 3D transform
-  const cardsRotateX = useTransform(scrollYProgress, [0.1, 0.3], [30, 0]);
-  const cardsOpacity = useTransform(scrollYProgress, [0.1, 0.3], [0, 1]);
-  const cardsScale = useTransform(scrollYProgress, [0.1, 0.3], [0.8, 1]);
-  
-  // CTA Section
-  const ctaY = useTransform(scrollYProgress, [0.6, 0.8], ["30%", "0%"]);
-  const ctaOpacity = useTransform(scrollYProgress, [0.6, 0.8], [0, 1]);
-
   return (
-    <div ref={containerRef} className="relative bg-slate-950 font-sans text-slate-100 pb-0 flex flex-col">
+    <div className="relative bg-slate-950 font-sans text-slate-100 pb-0 flex flex-col">
       
       {/* Navbar fixed */}
       <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 md:px-8 md:py-6 bg-slate-950/80 backdrop-blur-md border-b border-white/10 transition-all">
@@ -47,53 +23,39 @@ export default function LandingPage({ onLogin, onRegister, onVerify }) {
       </nav>
 
       {/* Dynamic Background */}
-      <motion.div 
-        style={{ y: bgY }}
+      <div
         className="fixed inset-0 pointer-events-none z-0"
       >
         <div className="absolute top-[-20%] left-[-10%] w-[50vw] h-[50vw] bg-brand-600/20 rounded-full blur-[120px]" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] bg-indigo-600/20 rounded-full blur-[120px]" />
-      </motion.div>
+      </div>
 
       {/* 1. Hero Section */}
-      <div className="sticky top-0 h-screen flex flex-col items-center justify-center px-4 overflow-hidden" style={{ perspective: '1200px' }}>
-        <motion.div 
-          style={{ opacity: heroOpacity, scale: heroScale, y: heroY }}
+      <div className="relative min-h-screen flex flex-col items-center justify-center px-4 overflow-hidden" style={{ perspective: '1200px' }}>
+        <div
           className="relative z-10 grid lg:grid-cols-2 gap-12 items-center max-w-7xl mx-auto mt-16 w-full px-4 lg:px-8"
         >
           <div className="flex flex-col items-center lg:items-start text-center lg:text-left">
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
+            <div
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-8"
             >
               <Zap className="w-4 h-4 text-brand-400" />
               <span className="text-xs md:text-sm font-medium text-slate-300">The new standard in credential management</span>
-            </motion.div>
+            </div>
             
-            <motion.h1 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
+            <h1
               className="text-4xl md:text-6xl lg:text-7xl font-bold font-serif leading-tight mb-6 bg-clip-text text-transparent bg-gradient-to-br from-white via-slate-200 to-slate-500"
             >
               Issue secure certificates <br className="hidden lg:block"/> at the speed of light.
-            </motion.h1>
+            </h1>
             
-            <motion.p 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
+            <p
               className="text-base md:text-xl text-slate-400 max-w-lg mb-10"
             >
               CampusCert Pro automates bulk generation, verifies authenticity via blockchain-grade encryption, and handles multi-role workflows flawlessly.
-            </motion.p>
+            </p>
             
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.8 }}
+            <div
               className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
             >
               <button onClick={onRegister} className="px-8 py-4 bg-brand-600 text-white rounded-xl font-bold text-lg hover:bg-brand-700 transition flex items-center justify-center gap-2 shadow-lg shadow-brand-600/25">
@@ -102,28 +64,12 @@ export default function LandingPage({ onLogin, onRegister, onVerify }) {
               <button onClick={onLogin} className="px-8 py-4 bg-white/5 text-white border border-white/10 rounded-xl font-bold text-lg hover:bg-white/10 transition backdrop-blur-sm">
                 Sign In to Workspace
               </button>
-            </motion.div>
+            </div>
           </div>
 
           {/* 3D Animated Certificate Mockup */}
-          <motion.div
-            initial={{ opacity: 0, x: 50, rotateY: 15, rotateX: 10 }}
-            animate={{ 
-              opacity: 1, 
-              x: 0,
-              rotateY: [-5, 5, -5],
-              rotateX: [5, 15, 5],
-              y: [-15, 15, -15]
-            }}
-            transition={{
-              opacity: { duration: 1, delay: 0.6 },
-              x: { duration: 1, delay: 0.6 },
-              rotateY: { duration: 8, repeat: Infinity, ease: "easeInOut" },
-              rotateX: { duration: 7, repeat: Infinity, ease: "easeInOut" },
-              y: { duration: 6, repeat: Infinity, ease: "easeInOut" }
-            }}
-            style={{ transformStyle: "preserve-3d" }}
-            className="hidden lg:flex relative w-full aspect-[1.414/1] bg-white rounded-xl shadow-[0_0_80px_rgba(79,70,229,0.3)] overflow-hidden p-6"
+          <div
+            className="certificate-mockup hidden lg:flex relative w-full aspect-[1.414/1] bg-white rounded-xl shadow-[0_0_80px_rgba(79,70,229,0.3)] overflow-hidden p-6"
           >
             {/* Colorful gradient border wrapper */}
             <div className="absolute inset-0 m-4 rounded-xl p-[6px] bg-gradient-to-br from-brand-600 via-pink-500 to-amber-400 pointer-events-none shadow-lg">
@@ -158,19 +104,13 @@ export default function LandingPage({ onLogin, onRegister, onVerify }) {
             </div>
             {/* Glass reflection overlay */}
             <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/50 to-white/0 pointer-events-none rounded-xl" />
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </div>
 
       {/* 2. Features Section (3D Scroll) */}
       <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-32" style={{ perspective: '1200px' }}>
-        <motion.div 
-          style={{ 
-            rotateX: cardsRotateX, 
-            opacity: cardsOpacity, 
-            scale: cardsScale,
-            transformStyle: "preserve-3d"
-          }}
+        <div
           className="grid md:grid-cols-3 gap-6 md:gap-8 max-w-6xl mx-auto w-full"
         >
           {[
@@ -189,13 +129,12 @@ export default function LandingPage({ onLogin, onRegister, onVerify }) {
               </div>
             </div>
           ))}
-        </motion.div>
+        </div>
       </div>
 
       {/* 3. CTA Section */}
       <div className="relative z-10 min-h-screen flex items-center justify-center px-4 pb-20">
-        <motion.div 
-          style={{ y: ctaY, opacity: ctaOpacity }}
+        <div
           className="max-w-4xl mx-auto w-full p-8 md:p-20 rounded-[3rem] bg-gradient-to-br from-brand-900 via-brand-800 to-indigo-900 text-center relative overflow-hidden border border-white/10 shadow-2xl shadow-brand-900/40"
         >
           <div className="absolute -top-24 -right-24 opacity-10">
@@ -212,7 +151,7 @@ export default function LandingPage({ onLogin, onRegister, onVerify }) {
               <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4"/> Setup in 2 minutes</span>
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
 
       {/* 4. Footer Section */}

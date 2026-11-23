@@ -57,6 +57,7 @@ export function AuthProvider({ children }) {
 
   const bootstrap = useCallback(async () => {
     try {
+      if (!localStorage.getItem('access_token') && !localStorage.getItem('refresh_token')) return;
       const res = await axios.get(`${API}/auth/me`);
       applySession(sessionSetters, res.data);
     } catch (e) {
@@ -84,7 +85,7 @@ export function AuthProvider({ children }) {
         if (!cfg || cfg._retried) return Promise.reject(err);
         const url = cfg.url || '';
         const isAuthCall = /\/auth\/(login|register|refresh|logout|logout-all|forgot-password|reset-password|verify-email|send-registration-otp)/.test(url);
-        if (err.response?.status === 401 && !isAuthCall) {
+        if (err.response?.status === 401 && !isAuthCall && !url.endsWith('/auth/me')) {
           cfg._retried = true;
           const ok = await silentRefresh();
           if (ok) return axios(cfg);

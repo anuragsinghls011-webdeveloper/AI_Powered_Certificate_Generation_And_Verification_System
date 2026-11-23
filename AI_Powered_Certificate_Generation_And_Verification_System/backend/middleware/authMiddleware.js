@@ -15,18 +15,17 @@ function authenticateUser({ optional = false } = {}) {
     try {
       const db = getDB();
       const decoded = verifyAccessToken(token);
-      const session = await db.collection('sessions').findOne({
-        id: decoded.sid, user_id: decoded.sub, revoked_at: null,
-        expires_at: { $gt: new Date() }
-      }, { projection: { _id: 1 } });
+      const [session, user] = await Promise.all([
+        db.collection('sessions').findOne({
+          id: decoded.sid, user_id: decoded.sub, revoked_at: null, expires_at: { $gt: new Date() }
+        }, { projection: { _id: 1 } }),
+        db.collection('users').findOne(
+          { id: decoded.sub, status: { $ne: 'suspended' } }, { projection: { password_hash: 0 } })
+      ]);
       if (!session) {
         if (optional) return next();
         return res.status(401).json({ error: 'Session expired or revoked' });
       }
-      const user = await db.collection('users').findOne(
-        { id: decoded.sub, status: { $ne: 'suspended' } },
-        { projection: { password_hash: 0 } }
-      );
       if (!user) {
         if (optional) return next();
         return res.status(401).json({ error: 'User not found or suspended' });
@@ -62,16 +61,16 @@ function resolveOrganization({ optional = false } = {}) {
       return res.status(400).json({ error: 'No organization selected' });
     }
     const db = getDB();
-    const membership = await db.collection('organization_memberships').findOne({
-      user_id: req.user.id,
-      organization_id: requestedOrgId,
-      status: 'active'
-    });
+    const [membership, organization] = await Promise.all([
+      db.collection('organization_memberships').findOne({
+        user_id: req.user.id, organization_id: requestedOrgId, status: 'active'
+      }),
+      db.collection('organizations').findOne({ id: requestedOrgId })
+    ]);
     if (!membership) {
       if (optional) return next();
       return res.status(403).json({ error: 'Not a member of this organization' });
     }
-    const organization = await db.collection('organizations').findOne({ id: membership.organization_id });
     if (!organization) return res.status(404).json({ error: 'Organization not found' });
     req.membership = membership;
     req.organization = organization;

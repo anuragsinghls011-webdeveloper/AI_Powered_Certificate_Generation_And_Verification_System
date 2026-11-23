@@ -28,9 +28,9 @@ test('parseSketchRequest: valid base64 payload passes', () => {
   assert.equal(result.sketchBase64, validBase64);
 });
 
-test('parseSketchRequest: rejects missing prompt', () => {
-  assert.throws(() => parseSketchRequest({ prompt: '' }, { mimetype: 'image/png', size: 10, buffer: Buffer.from('x') }),
-    /Describe your desired design style/);
+test('parseSketchRequest: accepts a sketch without style instructions', () => {
+  const result = parseSketchRequest({}, { mimetype: 'image/png', size: 10, buffer: Buffer.from('x') });
+  assert.match(result.prompt, /premium certificate/);
 });
 
 test('parseSketchRequest: rejects oversized prompt (>1200 chars)', () => {
@@ -124,13 +124,21 @@ test('designFromSketch: retries once on invalid model output before throwing', a
 });
 
 test('designFromSketch: executes real sketchBridge.py locally and produces valid template', async () => {
-  const proposal = await designFromSketch({
-    body: {
-      prompt: 'Create a luxurious gold award certificate with serif fonts',
-      sketch_base64: validBase64,
-      sketch_mime: 'image/png'
-    }
-  });
+  const previousProvider = process.env.AI_PROVIDER;
+  process.env.AI_PROVIDER = 'local';
+  let proposal;
+  try {
+    proposal = await designFromSketch({
+      body: {
+        prompt: 'Create a luxurious gold award certificate with serif fonts',
+        sketch_base64: validBase64,
+        sketch_mime: 'image/png'
+      }
+    });
+  } finally {
+    if (previousProvider === undefined) delete process.env.AI_PROVIDER;
+    else process.env.AI_PROVIDER = previousProvider;
+  }
 
   assert.equal(proposal.intent, 'create');
   assert.equal(proposal.replace_existing_fields, true);

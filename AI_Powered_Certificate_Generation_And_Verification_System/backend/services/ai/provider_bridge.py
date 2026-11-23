@@ -4,9 +4,11 @@ import os
 import re
 import sys
 
-from dotenv import load_dotenv
-
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # Production environment variables are supplied by the host.
 
 
 def generate_fallback_design(user_payload_raw):
@@ -60,6 +62,15 @@ def generate_fallback_design(user_payload_raw):
         primary = hex_matches[0].lower()
     if len(hex_matches) >= 2:
         secondary = hex_matches[1].lower()
+
+    title_match = re.search(r'(?:title|heading)\s*[:=-]\s*["\']?([^"\'\n,.;]{4,72})', prompt_text or '', re.I)
+    title = title_match.group(1).strip() if title_match else None
+    if not title:
+        for label in ("COMPLETION", "ACHIEVEMENT", "PARTICIPATION", "EXCELLENCE", "APPRECIATION", "RECOGNITION"):
+            if label.lower() in p:
+                title = f"CERTIFICATE OF {label}"
+                break
+    title = (title or 'CERTIFICATE OF APPRECIATION').upper()
 
     # 1. Check if request is variation
     if "variation" in p or "3 " in p or "three" in p:
@@ -201,11 +212,11 @@ def generate_fallback_design(user_payload_raw):
             "accent_ring": False,
             "gradient_enabled": False,
             "issuer_name": "Authorized Signatory",
-            "issuer_title": "Program Director"
+            "issuer_title": "Issuer Title"
         },
         "field_operations": [
             {"type": "add_field", "field_type": "organization_name", "properties": {"x": 96, "y": 48, "width": 600, "height": 30, "fontSize": 14, "fontFamily": font, "fontWeight": "bold", "textAlign": "center", "color": secondary, "letterSpacing": 2, "textTransform": "uppercase"}},
-            {"type": "add_field", "field_type": "custom_text", "properties": {"x": 64, "y": 82, "width": 664, "height": 52, "text": "CERTIFICATE OF EXCELLENCE", "fontSize": 32, "fontFamily": font, "fontWeight": "bold", "textAlign": "center", "color": primary, "letterSpacing": 3, "textTransform": "uppercase"}},
+            {"type": "add_field", "field_type": "custom_text", "properties": {"x": 64, "y": 82, "width": 664, "height": 52, "text": title, "fontSize": 32, "fontFamily": font, "fontWeight": "bold", "textAlign": "center", "color": primary, "letterSpacing": 3, "textTransform": "uppercase"}},
             {"type": "add_field", "field_type": "custom_text", "properties": {"x": 96, "y": 142, "width": 600, "height": 26, "text": "This certificate is proudly awarded to", "fontSize": 13, "fontFamily": "Helvetica", "fontStyle": "italic", "textAlign": "center", "color": "#4b5563"}},
             {"type": "add_field", "field_type": "recipient_name", "properties": {"x": 64, "y": 174, "width": 664, "height": 56, "fontSize": 38, "fontFamily": font, "fontWeight": "bold", "textAlign": "center", "color": primary}},
             {"type": "add_field", "field_type": "text_block", "properties": {"x": 84, "y": 240, "width": 624, "height": 48, "text": "for demonstrating outstanding commitment, exemplary leadership, and exceptional mastery of core competencies.", "fontSize": 13, "fontFamily": "Helvetica", "textAlign": "center", "color": "#374151"}},
@@ -241,6 +252,8 @@ def main():
         or os.environ.get("EMERGENT_LLM_KEY")
     )
     openai_key = os.environ.get("OPENAI_API_KEY")
+    if os.environ.get("AI_PROVIDER") == "local":
+        gemini_key = openai_key = None
 
     result = None
 

@@ -3,33 +3,27 @@ import axios from 'axios';
 import { API } from './services/api';
 import useNotification from './hooks/useNotification';
 
-// Layout Components
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import Notification from './components/layout/Notification';
-import PreviewModal from './components/certificates/PreviewModal';
-
-// Page Components
-import DashboardPage from './pages/DashboardPage';
-import EventsPage from './pages/EventsPage';
-import BulkGeneratorPage from './pages/BulkGeneratorPage';
-import RepositoryPage from './pages/RepositoryPage';
 import VerifyPage from './pages/VerifyPage';
 import LandingPage from './pages/LandingPage';
-import TeamPage from './pages/TeamPage';
 import { downloadEventReport, reportError } from './services/eventReports';
+import { useAuth } from './auth/AuthContext';
 
-// Feature Components (Lazy loaded for fast initial bundle)
+const PreviewModal = React.lazy(() => import('./components/certificates/PreviewModal'));
+const DashboardPage = React.lazy(() => import('./pages/DashboardPage'));
+const EventsPage = React.lazy(() => import('./pages/EventsPage'));
+const BulkGeneratorPage = React.lazy(() => import('./pages/BulkGeneratorPage'));
+const RepositoryPage = React.lazy(() => import('./pages/RepositoryPage'));
+const TeamPage = React.lazy(() => import('./pages/TeamPage'));
 const EventReportsPage = React.lazy(() => import('./pages/EventReportsPage'));
 const DesignStudio = React.lazy(() => import('./studio/DesignStudio'));
 const BulkStudio = React.lazy(() => import('./BulkStudio'));
-
-// Auth Components
-import { useAuth } from './auth/AuthContext';
-import AuthPages from './auth/AuthPages';
+const AuthPages = React.lazy(() => import('./auth/AuthPages'));
 
 export default function App() {
-  const { user, membership, loading: authLoading } = useAuth();
+  const { user, membership } = useAuth();
   const [activeTab, setActiveTab] = useState(() => {
     const path = window.location.pathname.toLowerCase();
     if (path.startsWith('/verify')) return 'verify';
@@ -42,6 +36,11 @@ export default function App() {
     if (window.location.hash === '#reports' || path.startsWith('/reports')) return 'reports';
     return 'dashboard';
   });
+  return <Workspace activeTab={activeTab} setActiveTab={setActiveTab} key={JSON.stringify([user?.id, membership?.organization_id])} />;
+}
+
+function Workspace({ activeTab, setActiveTab }) {
+  const { user, membership, loading: authLoading } = useAuth();
   const [events, setEvents] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [certificates, setCertificates] = useState([]);
@@ -90,11 +89,32 @@ export default function App() {
   const [previewCert, setPreviewCert] = useState(null);
 
   const reportsOpen = activeTab === 'reports';
+  const [revision, refreshPage] = React.useReducer(value => value + 1, 0);
   useEffect(() => {
-    // Reports fetch their own scoped events/summary; never preload the certificate collection.
-    if (!authLoading && user && !reportsOpen) fetchAllData();
-    // Existing mutation handlers explicitly refresh dashboard data when needed.
-  }, [authLoading, user?.id, membership?.organization_id, reportsOpen]);
+    if (!user || authLoading) return;
+    const controller = new AbortController();
+    const load = (path, apply) => axios.get(API + path, { signal: controller.signal })
+      .then(({ data }) => { if (!controller.signal.aborted) apply(data); })
+      .catch(err => { if (!controller.signal.aborted) showNotification(err.response?.data?.error || 'Unable to load workspace data', 'error'); });
+
+    if (['dashboard', 'events', 'bulk', 'repository'].includes(activeTab)) {
+      load('/events', rows => {
+        setEvents(rows);
+        if (rows.length) setBulkData(prev => prev.event_id ? prev : { ...prev, event_id: rows[0].id });
+      });
+    }
+    if (activeTab === 'dashboard') {
+      load('/analytics', setAnalytics);
+      load('/certificates?limit=5&view=list', setCertificates);
+    }
+    if (activeTab === 'bulk') {
+      load('/templates?view=picker', rows => {
+        setTemplates(rows);
+        if (rows.length) setBulkData(prev => prev.template_id ? prev : { ...prev, template_id: rows[0].id });
+      });
+    }
+    return () => controller.abort();
+  }, [activeTab, authLoading, user?.id, revision, showNotification]);
 
   useEffect(() => {
     if (!generationJob?.id || !['queued', 'processing'].includes(generationJob.status)) return undefined;
@@ -107,7 +127,7 @@ export default function App() {
         if (!['queued', 'processing'].includes(data.status)) {
           clearInterval(timer);
           showNotification(`${data.successful_records} certificate(s) generated; ${data.failed_records} failed.`, data.failed_records ? 'error' : 'success');
-          fetchAllData();
+          refreshPage();
         }
       } catch (error) {
         if (!disposed) { clearInterval(timer); setGenerationJob(job => ({ ...job, status: 'unavailable' })); showNotification('Unable to read job progress. Open Smart Bulk Studio to check the job.', 'error'); }
@@ -133,33 +153,6 @@ export default function App() {
     return () => window.clearInterval(timer);
   }, [activeTab, events]);
 
-  const fetchAllData = async () => {
-    setLoading(true);
-    try {
-      const [evRes, tplRes, certRes, anRes] = await Promise.all([
-        axios.get(`${API}/events`),
-        axios.get(`${API}/templates`),
-        axios.get(`${API}/certificates`),
-        axios.get(`${API}/analytics`)
-      ]);
-      setEvents(evRes.data);
-      setTemplates(tplRes.data);
-      setCertificates(certRes.data);
-      setAnalytics(anRes.data);
-      if (evRes.data.length > 0 && !bulkData.event_id) {
-        setBulkData(prev => ({ ...prev, event_id: evRes.data[0].id }));
-      }
-      if (tplRes.data.length > 0 && !bulkData.template_id) {
-        setBulkData(prev => ({ ...prev, template_id: tplRes.data[0].id }));
-      }
-    } catch (err) {
-      console.error(err);
-      showNotification(`Failed to load data: ${err.message}`, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Event handlers
   const handleCreateEvent = async (e) => {
     e.preventDefault();
@@ -178,7 +171,7 @@ export default function App() {
         organizer: '',
         location: 'Main Campus Auditorium'
       });
-      fetchAllData();
+      refreshPage();
     } catch (err) {
       showNotification('Error creating event', 'error');
     }
@@ -189,7 +182,7 @@ export default function App() {
     try {
       await axios.delete(`${API}/events/${eventId}`);
       showNotification('Event deleted successfully');
-      fetchAllData();
+      refreshPage();
     } catch (err) {
       showNotification('Error deleting event', 'error');
     }
@@ -201,7 +194,7 @@ export default function App() {
       setLoading(true);
       const res = await axios.post(`${API}/events/${eventId}/complete`);
       showNotification(res.data.message);
-      await fetchAllData();
+      refreshPage();
     } catch (err) {
       showNotification(err.response?.data?.error || 'Unable to complete event', 'error');
     } finally {
@@ -214,7 +207,7 @@ export default function App() {
       setLoading(true);
       const res = await axios.post(`${API}/events/${eventId}/report-delivery/retry`);
       showNotification(res.data.message);
-      await fetchAllData();
+      refreshPage();
     } catch (err) {
       showNotification(err.response?.data?.error || 'Unable to retry report', 'error');
     } finally {
@@ -303,7 +296,7 @@ export default function App() {
     try {
       const res = await axios.post(`${API}/certificates/${certId}/send-email`);
       showNotification(res.data.message || 'Email sent successfully');
-      fetchAllData();
+      refreshPage();
     } catch (err) {
       showNotification(err.response?.data?.error || 'Failed to send email', 'error');
     }
@@ -314,7 +307,7 @@ export default function App() {
     try {
       await axios.delete(`${API}/certificates/${certId}`);
       showNotification('Certificate revoked');
-      fetchAllData();
+      refreshPage();
     } catch (err) {
       showNotification('Failed to revoke certificate', 'error');
     }
@@ -326,7 +319,7 @@ export default function App() {
       setLoading(true);
       const res = await axios.post(`${API}/certificates/bulk-revoke`, { cert_ids: certIds });
       showNotification(`${res.data.revoked_count} certificates revoked successfully`);
-      fetchAllData();
+      refreshPage();
       return true;
     } catch (err) {
       showNotification('Failed to revoke certificates', 'error');
@@ -448,7 +441,7 @@ export default function App() {
       } else {
         showNotification(res.data?.message || 'No emails were delivered. Check recipient email addresses.', 'warning');
       }
-      fetchAllData();
+      refreshPage();
     } catch (err) {
       showNotification(err.response?.data?.error || 'Failed to send emails', 'error');
     }
@@ -457,7 +450,7 @@ export default function App() {
   if (authLoading) return <div className="flex h-screen items-center justify-center text-slate-500">Loading...</div>;
   if (!user) {
     if (showAuth) {
-      return <AuthPages initialMode={authMode} onBack={() => setShowAuth(false)} />;
+      return <React.Suspense fallback={<div role="status">Loading sign in...</div>}><AuthPages initialMode={authMode} onBack={() => setShowAuth(false)} /></React.Suspense>;
     }
     if (showVerifyPublic) {
       return (
@@ -501,7 +494,7 @@ export default function App() {
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        certificateCount={reportsOpen ? null : certificates.length}
+        certificateCount={activeTab === 'dashboard' ? analytics?.total_certificates : null}
       />
 
       <main className={`flex-1 w-full mx-auto p-4 md:p-8 ${activeTab === 'design' ? 'max-w-[1920px]' : 'max-w-7xl'}`}>
@@ -569,7 +562,7 @@ export default function App() {
 
         {activeTab === 'repository' && (
           <RepositoryPage
-            certificates={certificates}
+            revision={revision}
             events={events}
             onSendEmail={handleSendEmail}
             onRevoke={handleRevoke}
@@ -580,7 +573,7 @@ export default function App() {
         )}
 
         {activeTab === 'design' && (
-          <DesignStudio notify={showNotification} onTemplatesChanged={fetchAllData} />
+          <DesignStudio notify={showNotification} />
         )}
 
         {activeTab === 'verify' && (
@@ -593,12 +586,11 @@ export default function App() {
         </React.Suspense>
       </main>
 
-      <PreviewModal
+      {previewCert && <React.Suspense fallback={<div role="status">Loading preview...</div>}><PreviewModal
         cert={previewCert}
-        template={previewCert ? templates.find(t => t.id === previewCert.template_id) : null}
         onClose={() => setPreviewCert(null)}
         apiBase={API}
-      />
+      /></React.Suspense>}
 
       <Footer />
     </div>

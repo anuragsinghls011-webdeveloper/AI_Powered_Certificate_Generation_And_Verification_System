@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowUp, CircleHelp, Pencil, RotateCcw, Sparkles, Wand2, X } from 'lucide-react';
+import { AlertCircle, ArrowUp, CircleHelp, Pencil, RotateCcw, Sparkles, Wand2, X } from 'lucide-react';
 import { API } from '../../services/api';
 import CertificateSurface from '../CertificateSurface';
 import { compactDesign, designDiff, designFingerprint, previewDesign } from './aiDesignUtils';
@@ -28,16 +28,18 @@ const STAGES = ['Analyzing your design…', 'Building the layout…', 'Checking 
 function errorMessage(err) {
   if (err.response?.status === 401 || err.response?.status === 403) return 'Your session cannot use the AI designer. Please sign in with design access.';
   if (err.response?.status === 413) return 'This request is too large. Try a shorter instruction.';
+  if (err.response?.data?.code && typeof err.response.data.error === 'string') return err.response.data.error;
   if (err.response?.status === 429) return 'Too many requests. Please try again shortly.';
-  if (err.response?.status === 422) return "I couldn't safely apply that design change. Try a more specific instruction.";
+  if (err.response?.status === 422) return err.response.data?.error || "I couldn't safely apply that design change. Try a more specific instruction.";
   if (err.code === 'ECONNABORTED') return 'The designer took too long. Please try again.';
+  if (err.code === 'ERR_NETWORK') return 'Could not connect to the backend. Check your connection and try again.';
   return 'The AI designer is unavailable right now. Your design has not changed.';
 }
 
 const MODES = [
-  { id: 'chat', label: 'AI Chat', icon: Sparkles, description: 'Describe in words' },
-  { id: 'sketch', label: 'Sketch to Template', icon: Pencil, description: 'Upload a drawing' },
-  { id: 'background', label: 'AI Frames', icon: Wand2, description: 'Nano Banana frames' }
+  { id: 'chat', label: 'Chat', icon: Sparkles, description: 'Describe in words' },
+  { id: 'sketch', label: 'Sketch', icon: Pencil, description: 'Upload a drawing' },
+  { id: 'background', label: 'Frames', icon: Wand2, description: 'Decorative backgrounds' }
 ];
 
 export default function AIDesignAssistant({
@@ -74,7 +76,7 @@ export default function AIDesignAssistant({
     if (mode === 'chat') {
       conversationEnd.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
     }
-  }, [messages, proposal, mode]);
+  }, [messages, proposal, error, mode]);
 
   useEffect(() => {
     if (!loading) return undefined;
@@ -110,9 +112,14 @@ export default function AIDesignAssistant({
       setProposal({ fingerprint, choices, variants });
       setMessages(prev => [...prev, { role: 'assistant', content: design.summary.slice(0, 360) }]);
     } catch (err) {
-      if (!axios.isCancel(err)) setError(err.response ? errorMessage(err) :
-        err.message?.includes('Invalid') || err.message?.includes('Unsafe') || err.message?.includes('Unsupported') ?
-          "I couldn't safely apply that design change. Try a more specific instruction." : errorMessage(err));
+      if (!axios.isCancel(err)) {
+        setPrompt(instruction);
+        setMessages(prev => prev[prev.length - 1]?.role === 'user' && prev[prev.length - 1]?.content === instruction
+          ? prev.slice(0, -1) : prev);
+        setError(err.response ? errorMessage(err) :
+          err.message?.includes('Invalid') || err.message?.includes('Unsafe') || err.message?.includes('Unsupported') ?
+            "I couldn't safely apply that design change. Try a more specific instruction." : errorMessage(err));
+      }
     } finally {
       setLoading(false);
       controller.current = null;
@@ -139,13 +146,13 @@ export default function AIDesignAssistant({
   const modalScale = Math.min(0.84, (typeof window === 'undefined' ? 350 : window.innerWidth - 40) / 792);
 
   return (
-    <div data-testid="ai-design-assistant" className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-[#fcfbf9] shadow-xl shadow-slate-900/10">
+    <div data-testid="ai-design-assistant" className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-[#fcfbf9] shadow-2xl shadow-slate-900/15">
       {/* Top Header with gradient & Mode Switcher */}
-      <div className="shrink-0 relative overflow-hidden bg-slate-950 px-5 py-4 text-white">
+      <div className="shrink-0 relative overflow-hidden bg-slate-950 px-4 py-4 text-white">
         <div className="absolute -top-16 -right-6 h-40 w-40 rounded-full bg-amber-400/15 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-10 -left-6 h-32 w-32 rounded-full bg-violet-500/20 blur-3xl pointer-events-none" />
         <div className="relative flex items-start justify-between gap-3">
-          <div className="flex gap-3 items-start">
+          <div className="flex min-w-0 gap-3 items-start">
             <div className={`rounded-xl border p-2.5 transition-colors ${
               mode === 'sketch'
                 ? 'border-violet-300/20 bg-violet-400/10 text-violet-300'
@@ -155,38 +162,38 @@ export default function AIDesignAssistant({
             }`}>
               {mode === 'sketch' ? <Pencil size={18} /> : mode === 'background' ? <Wand2 size={18} /> : <Sparkles size={18} />}
             </div>
-            <div>
+            <div className="min-w-0">
               <p data-testid="ai-assistant-title" className="font-serif text-base font-bold leading-tight">
                 {mode === 'sketch'
                   ? 'Sketch-to-Template'
                   : mode === 'background'
-                  ? 'AI Frame & Background (Nano Banana)'
+                  ? 'AI Frames'
                   : 'AI Design Assistant'}
               </p>
               <p className="mt-0.5 text-[11px] leading-relaxed text-slate-300">
                 {mode === 'sketch'
                   ? 'Convert hand-drawn pen sketches into editable certificates'
                   : mode === 'background'
-                  ? 'Generate ornate borders, guilloche filigree & gold foil frames'
+                  ? 'Generate decorative certificate backgrounds'
                   : 'Describe changes in natural language or create from scratch'}
               </p>
             </div>
           </div>
           <button data-testid="ai-sidebar-close" type="button" onClick={onClose} aria-label="Close AI assistant"
-            className="rounded-lg p-1.5 text-slate-300 hover:bg-white/10 hover:text-white transition-colors">
+            className="shrink-0 rounded-lg p-1.5 text-slate-300 hover:bg-white/10 hover:text-white transition-colors">
             <X size={17} />
           </button>
         </div>
 
         {/* Mode Tabs */}
-        <div className="relative mt-3.5 flex rounded-xl bg-white/10 p-1" data-testid="ai-mode-tabs">
+        <div className="relative mt-4 grid grid-cols-3 gap-1 rounded-xl bg-white/10 p-1" data-testid="ai-mode-tabs">
           {MODES.map(m => (
             <button
               key={m.id}
               data-testid={`ai-mode-${m.id}`}
               type="button"
               onClick={() => setMode(m.id)}
-              className={`flex-1 flex items-center justify-center gap-1 rounded-lg py-1.5 text-[11px] font-semibold transition-all duration-200
+              className={`flex min-w-0 items-center justify-center gap-1.5 rounded-lg px-1 py-2 text-xs font-semibold transition-all duration-200
                 ${mode === m.id
                   ? 'bg-white text-slate-900 shadow-sm'
                   : 'text-slate-300 hover:text-white hover:bg-white/5'
@@ -250,7 +257,17 @@ export default function AIDesignAssistant({
               </div>
             </div>
           )}
-          {error && <p data-testid="ai-error" role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">{error}</p>}
+          {error && <div data-testid="ai-error" role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-3.5 text-xs text-rose-900">
+            <div className="flex items-start gap-2.5">
+              <AlertCircle size={17} className="mt-0.5 shrink-0 text-rose-600" />
+              <div className="min-w-0 flex-1">
+                <p className="font-bold">Could not generate the design</p>
+                <p className="mt-1 leading-relaxed">{error}</p>
+                {prompt.trim() && <button type="button" onClick={() => submit()} disabled={loading}
+                  className="mt-2 rounded-lg border border-rose-300 bg-white px-3 py-1.5 font-semibold text-rose-800 hover:bg-rose-100">Try again</button>}
+              </div>
+            </div>
+          </div>}
           {stale && <p data-testid="ai-stale-proposal" role="alert" className="rounded-xl bg-amber-50 p-3 text-xs text-amber-900">The canvas changed. Generate again to work from its latest state.</p>}
           {proposal && !stale && (proposal.variants ?
             <AIVariants choices={proposal.choices} onApply={applyChoice} onCancel={() => setProposal(null)} onPreview={setPreviewIndex} /> :
@@ -260,20 +277,28 @@ export default function AIDesignAssistant({
         </div>
 
         <div className="shrink-0 border-t border-slate-200 bg-white p-3.5 space-y-2.5">
-          <div data-testid="ai-quick-actions" className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin">
-            {ACTIONS.map(([label, value], i) => (
+          <div data-testid="ai-quick-actions" className="grid grid-cols-2 gap-1.5">
+            {ACTIONS.slice(0, 4).map(([label, value], i) => (
               <button key={label} data-testid={`ai-action-${i}`} type="button" disabled={loading}
-                onClick={() => setPrompt(value)}
-                className="shrink-0 rounded-full border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-700 hover:border-amber-400 hover:bg-amber-50 disabled:opacity-50 transition-colors">
+                onClick={() => { setPrompt(value); setError(''); }}
+                className="min-w-0 rounded-lg border border-slate-200 px-2 py-1.5 text-[11px] font-semibold text-slate-700 hover:border-amber-400 hover:bg-amber-50 disabled:opacity-50 transition-colors">
                 {label}
               </button>
             ))}
           </div>
+          <details className="group text-[11px] text-slate-600">
+            <summary className="cursor-pointer font-semibold hover:text-slate-900">More ideas</summary>
+            <div className="mt-2 grid grid-cols-2 gap-1.5">
+              {ACTIONS.slice(4).map(([label, value], i) => <button key={label} type="button"
+                data-testid={`ai-action-${i + 4}`} disabled={loading} onClick={() => { setPrompt(value); setError(''); }}
+                className="rounded-lg border border-slate-200 px-2 py-1.5 font-medium hover:border-amber-400 hover:bg-amber-50 disabled:opacity-50">{label}</button>)}
+            </div>
+          </details>
           {!messages.length && (
             <div className="flex flex-wrap gap-1.5">
               {SUGGESTIONS.map((text, i) => (
                 <button key={text} data-testid={`ai-suggestion-${i}`} type="button"
-                  onClick={() => setPrompt(text)}
+                  onClick={() => { setPrompt(text); setError(''); }}
                   className="text-[11px] text-amber-800 hover:text-amber-950 underline underline-offset-2 transition-colors">
                   {text}
                 </button>
@@ -282,7 +307,7 @@ export default function AIDesignAssistant({
           )}
           <form data-testid="ai-prompt-form" onSubmit={e => { e.preventDefault(); submit(); }}
             className="relative rounded-xl border border-slate-300 bg-slate-50 focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-100 transition-colors">
-            <textarea data-testid="ai-prompt-input" value={prompt} onChange={e => setPrompt(e.target.value)} maxLength={1200}
+            <textarea data-testid="ai-prompt-input" value={prompt} onChange={e => { setPrompt(e.target.value); if (error) setError(''); }} maxLength={1200}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }}
               placeholder="Describe your certificate or ask for a change…" rows={2} disabled={loading}
               className="w-full resize-none bg-transparent p-3 pr-12 text-xs text-slate-900 placeholder:text-slate-400 outline-none disabled:opacity-50" />

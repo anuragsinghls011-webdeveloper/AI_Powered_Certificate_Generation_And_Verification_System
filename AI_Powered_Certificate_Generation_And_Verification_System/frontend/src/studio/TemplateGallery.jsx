@@ -20,7 +20,7 @@ export default function TemplateGallery({
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('');
 
-  const prepared = useMemo(() => templates.map((t) => normalizeTemplate(t)), [templates]);
+  const prepared = useMemo(() => open ? templates.map((t) => normalizeTemplate(t)) : [], [templates, open]);
 
   const categories = useMemo(() => {
     const set = new Set();

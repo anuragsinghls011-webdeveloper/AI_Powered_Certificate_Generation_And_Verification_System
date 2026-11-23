@@ -5,6 +5,7 @@ const { requirePermission } = require('../middleware/authMiddleware');
 const { design } = require('../services/ai/aiDesignService');
 const { designFromSketch } = require('../services/ai/aiSketchService');
 const { DesignValidationError } = require('../services/ai/aiSchema');
+const { AiProviderError } = require('../services/ai/aiHttpProvider');
 
 const router = express.Router();
 const limiter = rateLimit({ windowMs: 10 * 60 * 1000, limit: 20, standardHeaders: 'draft-7',
@@ -52,6 +53,9 @@ router.post('/design', requirePermission('templates.create'), limiter, async (re
     if (err instanceof DesignValidationError) {
       return res.status(422).json({ error: 'I couldn\'t safely apply that design change. Please try a more specific instruction.' });
     }
+    if (err instanceof AiProviderError) {
+      return res.status(err.httpStatus).json({ error: err.publicMessage, code: err.code });
+    }
     if (err.statusCode === 404) return res.status(404).json({ error: 'Template not found in this organization' });
     return res.status(503).json({ error: 'The AI designer is unavailable right now. Your design has not changed.' });
   }
@@ -65,6 +69,9 @@ router.post('/design-from-sketch', requirePermission('templates.create'), sketch
   } catch (err) {
     if (err instanceof DesignValidationError) {
       return res.status(422).json({ error: err.message || 'Could not create a valid design from this sketch. Try a different sketch or more specific prompt.' });
+    }
+    if (err instanceof AiProviderError) {
+      return res.status(err.httpStatus).json({ error: err.publicMessage, code: err.code });
     }
     if (err.statusCode === 404) return res.status(404).json({ error: 'Template not found in this organization' });
     return res.status(503).json({ error: 'The AI sketch designer is unavailable right now. Please try again later.' });

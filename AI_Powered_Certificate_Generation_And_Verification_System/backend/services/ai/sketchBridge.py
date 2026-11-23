@@ -23,9 +23,11 @@ import sys
 import traceback
 from pathlib import Path
 
-from dotenv import load_dotenv
-
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # Production environment variables are supplied by the host.
 
 CANVAS_W = 792
 CANVAS_H = 560
@@ -177,14 +179,15 @@ def analyze_sketch_with_cv(image_bytes, prompt_info):
         blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 15, 8
     )
 
-    # Find external contours
-    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # Include contours nested inside a drawn frame; external-only detection sees
+    # the outer border and misses all of the title/recipient/event boxes.
+    contours, _ = cv2.findContours(thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
 
     has_outer_border = False
     qr_detected = False
     qr_pos = {"x": 648, "y": 420, "width": 84, "height": 84} # default bottom-right
-    signature_left = True
-    signature_right = True
+    layout_boxes = []
+    qr_candidates = []
 
     # Check for outer border and layout features
     for c in contours:
@@ -200,15 +203,45 @@ def analyze_sketch_with_cv(image_bytes, prompt_info):
         # QR code detection: square-like box in bottom half
         aspect = w / max(h, 1)
         if 0.75 <= aspect <= 1.3 and 0.05 < w_ratio < 0.25 and y > orig_h * 0.5:
-            norm_x = int((x / orig_w) * CANVAS_W)
-            norm_y = int((y / orig_h) * CANVAS_H)
-            norm_w = 84
-            norm_h = 84
-            # Bound inside canvas margins
-            clamped_x = max(48, min(norm_x, CANVAS_W - 48 - norm_w))
-            clamped_y = max(48, min(norm_y, CANVAS_H - 48 - norm_h))
-            qr_pos = {"x": clamped_x, "y": clamped_y, "width": norm_w, "height": norm_h}
-            qr_detected = True
+            qr_candidates.append((w * h, x, y))
+
+        # Wide sketched boxes are useful placement hints for the main text zones.
+        # Reject the outer frame, short handwriting strokes and footer rules.
+        if 0.28 <= w_ratio <= 0.86 and 0.045 <= h_ratio <= 0.16 and y < orig_h * 0.68:
+            layout_boxes.append((x, y, w, h))
+
+    if qr_candidates:
+        _, x, y = max(qr_candidates)
+        norm_x = int((x / orig_w) * CANVAS_W)
+        norm_y = int((y / orig_h) * CANVAS_H)
+        qr_pos = {"x": max(48, min(norm_x, CANVAS_W - 132)),
+                  "y": max(48, min(norm_y, CANVAS_H - 132)),
+                  "width": 84, "height": 84}
+        qr_detected = True
+
+    # Keep only distinct zones: a double-stroked box can create two contours.
+    layout_boxes.sort(key=lambda box: box[1])
+    distinct_boxes = []
+    for box in layout_boxes:
+        if all(abs(box[1] - other[1]) > orig_h * 0.045 for other in distinct_boxes):
+            distinct_boxes.append(box)
+
+    def mapped_zone(box, fallback):
+        if box is None:
+            return fallback
+        x, y, w, h = box
+        mapped_x = max(48, min(int(x / orig_w * CANVAS_W), 700))
+        mapped_y = max(48, min(int(y / orig_h * CANVAS_H), 445))
+        mapped_w = max(180, min(int(w / orig_w * CANVAS_W), 744 - mapped_x))
+        mapped_h = max(30, min(int(h / orig_h * CANVAS_H), 64))
+        return {"x": mapped_x, "y": mapped_y, "width": mapped_w, "height": mapped_h}
+
+    title_zone = mapped_zone(distinct_boxes[0] if len(distinct_boxes) > 0 else None,
+                             {"x": 64, "y": 82, "width": 664, "height": 52})
+    recipient_zone = mapped_zone(distinct_boxes[1] if len(distinct_boxes) > 1 else None,
+                                 {"x": 64, "y": 174, "width": 664, "height": 56})
+    event_zone = mapped_zone(distinct_boxes[2] if len(distinct_boxes) > 2 else None,
+                             {"x": 96, "y": 298, "width": 600, "height": 34})
 
     # Assemble template_changes
     p = prompt_info
@@ -224,8 +257,8 @@ def analyze_sketch_with_cv(image_bytes, prompt_info):
         "corner_radius": 8 if p["style"] == "modern" else 0,
         "accent_ring": True if p["style"] == "classic" else False,
         "gradient_enabled": False,
-        "issuer_name": "Dr. Arthur Vance",
-        "issuer_title": "Dean & Academic Director"
+        "issuer_name": "Authorized Signatory",
+        "issuer_title": "Issuer Title"
     }
 
     # Font configuration
@@ -262,7 +295,7 @@ def analyze_sketch_with_cv(image_bytes, prompt_info):
             "type": "add_field",
             "field_type": "custom_text",
             "properties": {
-                "x": 64, "y": 82, "width": 664, "height": 52,
+                **title_zone,
                 "text": p["title"],
                 "fontSize": 32, "fontFamily": heading_font, "fontWeight": "bold",
                 "textAlign": "center", "color": p["primary_color"],
@@ -285,7 +318,7 @@ def analyze_sketch_with_cv(image_bytes, prompt_info):
             "type": "add_field",
             "field_type": "recipient_name",
             "properties": {
-                "x": 64, "y": 174, "width": 664, "height": 56,
+                **recipient_zone,
                 "fontSize": 38, "fontFamily": heading_font, "fontWeight": "bold",
                 "textAlign": "center", "color": p["primary_color"],
                 "underline": False
@@ -307,7 +340,7 @@ def analyze_sketch_with_cv(image_bytes, prompt_info):
             "type": "add_field",
             "field_type": "event_title",
             "properties": {
-                "x": 96, "y": 298, "width": 600, "height": 34,
+                **event_zone,
                 "fontSize": 18, "fontFamily": heading_font, "fontWeight": "bold",
                 "textAlign": "center", "color": p["secondary_color"]
             }
@@ -384,7 +417,7 @@ def analyze_sketch_with_cv(image_bytes, prompt_info):
 
     notes = [
         "Analyzed hand-drawn sketch structure and spatial layout zones.",
-        f"Detected { 'drawn outer certificate border' if has_outer_border else 'standard content boundaries' }.",
+        f"Detected { 'drawn outer certificate border' if has_outer_border else 'standard content boundaries' } and {len(distinct_boxes)} text zones.",
         f"Mapped layout to 792x560 canvas with {p['style']} styling and {p['font_family']} typography.",
         "Positioned verification QR code and authorized signatory section in balanced footer."
     ]
@@ -400,7 +433,9 @@ def analyze_sketch_with_cv(image_bytes, prompt_info):
         "template_changes": template_changes,
         "field_operations": fields,
         "design_notes": notes,
-        "warnings": [],
+        "warnings": [] if distinct_boxes or has_outer_border or qr_detected else [
+            "No clear layout zones were detected in the sketch; a standard editable layout was used."
+        ],
         "replace_existing_fields": True
     }
 
@@ -515,6 +550,8 @@ def main():
         or os.environ.get("EMERGENT_LLM_KEY")
     )
     openai_key = os.environ.get("OPENAI_API_KEY")
+    if os.environ.get("AI_PROVIDER") == "local":
+        gemini_key = openai_key = None
 
     result = None
 

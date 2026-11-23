@@ -4,6 +4,7 @@ const { buildPrompt } = require('./aiPromptBuilder');
 const { normalizeModelOutput } = require('./aiModelNormalizer');
 const { FIELD_TYPES, DesignValidationError, validateResponse } = require('./aiSchema');
 const { generateDesign } = require('./aiProvider');
+const { configuredProvider } = require('./aiHttpProvider');
 
 const META_KEYS = ['name', 'style', 'category', 'primary_color', 'secondary_color', 'background_color',
   'border_style', 'border_width', 'corner_radius', 'accent_ring', 'gradient_enabled', 'gradient_from',
@@ -98,13 +99,14 @@ async function design({ body, req, provider = generateDesign, signal }) {
     }
     const count = proposal.variants ? proposal.variants.reduce((n, v) => n + v.design.field_operations.length, 0)
       : proposal.field_operations.length;
-    console.info('[AI design]', { provider: process.env.AI_PROVIDER || 'gemini', status: 'valid',
+    console.info('[AI design]', { provider: configuredProvider() || 'local', status: 'valid',
       latency_ms: Date.now() - started, operation_count: count });
     return proposal;
   } catch (err) {
-    console.warn('[AI design]', { provider: process.env.AI_PROVIDER || 'gemini',
+    console.warn('[AI design]', { provider: configuredProvider() || 'local',
       status: err instanceof DesignValidationError ? 'invalid_output' : 'provider_error',
-      error_type: err.name, validation_reason: err instanceof DesignValidationError ? err.message : undefined,
+      error_type: err.name, error_code: err.code,
+      validation_reason: err instanceof DesignValidationError ? err.message : undefined,
       latency_ms: Date.now() - started });
     throw err;
   }

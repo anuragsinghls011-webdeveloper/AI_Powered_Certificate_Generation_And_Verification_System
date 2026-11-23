@@ -15,6 +15,14 @@ import {
  *  - PDFKit rotates around the field's raw origin (x, y·SCALE_Y), so the CSS
  *    transform-origin is moved back up by that same offset.
  */
+if (typeof document !== 'undefined' && !document.getElementById('certificate-fonts')) {
+  const link = document.createElement('link');
+  link.id = 'certificate-fonts';
+  link.rel = 'stylesheet';
+  link.href = 'https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,700;1,400;1,700&family=Great+Vibes&family=Oswald:wght@400;700&family=Lato:ital,wght@0,400;0,700;1,400;1,700&family=Merriweather:ital,wght@0,400;0,700;1,400;1,700&family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400;1,700&family=Alex+Brush&display=swap';
+  document.head.appendChild(link);
+}
+
 export default function FieldView({
   testId,
   field,

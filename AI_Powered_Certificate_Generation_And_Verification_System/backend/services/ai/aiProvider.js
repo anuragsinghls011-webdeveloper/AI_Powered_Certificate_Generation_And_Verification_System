@@ -1,8 +1,16 @@
 const { spawn } = require('child_process');
 const path = require('path');
+const { AiProviderError, configuredProvider, requestDesign } = require('./aiHttpProvider');
 
 // Fixed, trusted bridge; provider-specific logic stays out of Express and the browser.
-function generateDesign({ system, user, signal }) {
+async function generateDesign({ system, user, signal }) {
+  if (configuredProvider()) return requestDesign({ system, user, signal });
+  if (process.env.AI_PROVIDER !== 'local') throw new AiProviderError('AI_NOT_CONFIGURED',
+    'The backend AI key is not configured. Ask the site administrator to set GEMINI_API_KEY or OPENAI_API_KEY.');
+  return generateLocalDesign({ system, user, signal });
+}
+
+function generateLocalDesign({ system, user, signal }) {
   const provider = process.env.AI_PROVIDER || 'gemini';
   const model = process.env.AI_MODEL || 'gemini-2.5-flash';
   const pythonBin = process.env.AI_PYTHON_BIN || (process.platform === 'win32' ? 'python' : 'python3');

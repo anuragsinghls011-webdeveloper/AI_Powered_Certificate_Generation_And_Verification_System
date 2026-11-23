@@ -70,7 +70,7 @@ export default function BulkStudio({ notify }) {
       try {
         const [l, t, e, jh, sm] = await Promise.all([
           axios.get(`${API}/bulk/limits`),
-          axios.get(`${API}/templates`),
+          axios.get(`${API}/templates?view=picker`),
           axios.get(`${API}/events`),
           axios.get(`${API}/bulk/jobs`),
           axios.get(`${API}/bulk/saved-mappings`),
@@ -854,7 +854,7 @@ function TemplateStep({ templates, selectedId, setSelectedId }) {
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded" style={{ background: t.primary_color, color: 'white' }}>Primary</span>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded border" style={{ borderColor: t.secondary_color, color: t.secondary_color }}>Accent</span>
               </div>
-              <p className="text-xs text-slate-400 mt-3">{(t.fields || []).length} fields · {t.border_style} border</p>
+              <p className="text-xs text-slate-400 mt-3">{t.field_count} fields · {t.border_style} border</p>
             </button>
           );
         })}
