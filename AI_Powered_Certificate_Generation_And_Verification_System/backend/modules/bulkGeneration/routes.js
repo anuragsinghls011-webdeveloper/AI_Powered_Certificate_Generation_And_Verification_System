@@ -16,6 +16,7 @@ const { suggestMappings, REQUIRED } = require('./columnMapper');
 const { validateRows, invertMapping } = require('./validationEngine');
 const { renderCertificatePdfBuffer } = require('./certificateRenderer');
 const { deliverCertificate } = require('../../services/certificateEmailService');
+const storageService = require('../../services/storageService');
 
 const upload = multer({
   storage: multer.memoryStorage(),

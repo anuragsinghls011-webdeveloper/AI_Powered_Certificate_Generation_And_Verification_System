@@ -547,11 +547,16 @@ const mw = require('../middleware/authMiddleware');
   router.post('/resend-verification', mw.authenticateUser(), workLimit('auth-email'), async (req, res) => {
     if (req.user.email_verified) return res.status(400).json({ error: 'Email already verified' });
     const rawToken = crypto.randomInt(100000, 1000000).toString();
-    await getDB().collection('email_verification_tokens').insertOne({
+    const tokens = getDB().collection('email_verification_tokens');
+    const { insertedId } = await tokens.insertOne({
       user_id: req.user.id, token_hash: sha256(rawToken),
       expires_at: inSecondsFromNow(60 * 60 * 24), used_at: null, created_at: nowIso()
     });
     const emailResult = await sendVerificationEmail(req.user, rawToken);
+    if (!emailResult.delivered) {
+      await tokens.deleteOne({ _id: insertedId });
+      return res.status(502).json({ error: 'Failed to send verification email. Please try again.' });
+    }
     res.json({
       message: 'Verification email sent',
       delivered: Boolean(emailResult.delivered)
@@ -559,51 +564,58 @@ const mw = require('../middleware/authMiddleware');
   });
 
   // ================= FORGOT / RESET PASSWORD =================
-  router.post('/forgot-password', forgotLimiter, workLimit('auth-email'), async (req, res) => {
-    const email = String(req.body?.email || '').trim().toLowerCase();
-    // Always respond OK to avoid email enumeration
-    const user = await getDB().collection('users').findOne({ email });
-    if (user) {
-      const rawToken = randomTokenUrl64();
-      await getDB().collection('password_reset_tokens').insertOne({
-        user_id: user.id, token_hash: sha256(rawToken),
-        expires_at: inSecondsFromNow(60 * 60), used_at: null, created_at: nowIso()
-      });
-      const emailResult = await sendPasswordResetEmail(user, rawToken);
-      await logAudit(getDB(), { action: 'AUTH_PASSWORD_RESET_REQUESTED', user_id: user.id, ip: req.ip });
-      return res.json({
-        message: 'If that account exists, a reset email has been sent.'
-      });
-    }
-    res.json({ message: 'If that account exists, a reset email has been sent.' });
+  router.post('/forgot-password', forgotLimiter, workLimit('auth-email'), async (req, res, next) => {
+    try {
+      const email = String(req.body?.email || '').trim().toLowerCase();
+      if (!HAS_KEY()) return res.status(503).json({ error: 'Password reset email is temporarily unavailable. Please try again later.' });
+      const user = await getDB().collection('users').findOne({ email });
+      if (user) {
+        const rawToken = randomTokenUrl64();
+        const tokens = getDB().collection('password_reset_tokens');
+        const { insertedId } = await tokens.insertOne({
+          user_id: user.id, token_hash: sha256(rawToken),
+          expires_at: inSecondsFromNow(60 * 60), used_at: null, created_at: nowIso()
+        });
+        const emailResult = await sendPasswordResetEmail(user, rawToken);
+        if (!emailResult.delivered) await tokens.deleteOne({ _id: insertedId });
+        await logAudit(getDB(), { action: 'AUTH_PASSWORD_RESET_REQUESTED', user_id: user.id, delivered: emailResult.delivered, ip: req.ip });
+      }
+      res.json({ message: 'If that address belongs to an account, check your inbox and spam folder for a reset link. If it does not arrive, try again later.' });
+    } catch (err) { next(err); }
   });
 
-  router.post('/reset-password', async (req, res) => {
-    const token = String(req.body?.token || '').trim();
-    const newPassword = String(req.body?.new_password || '');
-    if (!token) return res.status(400).json({ error: 'Token required' });
-    const strengthErr = validatePasswordStrength(newPassword);
-    if (strengthErr) return res.status(400).json({ error: strengthErr });
+  router.post('/reset-password', async (req, res, next) => {
+    try {
+      const token = String(req.body?.token || '').trim();
+      const newPassword = String(req.body?.new_password || '');
+      if (!token) return res.status(400).json({ error: 'Token required' });
+      const strengthErr = validatePasswordStrength(newPassword);
+      if (strengthErr) return res.status(400).json({ error: strengthErr });
 
-    const rec = await getDB().collection('password_reset_tokens').findOne({
-      token_hash: sha256(token), used_at: null
-    });
-    if (!rec) return res.status(400).json({ error: 'Invalid or already-used token' });
-    if (new Date(rec.expires_at) < new Date()) return res.status(400).json({ error: 'Token expired' });
+      const rec = await getDB().collection('password_reset_tokens').findOne({
+        token_hash: sha256(token), used_at: null
+      });
+      if (!rec) return res.status(400).json({ error: 'Invalid or already-used token' });
+      if (new Date(rec.expires_at) < new Date()) return res.status(400).json({ error: 'Token expired' });
 
-    const passwordHash = await hashPassword(newPassword);
-    await getDB().collection('users').updateOne(
-      { id: rec.user_id },
-      { $set: { password_hash: passwordHash, updated_at: nowIso() } }
-    );
-    await getDB().collection('password_reset_tokens').updateOne({ _id: rec._id }, { $set: { used_at: nowIso() } });
-    // Revoke all sessions on reset
-    await getDB().collection('sessions').updateMany(
-      { user_id: rec.user_id, revoked_at: null },
-      { $set: { revoked_at: nowIso(), revoke_reason: 'password_reset' } }
-    );
-    await logAudit(getDB(), { action: 'AUTH_PASSWORD_RESET', user_id: rec.user_id, ip: req.ip });
-    res.json({ message: 'Password reset. Please log in again.' });
+      const passwordHash = await hashPassword(newPassword);
+      const claimed = await getDB().collection('password_reset_tokens').updateOne(
+        { _id: rec._id, used_at: null, expires_at: { $gt: typeof rec.expires_at === 'string' ? nowIso() : new Date() } },
+        { $set: { used_at: nowIso() } }
+      );
+      if (!claimed.modifiedCount) return res.status(400).json({ error: 'Invalid, expired or already-used token' });
+      await getDB().collection('users').updateOne(
+        { id: rec.user_id },
+        { $set: { password_hash: passwordHash, updated_at: nowIso() } }
+      );
+      // Revoke all sessions on reset
+      await getDB().collection('sessions').updateMany(
+        { user_id: rec.user_id, revoked_at: null },
+        { $set: { revoked_at: nowIso(), revoke_reason: 'password_reset' } }
+      );
+      await logAudit(getDB(), { action: 'AUTH_PASSWORD_RESET', user_id: rec.user_id, ip: req.ip });
+      res.json({ message: 'Password reset. Please log in again.' });
+    } catch (err) { next(err); }
   });
 
   router.post('/change-password', mw.authenticateUser(), async (req, res) => {
@@ -766,15 +778,19 @@ const mw = require('../middleware/authMiddleware');
         target_user_id: user.id, organization_id: req.membership.organization_id, new_role: role
       });
 
+      let delivered = false;
       try {
         const organization = await getDB().collection('organizations').findOne({ id: req.membership.organization_id });
-        await sendInviteEmail(email, req.user.name, organization?.name || 'an organization', role, tempPassword);
+        const result = await sendInviteEmail(email, req.user.name, organization?.name || 'an organization', role, tempPassword);
+        delivered = result.delivered;
       } catch (err) {
         console.error('Failed to send invite email:', err);
       }
 
       res.json({
-        message: 'User invited successfully. An email with login instructions has been sent.',
+        message: delivered ? 'An invitation with login instructions has been sent.'
+          : 'Member added, but the invitation email could not be sent. They can use Forgot password on the sign-in page to get access.',
+        delivered,
         is_new_user: isNewUser
       });
     }

@@ -1,6 +1,9 @@
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const { connectDB } = require('./config/db');
-const { startCertificateWorker, startEmailWorker, startReportWorker, recoverStaleReports } = require('./queues');
+const { startCertificateWorker } = require('./queues/certificateWorker');
+const { startEmailWorker } = require('./queues/emailWorker');
+const { startReportWorker, recoverStaleReports } = require('./queues/reportWorker');
+const { startEventReportScheduler } = require('./services/eventReportScheduler');
 const { startBulkScheduler } = require('./modules/bulkGeneration/jobQueue');
 const { redisHealthCheck } = require('./config/redis');
 
@@ -34,6 +37,7 @@ async function startWorker() {
     } else {
       console.warn('[Worker] Redis NOT available — falling back to legacy setInterval schedulers');
       console.warn('[Worker] Set REDIS_URL in .env for durable queue processing');
+      await startEventReportScheduler(db);
       startBulkScheduler(db);
     }
 

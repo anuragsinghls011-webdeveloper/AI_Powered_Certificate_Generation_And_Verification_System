@@ -9,7 +9,10 @@ const limits = require('../config/security');
 //   EMAIL_PROVIDER=nodemailer   → uses Gmail SMTP via Nodemailer (DEFAULT)
 //   EMAIL_PROVIDER=resend       → uses Resend API
 // ============================================================================
-const EMAIL_PROVIDER = (process.env.EMAIL_PROVIDER || 'nodemailer').toLowerCase();
+const EMAIL_PROVIDER = (process.env.EMAIL_PROVIDER || 'nodemailer').trim().toLowerCase();
+if (!['nodemailer', 'resend'].includes(EMAIL_PROVIDER)) {
+  throw new Error('EMAIL_PROVIDER must be nodemailer or resend');
+}
 
 // ============================================================================
 // NODEMAILER (Gmail SMTP) — ACTIVE BY DEFAULT
@@ -32,17 +35,16 @@ function getNodemailerTransport() {
       host,
       port,
       secure: port === 465, // true for 465, false for other ports
-      auth: { user, pass },
+      auth: { user, pass: host.toLowerCase() === 'smtp.gmail.com' ? pass.replace(/\s/g, '') : pass },
+      requireTLS: port === 587,
+      dnsTimeout: limits.workTimeout,
+      connectionTimeout: limits.workTimeout,
+      greetingTimeout: limits.workTimeout,
+      socketTimeout: limits.workTimeout,
       pool: true,           // use pooled connections for bulk sending
       maxConnections: 5,
-      maxMessages: 100,
-      tls: { rejectUnauthorized: false }
+      maxMessages: 100
     });
-
-    // Verify connection on first use
-    nodemailerTransport.verify()
-      .then(() => console.log('[EMAIL] Nodemailer SMTP connected successfully'))
-      .catch(err => console.error('[EMAIL] Nodemailer SMTP verification failed:', err.message));
   }
   return nodemailerTransport;
 }
@@ -67,12 +69,14 @@ async function sendWithNodemailer({ to, subject, html, text, attachments = [], i
   };
 
   const info = await transport.sendMail(mailOptions);
+  const delivered = info.accepted.length > 0 && !info.rejected.length;
   return {
-    delivered: true,
+    delivered,
+    ...(delivered ? {} : { error: 'SMTP did not accept all recipients' }),
     dev_mode: false,
     email_id: info.messageId,
     intended_recipients: recipients,
-    actual_recipients: recipients,
+    actual_recipients: info.accepted,
     redirected: false
   };
 }
@@ -186,7 +190,9 @@ async function sendVerificationEmail(user, code) {
 }
 
 async function sendPasswordResetEmail(user, token) {
-  const link = `${APP_URL()}/auth/reset-password?token=${token}`;
+  const url = new URL('/auth/reset-password', APP_URL());
+  url.searchParams.set('token', token);
+  const link = url.href;
   const result = await sendEmail({
     to: user.email,
     subject: 'Reset your CampusCert password',

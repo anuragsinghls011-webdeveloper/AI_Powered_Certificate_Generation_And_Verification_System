@@ -202,10 +202,10 @@ function InviteModal({ apiBase, onClose, onSuccess, membership }) {
           <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 className="w-8 h-8" />
           </div>
-          <h3 className="text-2xl font-bold font-serif text-slate-900 mb-2">Member Invited!</h3>
+          <h3 className="text-2xl font-bold font-serif text-slate-900 mb-2">Member added</h3>
           <p className="text-slate-600 mb-6">{successData.message}</p>
           
-          {successData.is_new_user && (
+          {successData.is_new_user && successData.delivered && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-left">
               <p className="text-sm font-semibold text-amber-800 flex items-center gap-2 mb-2">
                 <AlertTriangle className="w-4 h-4" /> Invitation Sent Securely

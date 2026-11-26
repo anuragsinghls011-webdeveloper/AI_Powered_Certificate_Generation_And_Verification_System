@@ -36,6 +36,12 @@ export default function App() {
     if (window.location.hash === '#reports' || path.startsWith('/reports')) return 'reports';
     return 'dashboard';
   });
+  const authPath = window.location.pathname.replace(/\/$/, '');
+  if (authPath === '/auth/reset-password' || authPath === '/auth/forgot-password') {
+    return <React.Suspense fallback={<div role="status">Loading password reset...</div>}>
+      <AuthPages initialMode={authPath === '/auth/reset-password' ? 'reset' : 'forgot'} onBack={() => window.location.replace('/')} />
+    </React.Suspense>;
+  }
   return <Workspace activeTab={activeTab} setActiveTab={setActiveTab} key={JSON.stringify([user?.id, membership?.organization_id])} />;
 }
 

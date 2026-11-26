@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const { app, mountBulkRoutes } = require('./app');
 const { connectDB } = require('./config/db');
 const { seedInitialData } = require('./services/seedService');

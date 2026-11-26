@@ -69,7 +69,7 @@ export default function AuthPages({ initialMode = 'login', onBack }) {
           {mode === 'login' && <LoginForm setMode={setMode} setDevLinks={setDevLinks} />}
           {mode === 'register' && <RegisterForm setMode={setMode} />}
           {mode === 'forgot' && <ForgotForm setMode={setMode} setDevLinks={setDevLinks} />}
-          {mode === 'reset' && <ResetForm setMode={setMode} />}
+          {mode === 'reset' && <ResetForm />}
           {devLinks && (
             <div data-testid="auth-dev-links" className="mt-5 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
               <p className="font-bold mb-1 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> Dev-mode link (email provider not configured)</p>
@@ -288,7 +288,7 @@ function ForgotForm({ setMode, setDevLinks }) {
   );
 }
 
-function ResetForm({ setMode }) {
+function ResetForm() {
   const [token] = useState(new URLSearchParams(window.location.search).get('token') || '');
   const [pwd, setPwd] = useState('');
   const [loading, setLoading] = useState(false);
@@ -300,8 +300,8 @@ function ResetForm({ setMode }) {
     try {
       const res = await axios.post(`${API}/auth/reset-password`, { token, new_password: pwd });
       setMsg(res.data.message);
-      setTimeout(() => { window.location.href = '/'; setMode('login'); }, 1200);
-    } catch (e) { setErr(e.response?.data?.error || 'Failed'); }
+      window.history.replaceState(null, '', '/auth/login');
+    } catch (e) { setErr(e.response?.data?.error || 'Could not reset your password. Please try again.'); }
     finally { setLoading(false); }
   };
   return (
@@ -310,10 +310,15 @@ function ResetForm({ setMode }) {
         <h3 className="text-2xl font-bold font-serif text-slate-900">Set a new password</h3>
         <p className="text-sm text-slate-500 mt-1">Choose a strong password (min 8 chars, one letter + one digit).</p>
       </div>
-      <Field icon={Lock} label="New password" type="password" required data-testid="reset-password" value={pwd} onChange={(e) => setPwd(e.target.value)} />
+      {!msg && token && <Field icon={Lock} label="New password" type="password" required autoComplete="new-password" minLength={8} maxLength={128} data-testid="reset-password" value={pwd} onChange={(e) => setPwd(e.target.value)} />}
+      {!token && <FieldError>This link is missing its reset token.</FieldError>}
       <FieldError>{err}</FieldError>
       {msg && <div data-testid="reset-success" className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-800">{msg}</div>}
-      <SubmitBtn data-testid="reset-submit" loading={loading} type="submit">Reset password</SubmitBtn>
+      {msg ? <a href="/auth/login" className="block text-brand-600 font-semibold">Continue to sign in</a>
+        : <>
+          {token && <SubmitBtn data-testid="reset-submit" loading={loading} type="submit">Reset password</SubmitBtn>}
+          <a href="/auth/forgot-password" className="block text-sm font-semibold text-brand-600">Request another reset link</a>
+        </>}
     </form>
   );
 }
