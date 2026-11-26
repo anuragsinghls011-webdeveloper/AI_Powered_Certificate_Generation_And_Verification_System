@@ -118,7 +118,7 @@ async function processRecord(db, job, record, owner) {
     emailStatus = result.delivered ? 'sent' : 'failed';
     await db.collection('certificates').updateOne({ issuance_key: record._id, organization_id: job.organization_id }, { $set: {
       sent_email: result.delivered, email_status: emailStatus, email_id: result.email_id || null,
-      email_actual_recipient: result.actual_recipients?.[0] || null, email_error: result.delivered ? null : 'Email delivery failed'
+      email_actual_recipient: result.actual_recipients?.[0] || null, email_error: result.delivered ? null : (result.error || 'Email delivery failed')
     } });
   }
   await db.collection('bulk_records').updateOne({ _id: record._id, organization_id: job.organization_id }, { $set: {

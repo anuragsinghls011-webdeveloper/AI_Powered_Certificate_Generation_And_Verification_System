@@ -68,6 +68,7 @@ async function start() {
       } else {
         console.log('[Server] Queue system: Legacy (in-process, non-durable)');
       }
+      require('./utils/emailService').verifyEmailTransport().catch(() => {});
     });
   } catch (err) {
     console.error('Failed to start server:', err);

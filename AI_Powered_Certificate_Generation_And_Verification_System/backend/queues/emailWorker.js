@@ -132,7 +132,7 @@ async function updateEmailStatus(db, cert, recordId, emailStatus, result) {
         $set: {
           email_status: emailStatus,
           email_id: result?.email_id || null,
-          email_error: emailStatus === 'sent' ? null : 'Email delivery failed'
+          email_error: emailStatus === 'sent' ? null : (result?.error || 'Email delivery failed')
         }
       }
     );
@@ -159,7 +159,7 @@ function startEmailWorker(opts = {}) {
     {
       connection,
       concurrency: 5,         // Max 5 concurrent email sends
-      lockDuration: 30000,     // 30s lock per email
+      lockDuration: 70000,     // Allow SMTP connect + port fallback before stall detection
       stalledInterval: 15000,
       maxStalledCount: 1,
       limiter: {

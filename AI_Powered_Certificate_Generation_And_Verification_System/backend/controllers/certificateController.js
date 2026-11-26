@@ -181,7 +181,7 @@ const sendEmail = handle(async (req, res) => {
   const result = await deliverCertificate({ cert, template, pdfBuffer });
   await getCertificatesCol().updateOne({ ...scope(req), cert_id: cert.cert_id }, { $set: {
     sent_email: result.delivered, email_status: result.delivered ? 'sent' : 'failed', email_id: result.email_id || null,
-    email_actual_recipient: result.actual_recipients?.[0] || null, email_error: result.delivered ? null : 'Email delivery failed'
+    email_actual_recipient: result.actual_recipients?.[0] || null, email_error: result.delivered ? null : (result.error || 'Email delivery failed')
   } });
   if (!result.delivered) return res.status(502).json({ error: result.error || 'Certificate email could not be sent. Please retry.' });
   res.json({ message: 'Certificate email accepted', cert_id: cert.cert_id, email_id: result.email_id });

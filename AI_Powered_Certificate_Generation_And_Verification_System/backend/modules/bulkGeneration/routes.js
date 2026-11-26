@@ -296,7 +296,7 @@ function build(rawDb) {
         const template = await db.collection('templates').findOne({ id: cert.template_id });
         if (!template && !pdfBuffer) { failed++; continue; }
         const result = await deliverCertificate({ cert, template, pdfBuffer });
-        const patch = { email_status: result.delivered ? 'sent' : 'failed', email_id: result.email_id || null, email_error: result.delivered ? null : 'Email delivery failed' };
+        const patch = { email_status: result.delivered ? 'sent' : 'failed', email_id: result.email_id || null, email_error: result.delivered ? null : (result.error || 'Email delivery failed') };
         await db.collection('bulk_records').updateOne({ _id: record._id }, { $set: patch });
         await db.collection('certificates').updateOne({ cert_id: cert.cert_id }, { $set: { ...patch, sent_email: result.delivered } });
         result.delivered ? sent++ : failed++;
